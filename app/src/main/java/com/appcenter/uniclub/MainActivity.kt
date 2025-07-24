@@ -16,10 +16,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appcenter.uniclub.ui.theme.UniClubTheme
-import com.appcenter.uniclub.home.HomeScreen
-import com.appcenter.uniclub.components.bottombar.BottomNavigationBar
-import com.appcenter.uniclub.home.clublist.ClubListScreen
-import com.appcenter.uniclub.components.bottombar.Navigation
+import com.appcenter.uniclub.ui.home.HomeScreen
+import com.appcenter.uniclub.ui.components.bottombar.BottomNavigationBar
+import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
+import com.appcenter.uniclub.ui.components.bottombar.Navigation
 import com.appcenter.uniclub.login.MypageScreen
 import com.appcenter.uniclub.login.QnAScreen
 
