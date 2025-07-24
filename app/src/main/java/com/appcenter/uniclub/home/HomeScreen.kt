@@ -33,13 +33,12 @@ import com.appcenter.uniclub.R
 import com.appcenter.uniclub.home.components.ClubCardCarousel
 import com.appcenter.uniclub.home.components.TopAppBarSection
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.navigation.NavController
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(modifier: Modifier = Modifier,
+               navController: NavController) {
     LazyColumn(modifier = modifier
                 .fillMaxSize()
     ) {
@@ -77,7 +76,10 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         item {
             Spacer(modifier = Modifier.height(30.dp))
-            CategorySection()
+            CategorySection(onCategoryClick = { category ->
+                // 🔧 카테고리 클릭 시 ClubList로 이동
+                navController.navigate("clublist/${category}")
+            })
         }
     }
 }
@@ -96,18 +98,18 @@ fun RecommendTitle() {
 }
 
 @Composable
-fun CategorySection() {
+fun CategorySection(onCategoryClick: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 16.dp) //좌우, 상하 여백
-    ){
+    ) {
         //상단: '카테고리' 제목 + '전체보기' 버튼
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
-        ){
+        ) {
             Text(
                 text = "카테고리",
                 fontSize = 16.sp,
@@ -139,21 +141,23 @@ fun CategorySection() {
         LazyVerticalGrid(
             columns = GridCells.Fixed(4), //한 행에 4개 버튼
             modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp),
+                .fillMaxWidth()
+                .height(180.dp),
             userScrollEnabled = false,
             horizontalArrangement = Arrangement.spacedBy(15.dp), //가로간격
             verticalArrangement = Arrangement.spacedBy(12.dp) //세로간격
         ) {
             items(categories) { label ->
-                CategoryItem(label = label)
+                CategoryItem(label = label, onClick = { selectedLabel ->
+                    onCategoryClick(selectedLabel)
+                })
             }
         }
     }
 }
 
 @Composable
-fun CategoryItem(label: String) {
+fun CategoryItem(label: String, onClick: (String) -> Unit) {
     //피그마 비율 반영
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
@@ -169,7 +173,7 @@ fun CategoryItem(label: String) {
                 .size(width = buttonWidth.dp, height = buttonHeight.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFFFF9D00)) // 주황색
-                .clickable { /* TODO: 클릭 처리 */ },
+                .clickable { onClick(label) },
             contentAlignment = Alignment.Center
         ) {
             //추후 아이콘으로 변경
@@ -193,8 +197,10 @@ fun CategoryItem(label: String) {
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
     HomeScreen()
 }
+*/
