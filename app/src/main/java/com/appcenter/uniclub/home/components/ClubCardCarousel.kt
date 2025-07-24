@@ -57,7 +57,6 @@ fun ClubCard(
     imageResId: Int,
     clubName: String
 ) {
-
     //좋아요 상태 기억
     var isLiked by remember { mutableStateOf(false) }
 
