@@ -1,7 +1,5 @@
 package com.appcenter.uniclub
 
-import android.R.attr.defaultValue
-import android.R.attr.type
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,8 +17,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.home.HomeScreen
-import com.appcenter.uniclub.components.BottomNavigationBar
+import com.appcenter.uniclub.components.BottomBar.BottomNavigationBar
 import com.appcenter.uniclub.home.clublist.ClubListScreen
+import com.appcenter.uniclub.components.BottomBar.Navigation
+import com.appcenter.uniclub.login.MypageScreen
+import com.appcenter.uniclub.login.QnAScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,17 +32,18 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    bottomBar = { BottomNavigationBar() } //하단바
+                    bottomBar = { BottomNavigationBar(navController) } //하단바
                 ) { innerPadding ->
                     NavHost(
                         navController  = navController,
-                        startDestination = "home",
+                        startDestination = Navigation.Home.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         // 📌 홈 화면
-                        composable("home") {
-                            HomeScreen(navController = navController)
-                        }
+                        composable(Navigation.QnA.route)    { QnAScreen() }
+                        composable(Navigation.Home.route)   { HomeScreen(modifier = Modifier,
+                                                                        navController = navController) }
+                        composable(Navigation.MyPage.route) { MypageScreen() }
                         // 📌 카테고리 클릭 → 동아리 리스트 화면
                         composable(
                             route = "clublist/{categoryName}",
@@ -73,7 +75,7 @@ fun MainScreenPreview() {
 
     UniClubTheme {
         Scaffold(
-            bottomBar = { BottomNavigationBar() }
+            bottomBar = { BottomNavigationBar(navController = navController) }
         ) { innerPadding ->
             HomeScreen(
                 modifier = Modifier.padding(innerPadding),
