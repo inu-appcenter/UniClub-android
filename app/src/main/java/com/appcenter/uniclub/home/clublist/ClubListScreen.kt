@@ -10,14 +10,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.appcenter.uniclub.components.TopBar
 
 @Composable
-fun ClubListScreen(categoryName: String = "전체") {
+fun ClubListScreen(
+    navController: NavHostController,
+    categoryName: String = "전체"
+) {
     var selectedSort by remember { mutableStateOf("이름순") }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TopBar()
+        TopBar(
+            onBackClick = { navController.navigateUp() },
+            onRightIconClick = { /* 검색 로직 */ }
+        )
 
         Spacer(modifier = Modifier.height(15.dp))
 
@@ -58,5 +66,6 @@ fun ClubListScreen(categoryName: String = "전체") {
 @Preview(showBackground = true)
 @Composable
 fun ClubListScreenPreview() {
-    ClubListScreen()
+    val navController = rememberNavController()
+    ClubListScreen(navController = navController)
 }

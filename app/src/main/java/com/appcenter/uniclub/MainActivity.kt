@@ -54,7 +54,10 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             val category = backStackEntry.arguments
                                 ?.getString("categoryName") ?: "전체"
-                            ClubListScreen(categoryName = category)
+                            ClubListScreen(
+                                navController = navController,
+                                categoryName = category
+                            )
                         }
                     }
                 }

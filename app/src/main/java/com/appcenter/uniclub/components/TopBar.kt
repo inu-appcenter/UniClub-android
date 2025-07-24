@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun TopBar(
+    onBackClick: () -> Unit = {},
     rightIcon: ImageVector = Icons.Default.Search,
     onRightIconClick: () -> Unit = {}
 ) {
@@ -25,7 +26,11 @@ fun TopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+        Icon(
+            imageVector = Icons.Default.ArrowBack,
+            contentDescription = "뒤로가기",
+            modifier = Modifier.clickable { onBackClick() }
+        )
         Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = rightIcon,
