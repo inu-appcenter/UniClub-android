@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.login
+package com.appcenter.uniclub.promotion
 
 import androidx.compose.runtime.Composable
 
