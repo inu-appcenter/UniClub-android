@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.components.BottomBar
+package com.appcenter.uniclub.components.bottombar
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

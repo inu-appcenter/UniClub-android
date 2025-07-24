@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.login
+package com.appcenter.uniclub.qna
 
 import androidx.compose.runtime.Composable
 

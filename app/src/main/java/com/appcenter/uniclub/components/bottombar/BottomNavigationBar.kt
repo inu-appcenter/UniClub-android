@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.components.BottomBar
+package com.appcenter.uniclub.components.bottombar
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.appcenter.uniclub.components.BottomBar.Navigation
 
 //하단 내비게이션 바
 @Composable
