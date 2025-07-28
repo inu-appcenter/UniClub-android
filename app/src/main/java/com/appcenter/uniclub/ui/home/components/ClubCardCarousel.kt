@@ -8,14 +8,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,29 +21,80 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.R
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 //동아리 추천 카드캐러셀
 //현재는 카드 6개만
 //추후 서버 연동 후 랜덤 값 불러오기, 새로고침 기능 등 추가해야함
 @Composable
 fun ClubCardCarousel(
-    clubList: List<Pair<Int, String>>
+    fullList: List<Pair<Int, String>>,
 ) {
+    var clubList by remember { mutableStateOf(fullList.shuffled()) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    val visibleClubs = clubList.take(6)
+    val displayList: List<Pair<Int, String>?> = visibleClubs + listOf(null) // 마지막 null은 로딩 카드
+
+    // 마지막 아이템 도달 감지
+    LaunchedEffect(listState, clubList) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                val lastIndex = visibleItems.lastOrNull()?.index
+                if (!isRefreshing && lastIndex == displayList.lastIndex) {
+                    isRefreshing = true
+                    coroutineScope.launch {
+                        delay(1000L)
+                        clubList = fullList.shuffled()
+                        isRefreshing = false
+                        listState.scrollToItem(0)
+                    }
+                }
+            }
+    }
+
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val startPadding = (18f / 360f) * screenWidthDp
+    val spacing = (15f / 360f) * screenWidthDp
+
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp) //카드 간 간격
+        state = listState,
+        contentPadding = PaddingValues(start = startPadding.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing.dp) //카드 간 간격
     ) {
-        //6개까지 표시
-        items(items = clubList.take(6)) { pair ->
-            ClubCard(imageResId = pair.first, clubName = pair.second)
+        items(displayList) { pair ->
+            if (pair == null) {
+                // 새로고침 아이콘
+                Box(
+                    modifier = Modifier
+                        .figmaSize(widthPx = 136f, heightPx = 206f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(strokeWidth = 2.dp)
+                }
+            } else {
+                ClubCard(imageResId = pair.first, clubName = pair.second)
+            }
         }
     }
 }
@@ -60,14 +107,9 @@ fun ClubCard(
     //좋아요 상태 기억
     var isLiked by remember { mutableStateOf(false) }
 
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
-    val buttonWidth = screenWidthDp * 137f / 360f
-    val buttonHeight = screenWidthDp * 206f / 360f
     Box(
         modifier = Modifier
-            .width(buttonWidth.dp) //고정 너비
-            .height(buttonHeight.dp) //고정 높이
+            .figmaSize(widthPx = 136f, heightPx = 206f)
             .clip(RoundedCornerShape(17.dp)) //모서리
     ) {
         Image(
@@ -80,7 +122,7 @@ fun ClubCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .figmaPadding(startPx = 14f, topPx = 10f)
                 .align(Alignment.TopStart),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -89,18 +131,30 @@ fun ClubCard(
             Text(
                 text = clubName,
                 color = Color.White,
-                fontSize = 13.sp
-                //fontWeight = FontWeight.Bold
+                fontSize = figmaTextSizeSp(13f),
+                fontWeight = FontWeight.Medium
             )
-            //좋아요 아이콘
-            Icon(
-                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
-                tint = if (isLiked) Color(0xFFF30000) else Color.White, //채워졌을 때 빨간색
+            //즐겨찾기 아이콘
+            Box(
                 modifier = Modifier
-                    .padding(start = 8.dp)
-                    .clickable { isLiked = !isLiked }
-            )
+                    .figmaSize(widthPx = 28f, heightPx = 28f) //고정 박스 크기
+                    .figmaPadding(endPx = 14f) //오른쪽 여백
+                    .clickable { isLiked = !isLiked },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(
+                        id = if (isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
+                    ),
+                    contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(if (isLiked) 1.55f else 1f) //빨간 하트 확대
+                        .offset( //빨간 하트 위치조정
+                            x = if (isLiked) (-0.5).dp else 0.dp,
+                            y = if (isLiked) (-0.5).dp else 0.dp)
+                )
+            }
         }
     }
 }
