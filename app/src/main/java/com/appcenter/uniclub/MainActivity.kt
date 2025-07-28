@@ -20,8 +20,9 @@ import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.components.bottombar.BottomNavigationBar
 import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
 import com.appcenter.uniclub.ui.components.bottombar.Navigation
-import com.appcenter.uniclub.login.MypageScreen
-import com.appcenter.uniclub.login.QnAScreen
+import com.appcenter.uniclub.ui.mypage.MypageScreen
+import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
+import com.appcenter.uniclub.ui.qna.QnAScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +61,10 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 categoryName = category
                             )
+                        }
+
+                        composable("promotion") {
+                            UserPromotionScreen(navController = navController)
                         }
                     }
                 }

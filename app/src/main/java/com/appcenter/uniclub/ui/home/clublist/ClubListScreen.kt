@@ -2,6 +2,8 @@ package com.appcenter.uniclub.ui.home.clublist
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ fun ClubListScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar(
             onBackClick = { navController.navigateUp() }, //뒤로 가기 클릭 시 이전 화면으로
+            rightIcon = Icons.Default.Search, //검색 아이콘 명시
             onRightIconClick = { /* 검색 로직 */ }
         )
 
@@ -63,7 +66,9 @@ fun ClubListScreen(
         ) {
             //더미 데이터 개수만큼 반복하여 컴포즈
             items(dummyClubs.size) { index ->
-                ClubCardList(club = dummyClubs[index])
+                ClubCardList(
+                    club = dummyClubs[index],
+                    onClick = { navController.navigate("promotion") })
             }
         }
     }
