@@ -11,6 +11,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
 import com.google.accompanist.pager.*
 
 //이벤트 칸 카드뉴스 슬라이드형
@@ -23,13 +25,13 @@ fun EventImageCarousel(
 
     Column(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .figmaPadding(startPx = 18f, endPx = 18f, topPx = 30f),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.92f) //피그마 기준 너비 비율
-                .aspectRatio(330f / 249f) //비율 유지
+                .figmaSize(widthPx = 324f, heightPx = 249f)
                 .clip(RoundedCornerShape(21.dp)) //모서리
                 .clipToBounds() //내용 넘치지 않도록 자르기
         ) {

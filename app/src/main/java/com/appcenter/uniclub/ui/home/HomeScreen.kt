@@ -1,27 +1,25 @@
 package com.appcenter.uniclub.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -30,22 +28,28 @@ import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.ui.home.components.EventImageCarousel
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.home.components.ClubCardCarousel
-import com.appcenter.uniclub.ui.home.components.TopAppBarSection
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.navigation.NavController
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.appcenter.uniclub.ui.home.components.MainTopBar
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier,
                navController: NavHostController) {
-    LazyColumn(modifier = modifier
-                .fillMaxSize()
-    ) {
-        item { TopAppBarSection() }
+    LazyColumn(modifier = modifier.fillMaxSize()) {
+        item { MainTopBar() }
 
         item {
-            Spacer(modifier = Modifier.height(13.dp))
             //예시 이미지 넣어둠 나중에 서버 연결 필요
             val sampleEvents = listOf(
                 R.drawable.event_sample,
@@ -56,12 +60,11 @@ fun HomeScreen(modifier: Modifier = Modifier,
         }
 
         item {
-            Spacer(modifier = Modifier.height(30.dp))
             RecommendTitle()
         }
 
         item {
-            Spacer(modifier = Modifier.height(13.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             //예시 이미지 넣어둠 나중에 서버 연결 필요
             val sampleClubs = listOf(
                 R.drawable.club1 to "IUDC",
@@ -69,13 +72,13 @@ fun HomeScreen(modifier: Modifier = Modifier,
                 R.drawable.club3 to "기우회",
                 R.drawable.club1 to "appcenter",
                 R.drawable.club2 to "봉사동아리",
-                R.drawable.club3 to "크레퍼스(CREPERS)"
+                R.drawable.club3 to "크레퍼스(CREPERS)",
+                R.drawable.club1 to "멋쟁이사자처럼"
             )
-            ClubCardCarousel(clubList = sampleClubs)
+            ClubCardCarousel(fullList = sampleClubs)
         }
 
         item {
-            Spacer(modifier = Modifier.height(30.dp))
             CategorySection(
                 navController = navController,
                 onCategoryClick = { category ->
@@ -90,12 +93,12 @@ fun HomeScreen(modifier: Modifier = Modifier,
 fun RecommendTitle() {
     Text(
         text = "이런 동아리는 어떠세요?",
-        fontSize = 16.sp,
+        fontSize = figmaTextSizeSp(16f),
         fontWeight = FontWeight.Bold,
-        color = Color(0xFF0167FF),
+        color = Color(0xFF000000),
         lineHeight = 24.sp,
         modifier = Modifier
-            .padding(start = 20.dp)
+            .figmaPadding(startPx = 26f, topPx = 27f)
     )
 }
 
@@ -104,28 +107,27 @@ fun CategorySection(
     navController: NavHostController,
     onCategoryClick: (String) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp) //좌우, 상하 여백
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         //상단: '카테고리' 제목 + '전체보기' 버튼
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .figmaPadding(startPx = 27f, endPx = 31f, topPx = 25f),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "카테고리",
-                fontSize = 16.sp,
+                fontSize = figmaTextSizeSp(16f),
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0167FF),
+                color = Color(0xFF000000),
                 lineHeight = 24.sp
             )
 
             Text(
                 text = "전체보기",
-                fontSize = 10.sp,
+                fontSize = figmaTextSizeSp(10f),
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFFB1B1B1),
                 modifier = Modifier.clickable {
@@ -134,78 +136,70 @@ fun CategorySection(
             )
         }
 
-        Spacer(modifier = Modifier.height(15.dp))
-
-        //서버 연동 후 변경
         val categories = listOf(
-            "교양학술", "취미전시", "체육", "종교",
-            "봉사", "문화", "+", "+"
+            "교양학술" to R.drawable.ic_category_academic,
+            "취미전시" to R.drawable.ic_category_hobby,
+            "체육" to R.drawable.ic_category_sports, //수정 필요
+            "종교" to R.drawable.ic_category_religion, //수정 필요
+            "봉사" to R.drawable.ic_category_volunteer,
+            "문화" to R.drawable.ic_category_culture
         )
 
         //카테고리 버튼 배치
         LazyVerticalGrid(
-            columns = GridCells.Fixed(4), //한 행에 4개 버튼
+            columns = GridCells.Fixed(3), //한 행에 3개 버튼
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(250.dp)
+                .figmaPadding(startPx = 27f, endPx = 27f, topPx = 20f),
             userScrollEnabled = false,
-            horizontalArrangement = Arrangement.spacedBy(15.dp), //가로간격
+            horizontalArrangement = Arrangement.spacedBy(38.dp), //가로간격
             verticalArrangement = Arrangement.spacedBy(12.dp) //세로간격
         ) {
-            items(categories) { label ->
-                CategoryItem(label = label, onClick = { selectedLabel ->
-                    onCategoryClick(selectedLabel)
-                })
+            items(categories) { (label, icon) ->
+                CategoryItem(
+                    label = label,
+                    iconResId = icon,
+                    onClick = { selectedLabel -> onCategoryClick(selectedLabel) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun CategoryItem(label: String, onClick: (String) -> Unit) {
-    //피그마 비율 반영
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
-    val buttonWidth = screenWidthDp * 68.39f / 360f
-    val buttonHeight = screenWidthDp * 48.41f / 360f
+fun CategoryItem(
+    label: String,
+    iconResId: Int,
+    onClick: (String) -> Unit) {
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(buttonWidth.dp)
+        modifier = Modifier.wrapContentHeight()
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = iconResId),
+            contentDescription = label,
             modifier = Modifier
-                .size(width = buttonWidth.dp, height = buttonHeight.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFFFF9D00)) // 주황색
-                .clickable { onClick(label) },
-            contentAlignment = Alignment.Center
-        ) {
-            //추후 아이콘으로 변경
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
-        }
+                .figmaSize(widthPx = 80f, heightPx = 60.4f)
+                .clickable { onClick(label) }
+        )
 
         Spacer(modifier = Modifier.height(5.dp))
 
         Text(
             text = label,
-            fontSize = 11.sp,
+            fontSize = figmaTextSizeSp(11f),
             fontWeight = FontWeight.Medium,
-            color = Color(0xFFFF9D00),
+            color = Color(0xFF3C3C3C),
             textAlign = TextAlign.Center
         )
     }
 }
 
-/*
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen()
+    val navController = rememberNavController()
+    HomeScreen(navController = navController)
 }
-*/

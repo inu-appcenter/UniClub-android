@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,7 +35,8 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    bottomBar = { BottomNavigationBar(navController) } //하단바
+                    containerColor = Color.Transparent,
+                    bottomBar = { BottomNavigationBar(navController=navController) } //하단바
                 ) { innerPadding ->
                     NavHost(
                         navController  = navController,
@@ -72,6 +75,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
