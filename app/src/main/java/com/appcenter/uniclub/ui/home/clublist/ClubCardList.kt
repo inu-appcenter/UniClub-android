@@ -29,7 +29,7 @@ import com.appcenter.uniclub.model.RecruitStatus
 
 //동아리 리스트 화면의 동아리 카드
 @Composable
-fun ClubCardList(club: Club) {
+fun ClubCardList(club: Club, onClick: () -> Unit) {
     //좋아요 상태 기억
     var isLiked by remember { mutableStateOf(false) }
 
@@ -52,7 +52,8 @@ fun ClubCardList(club: Club) {
             .height(buttonHeight.dp)
             .padding(bottom = 12.dp) //카드 간 간격
             .clip(RoundedCornerShape(20.dp))
-            .background(bgColor),
+            .background(bgColor)
+            .clickable { onClick() },
         contentAlignment = Alignment.Center //내부 내용 중앙 정렬
     ) {
         Row(

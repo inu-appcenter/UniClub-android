@@ -34,10 +34,11 @@ import com.appcenter.uniclub.ui.home.components.TopAppBarSection
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier,
-               navController: NavController) {
+               navController: NavHostController) {
     LazyColumn(modifier = modifier
                 .fillMaxSize()
     ) {
@@ -75,7 +76,9 @@ fun HomeScreen(modifier: Modifier = Modifier,
 
         item {
             Spacer(modifier = Modifier.height(30.dp))
-            CategorySection(onCategoryClick = { category ->
+            CategorySection(
+                navController = navController,
+                onCategoryClick = { category ->
                 // 🔧 카테고리 클릭 시 ClubList로 이동
                 navController.navigate("clublist/${category}")
             })
@@ -97,7 +100,10 @@ fun RecommendTitle() {
 }
 
 @Composable
-fun CategorySection(onCategoryClick: (String) -> Unit) {
+fun CategorySection(
+    navController: NavHostController,
+    onCategoryClick: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -123,7 +129,7 @@ fun CategorySection(onCategoryClick: (String) -> Unit) {
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFFB1B1B1),
                 modifier = Modifier.clickable {
-                    // TODO: 클릭 시 동아리 리스트로 이동 처리 예정
+                    navController.navigate("clublist/전체")
                 }
             )
         }

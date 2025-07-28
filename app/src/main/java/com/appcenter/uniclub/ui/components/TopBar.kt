@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun TopBar(
+    modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
-    rightIcon: ImageVector = Icons.Default.Search,
+    rightIcon: ImageVector? = null,
+    rightIconTint: Color = MaterialTheme.colorScheme.onBackground,
     onRightIconClick: () -> Unit = {}
 ) {
     Row(
@@ -32,10 +34,15 @@ fun TopBar(
             modifier = Modifier.clickable { onBackClick() }
         )
         Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = rightIcon,
-            contentDescription = "오른쪽 아이콘",
-            modifier = Modifier.clickable { onRightIconClick() }
-        )
+        rightIcon?.let {
+            Icon(
+                imageVector = rightIcon,
+                contentDescription = "오른쪽 아이콘",
+                tint = rightIconTint,
+                modifier = Modifier
+                    .size(width = 24.dp, height = 24.dp)
+                    .clickable { onRightIconClick() }
+            )
+        }
     }
 }
