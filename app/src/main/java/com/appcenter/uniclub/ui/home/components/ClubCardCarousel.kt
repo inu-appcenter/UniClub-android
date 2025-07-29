@@ -146,10 +146,10 @@ fun ClubCard(
                     painter = painterResource(
                         id = if (isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
                     ),
-                    contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+                    contentDescription = if (isLiked) "즐겨찾기 취소" else "즐겨찾기",
                     modifier = Modifier
                         .fillMaxSize()
-                        .scale(if (isLiked) 1.55f else 1f) //빨간 하트 확대
+                        .scale(if (isLiked) 1.6f else 1f) //빨간 하트 확대
                         .offset( //빨간 하트 위치조정
                             x = if (isLiked) (-0.5).dp else 0.dp,
                             y = if (isLiked) (-0.5).dp else 0.dp)
