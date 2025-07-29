@@ -53,8 +53,8 @@ fun HomeScreen(modifier: Modifier = Modifier,
             //예시 이미지 넣어둠 나중에 서버 연결 필요
             val sampleEvents = listOf(
                 R.drawable.event_sample,
-                R.drawable.event_sample_2,
-                R.drawable.event_sample_3
+                R.drawable.event_sample,
+                R.drawable.event_sample
             )
             EventImageCarousel(eventList = sampleEvents)
         }
@@ -139,8 +139,8 @@ fun CategorySection(
         val categories = listOf(
             "교양학술" to R.drawable.ic_category_academic,
             "취미전시" to R.drawable.ic_category_hobby,
-            "체육" to R.drawable.ic_category_sports, //수정 필요
-            "종교" to R.drawable.ic_category_religion, //수정 필요
+            "체육" to R.drawable.ic_category_sports,
+            "종교" to R.drawable.ic_category_religion,
             "봉사" to R.drawable.ic_category_volunteer,
             "문화" to R.drawable.ic_category_culture
         )

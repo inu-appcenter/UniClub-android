@@ -13,5 +13,5 @@ data class Club(
     val description: String, //추가 정보
     val isRecruiting: RecruitStatus, //모집 상태
     val isLiked: Boolean, //좋아요 여부
-    val imageResId: Int //프로필 이미지 (drawable 리소스 ID)
+    val imageResId: Int? = null //프로필 이미지 (drawable 리소스 ID)
 )

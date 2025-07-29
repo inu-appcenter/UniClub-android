@@ -1,13 +1,9 @@
 package com.appcenter.uniclub.ui.home.clublist
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,114 +13,146 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.appcenter.uniclub.model.Club
 import com.appcenter.uniclub.model.RecruitStatus
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
 @Composable
 fun ClubCardList(club: Club, onClick: () -> Unit) {
-    //좋아요 상태 기억
+    //즐겨찾기 상태 기억
     var isLiked by remember { mutableStateOf(false) }
-
-    val bgColor = when (club.isRecruiting) {
-        RecruitStatus.RECRUITING -> Color(0xFFCCCCCC) //모집중 색상
-        RecruitStatus.UPCOMING -> Color(0xFFFFCCCC) //모집예정 색상
-        RecruitStatus.CLOSED -> Color(0xFFEEEEEE) //모집마감 색상
-    }
-
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
-    val screenHeightDp = configuration.screenHeightDp
-    val buttonWidth = screenWidthDp * 329f / 360f
-    val buttonHeight = screenHeightDp * 69f / 800f
 
     //카드 컨테이너
     Box(
         modifier = Modifier
-            .width(buttonWidth.dp)
-            .height(buttonHeight.dp)
-            .padding(bottom = 12.dp) //카드 간 간격
-            .clip(RoundedCornerShape(20.dp))
-            .background(bgColor)
+            .figmaSize(widthPx = 350f, heightPx = 85f)
+            .clip(RoundedCornerShape(28.dp))
             .clickable { onClick() },
-        contentAlignment = Alignment.Center //내부 내용 중앙 정렬
     ) {
+        //배경 이미지
+        Image(
+            painter = painterResource(id = R.drawable.club_card_bg), //배경 이미지 리소스
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize() //Box 전체 채우기
+                .clip(RoundedCornerShape(28.dp))
+        )
+
+        //카드 내부 콘텐츠
         Row(
             verticalAlignment = Alignment.CenterVertically, //수직 중앙
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .figmaPadding(startPx = 20f, endPx = 30f)
         ) {
-            //동아리 이미지 영역
-            Box(
-                modifier = Modifier
-                    .width(54.dp)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.Center
-            ){
-                Image(
-                    painter = painterResource(id = club.imageResId),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(54.dp)
-                        .offset(y = 4.dp), //중앙 맞추기
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.BottomCenter
-                )
-            }
+            //동아리 프로필 이미지 영역
+            //기본 이미지 여부 판단
+            val isDefaultImage = club.imageResId == null || club.imageResId == R.drawable.default_club_image
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Image(
+                painter = painterResource(id = club.imageResId ?: R.drawable.default_club_image),
+                contentDescription = null,
+                modifier = if (isDefaultImage) {
+                    Modifier
+                        .figmaSize(widthPx = 54f, heightPx = 59f) //기본 이미지일 때 더 큰 사이즈
+                        .offset(y = 4.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                } else {
+                    Modifier
+                        .figmaSize(widthPx = 54f, heightPx = 53f) //일반 동아리 이미지
+                        .clip(RoundedCornerShape(20.dp))
+                },
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.BottomCenter
+            )
+
+            Spacer(modifier = Modifier.width(20.dp))
 
             //동아리 이름, 추가정보 영역
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .weight(1f)
+                    .offset(y = (-3).dp),
+                verticalArrangement = Arrangement.Top
             ) {
-                Text(
-                    text = club.name, //동아리 이름
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = club.description, //추가정보
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text(
+                        text = club.name, //동아리명
+                        fontSize = figmaTextSizeSp(14f),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = club.description, //추가정보
+                        fontSize = figmaTextSizeSp(9f),
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                    )
+                }
             }
 
-            //좋아요, 모집상태 영역
+            //즐겨찾기, 모집상태 영역
             Column(
                 horizontalAlignment = Alignment.End, //우측 정렬
                 verticalArrangement = Arrangement.Center
             ) {
-                //좋아요 아이콘
-                Icon(
-                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
-                    tint = if (isLiked) Color(0xFFF30000) else Color.White, //눌렀을 때 빨간색
+                Spacer(modifier = Modifier.height(25.dp))
+                // 즐겨찾기 아이콘
+                Box(
                     modifier = Modifier
-                        .size(width = 15.dp, height = 13.dp)
-                        .clickable { isLiked = !isLiked }
-                )
+                        .figmaSize(widthPx = 14f, heightPx = 12f) //고정된 박스 크기
+                        .clickable { isLiked = !isLiked },
+                    contentAlignment = Alignment.Center
+                ){
+                    Image(
+                        painter = painterResource(
+                            id = if (isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
+                        ),
+                        contentDescription = if (isLiked) "즐겨찾기 취소" else "즐겨찾기",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(if (isLiked) 1.6f else 1f) //빨간 하트 확대
+                            .offset( //빨간 하트 위치조정
+                                x = if (isLiked) (-0.5).dp else 0.dp,
+                                y = if (isLiked) (-0.5).dp else 0.dp
+                            )
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = when (club.isRecruiting) {
-                        RecruitStatus.RECRUITING -> "모집중"
-                        RecruitStatus.UPCOMING -> "모집예정"
-                        RecruitStatus.CLOSED -> "모집마감"
-                    },
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.DarkGray
+                //모집 상태에 따른 이미지 설정
+                val statusImageRes = when (club.isRecruiting) {
+                    RecruitStatus.RECRUITING -> R.drawable.label_recruiting
+                    RecruitStatus.UPCOMING -> R.drawable.label_upcoming
+                    RecruitStatus.CLOSED -> R.drawable.label_closed
+                }
+                //모집 상태에 따라 사이즈 조정
+                val statusModifier = if (club.isRecruiting == RecruitStatus.RECRUITING) {
+                    Modifier
+                        .figmaSize(widthPx = 46f, heightPx = 31f) // 모집중일 때 더 큼
+                        .padding(bottom = 6.dp) // 아래 위치 고정
+                } else {
+                    Modifier
+                        .figmaSize(widthPx = 43f, heightPx = 28f)
+                        .padding(bottom = 6.dp)
+                }
+                //모집 상태 이미지 출력 (오른쪽 하단)
+                Image(
+                    painter = painterResource(id = statusImageRes),
+                    contentDescription = "모집 상태",
+                    modifier = statusModifier
                 )
             }
         }

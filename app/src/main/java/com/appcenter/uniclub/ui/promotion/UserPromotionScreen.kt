@@ -227,7 +227,7 @@ fun UserPromotionScreen(navController: NavHostController,) {
                 BottomActionButtons()
             }
         }
-
+/*
         //상단바 (뒤로가기, 좋아요)
         TopBar(
             modifier = Modifier
@@ -239,6 +239,7 @@ fun UserPromotionScreen(navController: NavHostController,) {
             rightIconTint = if (isLiked) Color(0xFFF30000) else Color.White,
             onRightIconClick = { isLiked = !isLiked }
         )
+ */
     }
 }
 
