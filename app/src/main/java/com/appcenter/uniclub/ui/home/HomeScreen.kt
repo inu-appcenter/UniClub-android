@@ -150,7 +150,7 @@ fun CategorySection(
             columns = GridCells.Fixed(3), //한 행에 3개 버튼
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp)
+                .height(230.dp)
                 .figmaPadding(startPx = 27f, endPx = 27f, topPx = 20f),
             userScrollEnabled = false,
             horizontalArrangement = Arrangement.spacedBy(38.dp), //가로간격

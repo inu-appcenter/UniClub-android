@@ -43,28 +43,25 @@ fun BottomNavigationBar(navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp) // 상단만 보이게 설정 (절반)
-            .offset(y = 40.dp) // 전체 높이 중 하단을 화면 밖으로 내보냄
             .background(Color.Transparent)
+            .clipToBounds()
     ) {
-        val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-        // 전체 이미지 (450 x 80)
+        // 원본 이미지 크기 450x80 기준
         Image(
             painter = painterResource(id = barImage),
             contentDescription = "Bottom Navigation Bar",
-            contentScale = ContentScale.FillWidth,
+            contentScale = ContentScale.FillBounds, // 또는 ContentScale.None
             modifier = Modifier
-                .width(screenWidth)
-                .height(80.dp) // 원래 이미지 높이
-                .scale(1.5f)
+                .width(450.dp)
+                .height(80.dp)
+                .align(Alignment.BottomCenter) // 가운데 정렬
         )
 
-        // 클릭 가능한 3등분 영역
         Row(
             modifier = Modifier
-                .fillMaxWidth()
+                .width(450.dp)
                 .height(80.dp)
-                .offset(y = (-40).dp)
+                .align(Alignment.BottomCenter) // 이미지 위에 딱 맞게
         ) {
             val routes = listOf("qna", "home", "mypage")
             routes.forEach { route ->
