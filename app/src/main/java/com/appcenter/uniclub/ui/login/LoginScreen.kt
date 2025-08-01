@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.login
 
-import android.R.attr.bottom
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,9 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.ModalDrawer
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,18 +27,14 @@ import com.appcenter.uniclub.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImagePainter.State.Empty.painter
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 import kotlinx.coroutines.delay
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(onLoginSuccess: () -> Unit) {
     //학번과 비밀번호 입력 상태
     var studentId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -54,7 +47,7 @@ fun LoginScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         //로고 이미지
         Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.figmaPadding(startPx = 39f, topPx = 51f, bottomPx = 340f)){
+            Box(modifier = Modifier.figmaPadding(startPx = 39f, topPx = 80f, bottomPx = 290f)){
                 Image(
                     painter = painterResource(R.drawable.ic_logo_uniclub),
                     contentDescription = "로고",
@@ -79,7 +72,11 @@ fun LoginScreen() {
                     modifier = Modifier
                         .figmaSize(widthPx = 180f, heightPx = 54f)
                         .clickable(enabled = isLoginEnabled) {
-                            showJoinWarning = true
+                            if (studentId == "1111" && password == "1111") {
+                                onLoginSuccess() //성공 시 콜백 호출
+                            } else {
+                                showJoinWarning = true //실패 시 안내 이미지 표시
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -101,6 +98,8 @@ fun LoginScreen() {
                     color = Color.Black,
                     modifier = Modifier.clickable { /* 이동 */ }
                 )
+
+                //Spacer(modifier = Modifier.height(70.dp))
             }
         }
 
@@ -118,7 +117,7 @@ fun LoginScreen() {
                 contentDescription = "회원가입 안내",
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 390.dp) // 위치 조절
+                    .padding(top = 340.dp) // 위치 조절
                     .figmaSize(widthPx = 258.5f, heightPx = 43.64f)
             )
         }
@@ -178,8 +177,9 @@ fun LoginInputField(
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen()
+    LoginScreen(onLoginSuccess = {})
 }

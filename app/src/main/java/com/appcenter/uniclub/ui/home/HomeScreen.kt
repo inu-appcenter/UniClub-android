@@ -1,17 +1,17 @@
 package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -29,9 +29,6 @@ import com.appcenter.uniclub.ui.home.components.EventImageCarousel
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.home.components.ClubCardCarousel
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
@@ -40,13 +37,14 @@ import com.appcenter.uniclub.ui.home.components.MainTopBar
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier,
                navController: NavHostController) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
+    LazyColumn(modifier = modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+    ) {
         item { MainTopBar() }
 
         item {
@@ -86,6 +84,10 @@ fun HomeScreen(modifier: Modifier = Modifier,
                 navController.navigate("clublist/${category}")
             })
         }
+
+        item {
+            Spacer(modifier = Modifier.height(40.dp))
+        }
     }
 }
 
@@ -112,8 +114,7 @@ fun CategorySection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp)
-                .figmaPadding(startPx = 27f, endPx = 31f, topPx = 25f),
+                .figmaPadding(startPx = 27f, endPx = 31f, topPx = 45f),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -150,7 +151,7 @@ fun CategorySection(
             columns = GridCells.Fixed(3), //한 행에 3개 버튼
             modifier = Modifier
                 .fillMaxWidth()
-                .height(230.dp)
+                .height(250.dp)
                 .figmaPadding(startPx = 27f, endPx = 27f, topPx = 20f),
             userScrollEnabled = false,
             horizontalArrangement = Arrangement.spacedBy(38.dp), //가로간격

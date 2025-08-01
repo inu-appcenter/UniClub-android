@@ -1,14 +1,14 @@
 package com.appcenter.uniclub.ui.home.clublist
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.util.figmaSize
@@ -22,13 +22,13 @@ fun SortDropdown(
 
     Box(
         modifier = Modifier
-            .width(80.dp) //버튼과 드롭다운 모두 동일한 고정 폭
+            .width(75.dp) //버튼과 드롭다운 모두 동일한 고정 폭
             .wrapContentHeight()
     ) {
         Column(horizontalAlignment = Alignment.End) {
             //드롭다운 버튼
             Image(
-                painter = painterResource(id = R.drawable.ic_sort), // 드롭다운 트리거 이미지
+                painter = painterResource(id = R.drawable.ic_sort), //드롭다운 트리거 이미지
                 contentDescription = "정렬 아이콘",
                 modifier = Modifier
                     .figmaSize(widthPx = 75f, heightPx = 30f)
@@ -45,16 +45,18 @@ fun SortDropdown(
                 ) {
                     //드롭다운 배경 이미지
                     Image(
-                        painter = painterResource(id = R.drawable.sort_dropdown), // 업로드하신 이미지
+                        painter = painterResource(id = R.drawable.sort_dropdown),
                         contentDescription = "정렬 옵션 메뉴",
-                        modifier = Modifier.fillMaxSize()
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
                     )
 
-                    // 투명 클릭 옵션 영역
+                    //투명 클릭 옵션 영역
                     Column(
                         modifier = Modifier
                             .matchParentSize()
-                            .padding(vertical = 7.dp),
+                            .padding(vertical = 6.dp),
                         verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -76,4 +78,14 @@ fun SortDropdown(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SortDropdownPreview() {
+    SortDropdown(
+        onOptionSelected = { selected ->
+            println("선택된 정렬 옵션: $selected") // 프리뷰에선 로그로 대체
+        }
+    )
 }

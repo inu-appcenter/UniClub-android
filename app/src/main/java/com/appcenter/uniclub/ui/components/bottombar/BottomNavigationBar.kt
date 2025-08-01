@@ -6,17 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
@@ -24,7 +20,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.appcenter.uniclub.R
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 
 //하단 내비게이션 바 (수정 필요)
@@ -42,25 +37,22 @@ fun BottomNavigationBar(navController: NavHostController) {
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Transparent)
+            .wrapContentSize()
             .clipToBounds()
+            .background(Color.Transparent)
+            .navigationBarsPadding()
     ) {
-        // 원본 이미지 크기 450x80 기준
         Image(
             painter = painterResource(id = barImage),
             contentDescription = "Bottom Navigation Bar",
-            contentScale = ContentScale.FillBounds, // 또는 ContentScale.None
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .width(450.dp)
-                .height(80.dp)
                 .align(Alignment.BottomCenter) // 가운데 정렬
         )
 
         Row(
             modifier = Modifier
-                .width(450.dp)
-                .height(80.dp)
+                .matchParentSize()
                 .align(Alignment.BottomCenter) // 이미지 위에 딱 맞게
         ) {
             val routes = listOf("qna", "home", "mypage")
@@ -85,7 +77,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = false)
 @Composable
 fun BottomNavigationBarPreview() {
     val navController = rememberNavController()
