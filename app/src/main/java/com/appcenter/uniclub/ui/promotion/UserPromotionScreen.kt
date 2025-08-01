@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Divider
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.zIndex
@@ -47,10 +48,11 @@ import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
+//사용자용 홍보 페이지
 @Composable
 fun UserPromotionScreen(navController: NavHostController) {
     var isLiked by remember { mutableStateOf(false) } //즐겨찾기 상태 저장
-    var isRecruiting by remember { mutableStateOf(false) } //모집중, 모집예정 상태 저장
+    var isRecruiting by remember { mutableStateOf(true) } //모집중, 모집예정 상태 저장
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -309,13 +311,16 @@ fun ClubDescription(description: String) {
 //활동사진 캐러셀
 @Composable
 fun ActivityImageCarousel(imageResIds: List<Int>) {
+    val limitedImages = imageResIds.take(10) //최대 10장 제한
+
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 21.dp, top = 15.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(imageResIds.take(10)) { resId ->
+        itemsIndexed(limitedImages) { index, resId ->
+            val isLast = index == limitedImages.lastIndex
             Image(
                 painter = painterResource(id = resId),
                 contentDescription = null,
@@ -323,6 +328,9 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
                 modifier = Modifier
                     .figmaSize(widthPx = 139f, heightPx = 183f)
                     .clip(RoundedCornerShape(25.dp))
+                    .then(
+                        if (isLast) Modifier.padding(end = 20.dp) else Modifier
+                    )
             )
         }
     }
