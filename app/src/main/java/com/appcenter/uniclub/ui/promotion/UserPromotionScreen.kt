@@ -43,134 +43,124 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.zIndex
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 @Composable
-fun UserPromotionScreen(navController: NavHostController,) {
-    //좋아요 상태 저장용 변수
-    var isLiked by remember { mutableStateOf(false) }
+fun UserPromotionScreen(navController: NavHostController) {
+    var isLiked by remember { mutableStateOf(false) } //즐겨찾기 상태 저장
+    var isRecruiting by remember { mutableStateOf(false) } //모집중, 모집예정 상태 저장
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        PromotionTopBar(
-            isLiked = isLiked,
-            onBackClick = { navController.popBackStack() },
-            onLikeClick = { isLiked = !isLiked }
-        )
 
-        //배너
-        Image(
-            painter = painterResource(R.drawable.banner),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(209.dp)
-                .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
-        )
-
-        //프로필 이미지
-        Image(
-            painter = painterResource(R.drawable.profile_example), // 교체 필요
-            contentDescription = "Profile Image",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .size(113.dp)
-                .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
-                .clip(RoundedCornerShape(40.dp))
-        )
-
-        //SNS 버튼 2개
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .offset(y = 209.dp + 17.dp)
-                .fillMaxWidth()
-                .padding(end = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 유튜브 버튼
-            Image(
-                painter = painterResource(id = R.drawable.ic_youtube), // 이미지 리소스 이름에 맞게
-                contentDescription = "YouTube",
-                modifier = Modifier
-                    .size(30.dp)
-                    .clickable { /* TODO: YouTube 링크 이동 */ }
-            )
-
-            // 인스타그램 버튼
-            Image(
-                painter = painterResource(id = R.drawable.ic_instagram), // 이미지 리소스 이름에 맞게
-                contentDescription = "Instagram",
-                modifier = Modifier
-                    .size(30.dp)
-                    .clickable { /* TODO: Instagram 링크 이동 */ }
-            )
-        }
-
-        //스크롤 가능한 본문 콘텐츠 (회의 후 수정)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(top = 209.dp + 113.dp / 2 )
-                .zIndex(0f) //상단바보다 뒤에 배치
+                .verticalScroll(scrollState) //스크롤
+                .zIndex(0f)
         ) {
-            //모집중 상태
-            var isRecruiting by remember { mutableStateOf(false) }
+            //배너 + TopBar + 프로필 사진 겹치는 구조
+            Box(modifier = Modifier.height(209.dp)) {
+                Image( //배너
+                    painter = painterResource(R.drawable.banner),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
+                )
 
+                PromotionTopBar( // 상단바
+                    isLiked = isLiked,
+                    onBackClick = { navController.popBackStack() },
+                    onLikeClick = { isLiked = !isLiked },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(63.dp)
+                        .zIndex(1f) //배너 위에 배치
+                )
+
+                //프로필 이미지
+                Image(
+                    painter = painterResource(R.drawable.profile_example),
+                    contentDescription = "Profile Image",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .size(113.dp)
+                        .offset(x = 24.dp, y = 209.dp - 113.dp / 2) //배너 반쯤 걸쳐서
+                        .clip(RoundedCornerShape(40.dp))
+                        .zIndex(1f)
+                )
+            }
+
+            //SNS 버튼 (유튜브, 인스타)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 28.dp, top = 16.dp),
+                    .padding(top = 17.dp, end = 15.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                //동아리명 박스
+                Image(
+                    painter = painterResource(id = R.drawable.ic_youtube),
+                    contentDescription = "YouTube",
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable { /* TODO */ }
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.ic_instagram),
+                    contentDescription = "Instagram",
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable { /* TODO */ }
+                )
+            }
+
+            //동아리명 + 모집상태
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, top = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
-                        .width(143.dp)
-                        .height(30.dp)
+                        .figmaSize(widthPx = 143f, heightPx = 30f)
                         .clip(RoundedCornerShape(45.dp))
                         .background(Color(0xFFFF5900)),
                     contentAlignment = Alignment.CenterStart
                 ) {
-                    Text(
+                    Text( //동아리명
                         text = "크레퍼스(CREPERS)",
                         color = Color.White,
                         modifier = Modifier.padding(start = 12.dp),
-                        fontSize = 14.sp,
+                        fontSize = figmaTextSizeSp(14f),
                         fontWeight = FontWeight.Medium
                     )
                 }
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                //모집중 버튼
-                Row(
+                Image( //모집상태
+                    painter = painterResource(
+                        id = if (isRecruiting) R.drawable.ic_recruiting else R.drawable.ic_upcoming
+                    ),
+                    contentDescription = if (isRecruiting) "모집중" else "모집예정",
                     modifier = Modifier
-                        .offset(x = (-15).dp)
-                        .width(54.dp)
-                        .height(18.dp)
-                        .clip(RoundedCornerShape(45.dp))
-                        .background(Color(0xFF363636))
-                        .clickable { isRecruiting = !isRecruiting },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "모집중",
-                        color = Color.White,
-                        fontSize = 10.sp
-                    )
-                }
+                        .offset(x = (-18).dp)
+                        .clickable { isRecruiting = !isRecruiting }
+                )
             }
 
-            //동아리 정보 (위치, 회장, 연락처)
+            //동아리 정보 3개
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 30.dp, top = 12.dp),
+                    .padding(start = 30.dp, top = 15.dp),
                 horizontalArrangement = Arrangement.spacedBy(35.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -181,12 +171,12 @@ fun UserPromotionScreen(navController: NavHostController,) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            //한줄소개
+            //한줄 소개
             TextShadowBanner(text = "동아리에서 함께 연주하고 추억을 쌓아봐요!")
 
             Spacer(modifier = Modifier.height(35.dp))
 
-            //공지사항 (모집기간 등)
+            //모집 안내, 공지
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -198,23 +188,18 @@ fun UserPromotionScreen(navController: NavHostController,) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            //실선
-            Divider(color = Color(0xFFDDDDDD), thickness = 1.dp)
-
+            Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(15.dp))
 
-            //소개글
             ClubDescription(
                 description = "이 글은 동아리 소개 예시글입니다. 저희 동아리는 전공과 학년을 넘어 다양한 사람들이 모여 공통의 관심사를 나누고, 함께 경험을 쌓아가는 공간입니다. 활동 하나하나에 진심을 담고, 소소한 일상도 특별하게 만드는 우리! 처음이라도 괜찮아요. 언제든 환영합니다. 당신의 자리를 만들어드릴게요."
             )
 
-            //활동사진 캐러셀 & 버튼2개
+            //활동 사진 캐러셀, 질문지원 버튼
             val sampleImages = listOf(
                 R.drawable.club1, R.drawable.club2, R.drawable.club3,
                 R.drawable.club1, R.drawable.club2
             )
-
             Column {
                 ActivityImageCarousel(imageResIds = sampleImages)
                 BottomActionButtons()
@@ -225,6 +210,7 @@ fun UserPromotionScreen(navController: NavHostController,) {
     }
 }
 
+//동아리 정보 컴포넌트
 @Composable
 fun InfoItem(title: String, value: String) {
     Column(
@@ -245,6 +231,7 @@ fun InfoItem(title: String, value: String) {
     }
 }
 
+//한줄 소개 컴포넌트
 @Composable
 fun TextShadowBanner(text: String) {
     Box(
@@ -252,8 +239,7 @@ fun TextShadowBanner(text: String) {
             .fillMaxWidth()
             .height(39.dp)
             .graphicsLayer {
-                // 그림자 효과 주기 위해 graphicsLayer 사용
-                shadowElevation = 15.dp.toPx() // 높이 조절
+                shadowElevation = 10.dp.toPx() //높이 조절
                 shape = RoundedCornerShape(0.dp)
                 clip = false
             }
@@ -280,6 +266,7 @@ fun TextShadowBanner(text: String) {
     }
 }
 
+//공지 컴포넌트
 @Composable
 fun AnnouncementItem(label: String, content: String) {
     Row(
@@ -302,6 +289,7 @@ fun AnnouncementItem(label: String, content: String) {
     }
 }
 
+//동아리 설명 컴포넌트
 @Composable
 fun ClubDescription(description: String) {
     Column(
@@ -324,7 +312,7 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 21.dp, top = 20.dp),
+            .padding(start = 21.dp, top = 15.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(imageResIds.take(10)) { resId ->
@@ -333,44 +321,47 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(width = 139.dp, height = 183.dp)
+                    .figmaSize(widthPx = 139f, heightPx = 183f)
                     .clip(RoundedCornerShape(25.dp))
             )
         }
     }
 }
 
+//하단 버튼 정렬 컴포넌트
 @Composable
 fun BottomActionButtons() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 34.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
+            .padding(top = 30.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally)
     ) {
-        ButtonItem(text = "질문하기")
-        ButtonItem(text = "지원하기")
+        ImageButtonItem(
+            imageRes = R.drawable.btn_question,
+            contentDescription = "질문하기",
+            onClick = { /* TODO: 질문하기 기능 */ }
+        )
+        ImageButtonItem(
+            imageRes = R.drawable.btn_apply,
+            contentDescription = "지원하기",
+            onClick = { /* TODO: 지원하기 기능 */ }
+        )
     }
 }
 
-//하단 버튼 두개
 @Composable
-fun ButtonItem(text: String) {
-    Box(
+fun ImageButtonItem(
+    imageRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Image(
+        painter = painterResource(id = imageRes),
+        contentDescription = contentDescription,
         modifier = Modifier
-            .width(152.dp)
-            .height(54.dp)
-            .clip(RoundedCornerShape(45.dp))
-            .background(Color(0xFF2C2C2C)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
+            .clickable(onClick = onClick)
+    )
 }
 
 @Preview(showBackground = true)

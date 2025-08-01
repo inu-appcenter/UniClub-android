@@ -36,14 +36,14 @@ fun PromotionTopBar(
             .background(Color.Transparent)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.promotion_topbar_bg), // ← 배경 이미지
+            painter = painterResource(id = R.drawable.promotion_topbar_bg), //배경 이미지
             contentDescription = "TopBar Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
         )
 
-        // 왼쪽 뒤로가기 버튼 이미지
+        //왼쪽 뒤로가기 버튼 이미지
         Image(
             painter = painterResource(id = R.drawable.ic_back_white),
             contentDescription = "Back",
@@ -54,7 +54,7 @@ fun PromotionTopBar(
                 .clickable { onBackClick() }
         )
 
-        // 오른쪽 좋아요 버튼 이미지
+        //오른쪽 좋아요 버튼 이미지
         Image(
             painter = painterResource(
                 id = if (isLiked) R.drawable.promotion_favorite_filled else R.drawable.promotion_favorite
@@ -76,6 +76,6 @@ fun PromotionTopBarPreview() {
     PromotionTopBar(
         isLiked = isLiked,
         onBackClick = {},
-        onLikeClick = { isLiked = !isLiked } // ← 여기서 상태 토글
+        onLikeClick = { isLiked = !isLiked }
     )
 }
