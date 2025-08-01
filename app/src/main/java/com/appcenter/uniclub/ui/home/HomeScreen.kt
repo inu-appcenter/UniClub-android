@@ -45,7 +45,7 @@ fun HomeScreen(modifier: Modifier = Modifier,
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        item { MainTopBar() }
+        item { MainTopBar(navController = navController) }
 
         item {
             //예시 이미지 넣어둠 나중에 서버 연결 필요

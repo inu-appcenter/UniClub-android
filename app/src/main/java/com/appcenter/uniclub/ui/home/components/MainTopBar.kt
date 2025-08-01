@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.home.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,13 +10,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 
 //메인상단바: 로고, 검색, 알림 아이콘 설정
 @Composable
-fun MainTopBar(){
+fun MainTopBar(navController: NavHostController){
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,7 +41,9 @@ fun MainTopBar(){
             Image(
                 painter = painterResource(id = R.drawable.ic_search),
                 contentDescription = "검색",
-                modifier = Modifier.figmaSize(widthPx = 24f, heightPx = 23f)
+                modifier = Modifier
+                    .figmaSize(widthPx = 24f, heightPx = 23f)
+                    .clickable { navController.navigate("search") }
             )
 
             Spacer(modifier = Modifier.figmaPadding(startPx = 22f)) //아이콘 사이 간격
@@ -48,7 +52,9 @@ fun MainTopBar(){
             Image(
                 painter = painterResource(id = R.drawable.ic_notification),
                 contentDescription = "알림",
-                modifier = Modifier.figmaSize(widthPx = 20f, heightPx = 21f)
+                modifier = Modifier
+                    .figmaSize(widthPx = 20f, heightPx = 21f)
+                    .clickable { navController.navigate("notification") }
             )
         }
     }

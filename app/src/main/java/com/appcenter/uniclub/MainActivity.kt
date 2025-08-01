@@ -32,8 +32,10 @@ import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
 import com.appcenter.uniclub.ui.components.bottombar.Navigation
 import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.mypage.MypageScreen
+import com.appcenter.uniclub.ui.notification.NotificationScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
+import com.appcenter.uniclub.ui.search.SearchScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,6 +102,8 @@ fun MainScaffold(rootNavController: NavHostController) {
                         composable("promotion") {
                             UserPromotionScreen(navController = bottomNavController)
                         }
+                        composable("search") { SearchScreen() }
+                        composable("notification") { NotificationScreen() }
                     }
                 }
             }
