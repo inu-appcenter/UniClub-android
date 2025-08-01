@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.data.dummyClubs
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.model.ClubCategory
 
 //동아리 리스트 페이지
 @Composable
@@ -20,6 +21,17 @@ fun ClubListScreen(
     categoryName: String = "전체" //카테고리명 기본값
 ) {
     var selectedSort by remember { mutableStateOf("기본") } //정렬 옵션 상태
+
+    val categoryFilter = categoryName.toClubCategoryOrNull() //문자열을 ClubCategory로 변환
+
+    //categoryFilter에 따라 필터링
+    val filteredClubs = remember(categoryFilter) {
+        if (categoryFilter != null) {
+            dummyClubs.filter { it.category == categoryFilter }
+        } else {
+            dummyClubs
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar( //상단 바
@@ -40,10 +52,14 @@ fun ClubListScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 //더미 데이터 개수만큼 반복하여 컴포즈
-                items(dummyClubs.size) { index ->
+                items(filteredClubs.size) { index ->
                     ClubCardList(
-                        club = dummyClubs[index],
+                        club = filteredClubs[index],
                         onClick = { navController.navigate("promotion") })
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(70.dp))
                 }
             }
 
@@ -60,6 +76,16 @@ fun ClubListScreen(
             }
         }
     }
+}
+
+fun String.toClubCategoryOrNull(): ClubCategory? = when (this) {
+    "교양학술" -> ClubCategory.ACADEMIC
+    "취미전시" -> ClubCategory.HOBBY
+    "체육" -> ClubCategory.SPORTS
+    "종교" -> ClubCategory.RELIGION
+    "봉사" -> ClubCategory.VOLUNTEER
+    "문화" -> ClubCategory.CULTURE
+    else -> null
 }
 
 @Preview(showBackground = true)

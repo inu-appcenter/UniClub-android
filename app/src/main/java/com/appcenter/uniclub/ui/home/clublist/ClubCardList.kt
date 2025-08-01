@@ -14,17 +14,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import com.appcenter.uniclub.model.Club
 import com.appcenter.uniclub.model.RecruitStatus
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
@@ -88,14 +89,28 @@ fun ClubCardList(club: Club, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.Top
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
-                        text = club.name, //동아리명
-                        fontSize = figmaTextSizeSp(14f),
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = club.description, //추가정보
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text( //동아리 이름
+                            text = club.name,
+                            fontSize = figmaTextSizeSp(14f),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        Spacer(modifier = Modifier.width(7.dp))
+
+                        Image( //카테고리 이미지
+                            painter = painterResource(id = club.category.getIconRes()),
+                            contentDescription = club.category.toDisplayName(),
+                            contentScale = ContentScale.FillBounds,
+                            modifier = Modifier
+                                .scale(1.1f)
+                        )
+                    }
+                    Text( //추가정보
+                        text = club.description,
                         fontSize = figmaTextSizeSp(9f),
                         fontWeight = FontWeight.Medium,
                         color = Color.White
@@ -157,4 +172,37 @@ fun ClubCardList(club: Club, onClick: () -> Unit) {
             }
         }
     }
+}
+
+fun ClubCategory.toDisplayName(): String = when (this) {
+    ClubCategory.ACADEMIC -> "교양학술"
+    ClubCategory.HOBBY -> "취미전시"
+    ClubCategory.SPORTS -> "체육"
+    ClubCategory.RELIGION -> "종교"
+    ClubCategory.VOLUNTEER -> "봉사"
+    ClubCategory.CULTURE -> "문화"
+}
+
+fun ClubCategory.getIconRes(): Int = when (this) {
+    ClubCategory.ACADEMIC -> R.drawable.academic
+    ClubCategory.HOBBY -> R.drawable.hobby
+    ClubCategory.SPORTS -> R.drawable.sports
+    ClubCategory.RELIGION -> R.drawable.religion
+    ClubCategory.VOLUNTEER -> R.drawable.culture //R.drawable.volunteer 수정필요
+    ClubCategory.CULTURE -> R.drawable.culture
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ClubCardListPreview() {
+    val sampleClub = Club(
+        name = "appcenter",
+        description = "앱 개발 동아리",
+        isRecruiting = RecruitStatus.RECRUITING,
+        isLiked = true,
+        category = ClubCategory.ACADEMIC,
+        imageResId = R.drawable.club1
+    )
+
+    ClubCardList(club = sampleClub, onClick = {})
 }

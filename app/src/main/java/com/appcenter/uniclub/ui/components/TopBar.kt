@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -35,12 +34,12 @@ fun TopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // ← 뒤로가기 아이콘
+            //뒤로가기 아이콘
             Image(
                 painter = painterResource(id = R.drawable.ic_back_arrow),
                 contentDescription = "뒤로가기",
                 modifier = Modifier
-                    .figmaSize(widthPx = 9f, heightPx = 18f)
+                    .figmaSize(widthPx = 11f, heightPx = 20f)
                     .clickable { onBackClick() }
             )
 

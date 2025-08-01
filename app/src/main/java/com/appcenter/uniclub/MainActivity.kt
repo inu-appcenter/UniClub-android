@@ -4,14 +4,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,6 +30,7 @@ import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.components.bottombar.BottomNavigationBar
 import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
 import com.appcenter.uniclub.ui.components.bottombar.Navigation
+import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
@@ -29,52 +38,84 @@ import com.appcenter.uniclub.ui.qna.QnAScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContent {
             UniClubTheme {
                 val navController = rememberNavController()
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = Color.Transparent,
-                    bottomBar = { BottomNavigationBar(navController=navController) } //하단바
-                ) { innerPadding ->
-                    NavHost(
-                        navController  = navController,
-                        startDestination = Navigation.Home.route,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        // 📌 홈 화면
-                        composable(Navigation.QnA.route)    { QnAScreen() }
-                        composable(Navigation.Home.route)   { HomeScreen(modifier = Modifier,
-                                                                        navController = navController) }
-                        composable(Navigation.MyPage.route) { MypageScreen() }
-                        // 📌 카테고리 클릭 → 동아리 리스트 화면
-                        composable(
-                            route = "clublist/{categoryName}",
-                            arguments = listOf(
-                                navArgument("categoryName") {
-                                    type = NavType.StringType
-                                    defaultValue = "전체"
+                NavHost(
+                    navController,
+                    startDestination = "login",
+                ) {
+                    composable("login") {
+                        LoginScreen(
+                            onLoginSuccess = {
+                                navController.navigate("main") {
+                                    popUpTo("login") { inclusive = true }
                                 }
-                            )
-                        ) { backStackEntry ->
-                            val category = backStackEntry.arguments
-                                ?.getString("categoryName") ?: "전체"
-                            ClubListScreen(
-                                navController = navController,
-                                categoryName = category
-                            )
-                        }
-
-                        composable("promotion") {
-                            UserPromotionScreen(navController = navController)
-                        }
+                            }
+                        )
                     }
+
+                    composable("main") {
+                            MainScaffold(navController)
+                    }
+
                 }
             }
         }
     }
 }
+
+@Composable
+fun MainScaffold(rootNavController: NavHostController) {
+    val bottomNavController = rememberNavController()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            content = { innerPadding ->
+                Box(modifier = Modifier
+                    .padding(innerPadding)
+                    .windowInsetsPadding(WindowInsets.navigationBars)) {
+                    NavHost(
+                        navController = bottomNavController,
+                        startDestination = Navigation.Home.route
+                    ) {
+                        composable(Navigation.QnA.route)      { QnAScreen() }
+                        composable(Navigation.Home.route)     {
+                            HomeScreen(navController = bottomNavController)
+                        }
+                        composable(Navigation.MyPage.route)   { MypageScreen() }
+                        composable("clublist/{categoryName}",
+                            arguments = listOf(navArgument("categoryName") {
+                                type = NavType.StringType
+                                defaultValue = "전체"
+                            })
+                        ) { backStackEntry ->
+                            val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
+                            ClubListScreen(navController = bottomNavController, categoryName = category)
+                        }
+                        composable("promotion") {
+                            UserPromotionScreen(navController = bottomNavController)
+                        }
+                    }
+                }
+            }
+        )
+
+        // ✅ bottomBar를 content 외부에 위치시킴
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .wrapContentSize()
+        ) {
+            BottomNavigationBar(navController = bottomNavController)
+        }
+    }
+}
+
 
 
 @Preview(showBackground = true)

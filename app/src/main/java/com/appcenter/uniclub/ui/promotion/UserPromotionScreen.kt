@@ -16,13 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +26,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.appcenter.uniclub.ui.components.TopBar
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,7 +50,13 @@ fun UserPromotionScreen(navController: NavHostController,) {
     var isLiked by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        PromotionTopBar(
+            isLiked = isLiked,
+            onBackClick = { navController.popBackStack() },
+            onLikeClick = { isLiked = !isLiked }
+        )
+
         //배너
         Image(
             painter = painterResource(R.drawable.banner),
@@ -73,14 +72,14 @@ fun UserPromotionScreen(navController: NavHostController,) {
         Image(
             painter = painterResource(R.drawable.profile_example), // 교체 필요
             contentDescription = "Profile Image",
-            contentScale = ContentScale.Crop,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .size(113.dp)
-                .offset(x = 24.dp, y = 209.dp - 113.dp / 2) // 절반 걸치도록 오프셋
+                .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
                 .clip(RoundedCornerShape(40.dp))
         )
 
-        //SNS 버튼 (수정 필요)
+        //SNS 버튼 2개
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
@@ -91,19 +90,22 @@ fun UserPromotionScreen(navController: NavHostController,) {
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            Box(
+            // 유튜브 버튼
+            Image(
+                painter = painterResource(id = R.drawable.ic_youtube), // 이미지 리소스 이름에 맞게
+                contentDescription = "YouTube",
                 modifier = Modifier
                     .size(30.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFF5900))
-                    .clickable { /* TODO: Instagram 이동 */ }
+                    .clickable { /* TODO: YouTube 링크 이동 */ }
             )
-            Box(
+
+            // 인스타그램 버튼
+            Image(
+                painter = painterResource(id = R.drawable.ic_instagram), // 이미지 리소스 이름에 맞게
+                contentDescription = "Instagram",
                 modifier = Modifier
                     .size(30.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFF5900))
-                    .clickable { /* TODO: YouTube 이동 */ }
+                    .clickable { /* TODO: Instagram 링크 이동 */ }
             )
         }
 
@@ -161,15 +163,6 @@ fun UserPromotionScreen(navController: NavHostController,) {
                         color = Color.White,
                         fontSize = 10.sp
                     )
-
-                    Spacer(modifier = Modifier.width(3.dp))
-
-                    Icon(
-                        imageVector = Icons.Filled.Notifications, // 종 아이콘
-                        contentDescription = "알림",
-                        tint = if (isRecruiting) Color(0xFFFF5900) else Color.White,
-                        modifier = Modifier.size(10.dp)
-                    )
                 }
             }
 
@@ -226,20 +219,9 @@ fun UserPromotionScreen(navController: NavHostController,) {
                 ActivityImageCarousel(imageResIds = sampleImages)
                 BottomActionButtons()
             }
+
+            Spacer(modifier = Modifier.height(75.dp))
         }
-/*
-        //상단바 (뒤로가기, 좋아요)
-        TopBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .zIndex(10f),
-            onBackClick = { navController.navigateUp() },
-            rightIcon = if (isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
-            rightIconTint = if (isLiked) Color(0xFFF30000) else Color.White,
-            onRightIconClick = { isLiked = !isLiked }
-        )
- */
     }
 }
 
@@ -363,7 +345,7 @@ fun BottomActionButtons() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 36.dp), // 필요 시 조정
+            .padding(top = 34.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
     ) {
         ButtonItem(text = "질문하기")
