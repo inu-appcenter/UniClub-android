@@ -86,9 +86,7 @@ fun MainScaffold(rootNavController: NavHostController) {
                         startDestination = Navigation.Home.route
                     ) {
                         composable(Navigation.QnA.route)      { QnAScreen() }
-                        composable(Navigation.Home.route)     {
-                            HomeScreen(navController = bottomNavController)
-                        }
+                        composable(Navigation.Home.route)     { HomeScreen(navController = bottomNavController) }
                         composable(Navigation.MyPage.route)   { MypageScreen() }
                         composable("clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {
@@ -99,10 +97,8 @@ fun MainScaffold(rootNavController: NavHostController) {
                             val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
                             ClubListScreen(navController = bottomNavController, categoryName = category)
                         }
-                        composable("promotion") {
-                            UserPromotionScreen(navController = bottomNavController)
-                        }
-                        composable("search") { SearchScreen() }
+                        composable("promotion") { UserPromotionScreen(navController = bottomNavController) }
+                        composable("search") { SearchScreen(navController = bottomNavController) }
                         composable("notification") { NotificationScreen() }
                     }
                 }

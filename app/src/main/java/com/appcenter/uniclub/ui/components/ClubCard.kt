@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.ui.home.clublist
+package com.appcenter.uniclub.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -30,7 +30,7 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
 @Composable
-fun ClubCardList(club: Club, onClick: () -> Unit) {
+fun ClubCard(club: Club, onClick: () -> Unit) {
     //즐겨찾기 상태 기억
     var isLiked by remember { mutableStateOf(false) }
 
@@ -194,7 +194,7 @@ fun ClubCategory.getIconRes(): Int = when (this) {
 
 @Preview(showBackground = true)
 @Composable
-fun ClubCardListPreview() {
+fun ClubCardPreview() {
     val sampleClub = Club(
         name = "appcenter",
         description = "앱 개발 동아리",
@@ -204,5 +204,5 @@ fun ClubCardListPreview() {
         imageResId = R.drawable.club1
     )
 
-    ClubCardList(club = sampleClub, onClick = {})
+    ClubCard(club = sampleClub, onClick = {})
 }

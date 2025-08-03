@@ -18,6 +18,7 @@ import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.data.dummyClubs
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.ClubCategory
+import com.appcenter.uniclub.ui.components.ClubCard
 import com.appcenter.uniclub.ui.util.figmaSize
 
 //동아리 리스트 페이지
@@ -80,7 +81,7 @@ fun ClubListScreen(
 
             //동아리 카드 리스트 출력
             items(filteredClubs.size) { index ->
-                ClubCardList(
+                ClubCard(
                     club = filteredClubs[index],
                     onClick = { navController.navigate("promotion") }
                 )
