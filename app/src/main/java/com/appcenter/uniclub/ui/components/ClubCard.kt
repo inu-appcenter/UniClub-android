@@ -188,7 +188,7 @@ fun ClubCategory.getIconRes(): Int = when (this) {
     ClubCategory.HOBBY -> R.drawable.hobby
     ClubCategory.SPORTS -> R.drawable.sports
     ClubCategory.RELIGION -> R.drawable.religion
-    ClubCategory.VOLUNTEER -> R.drawable.culture //R.drawable.volunteer 수정필요
+    ClubCategory.VOLUNTEER -> R.drawable.volunteer
     ClubCategory.CULTURE -> R.drawable.culture
 }
 
