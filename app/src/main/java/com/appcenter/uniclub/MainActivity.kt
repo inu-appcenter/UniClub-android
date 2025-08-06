@@ -21,21 +21,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
+import androidx.navigation.Navigation
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.ui.home.HomeScreen
-import com.appcenter.uniclub.ui.components.bottombar.BottomNavigationBar
+import com.appcenter.uniclub.ui.components.BottomNavigationBar
 import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
-import com.appcenter.uniclub.ui.components.bottombar.Navigation
 import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.notification.NotificationScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
 import com.appcenter.uniclub.ui.search.SearchScreen
+import com.appcenter.uniclub.ui.signup.SignUpScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,14 +57,16 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("main") {
                                     popUpTo("login") { inclusive = true }
                                 }
-                            }
+                            },
+                            onSignUpClick = { navController.navigate("signup") }
                         )
                     }
+
+                    composable("signup") { SignUpScreen()  }
 
                     composable("main") {
                             MainScaffold(navController)
                     }
-
                 }
             }
         }
@@ -83,11 +86,11 @@ fun MainScaffold(rootNavController: NavHostController) {
                     .windowInsetsPadding(WindowInsets.navigationBars)) {
                     NavHost(
                         navController = bottomNavController,
-                        startDestination = Navigation.Home.route
+                        startDestination = "home"
                     ) {
-                        composable(Navigation.QnA.route)      { QnAScreen() }
-                        composable(Navigation.Home.route)     { HomeScreen(navController = bottomNavController) }
-                        composable(Navigation.MyPage.route)   { MypageScreen() }
+                        composable("qna")      { QnAScreen() }
+                        composable("home")     { HomeScreen(navController = bottomNavController) }
+                        composable("mypage")   { MypageScreen() }
                         composable("clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {
                                 type = NavType.StringType

@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.ui.components.bottombar
+package com.appcenter.uniclub.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

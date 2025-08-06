@@ -34,7 +34,10 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 import kotlinx.coroutines.delay
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    onSignUpClick: () -> Unit
+) {
     //학번과 비밀번호 입력 상태
     var studentId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -96,10 +99,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     text = "회원가입",
                     fontSize = figmaTextSizeSp(12f),
                     color = Color.Black,
-                    modifier = Modifier.clickable { /* 이동 */ }
+                    modifier = Modifier.clickable { onSignUpClick() }
                 )
-
-                //Spacer(modifier = Modifier.height(70.dp))
             }
         }
 
@@ -175,11 +176,4 @@ fun LoginInputField(
             )
         }
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(onLoginSuccess = {})
 }
