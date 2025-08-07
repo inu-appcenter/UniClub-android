@@ -34,10 +34,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -132,7 +135,10 @@ fun ClubCard(
                 text = clubName,
                 color = Color.White,
                 fontSize = figmaTextSizeSp(13f),
-                fontWeight = FontWeight.Medium
+                fontFamily = NotoSansKR,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 13.sp * 1.5f, //행간
+                letterSpacing = (-0.011).em, //자간
             )
             //즐겨찾기 아이콘
             Box(
