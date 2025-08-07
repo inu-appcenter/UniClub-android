@@ -13,8 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
@@ -37,8 +39,10 @@ fun TopBar(
             Text(
                 text = it,
                 fontSize = figmaTextSizeSp(15f),
+                fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.011).em,
+                lineHeight = 15.sp * 1.5f, //행간
+                letterSpacing = (-0.011).em, //자간
                 color = Color.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

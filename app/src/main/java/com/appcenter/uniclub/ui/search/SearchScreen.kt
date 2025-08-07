@@ -36,7 +36,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
@@ -103,6 +106,9 @@ fun SearchScreen(navController: NavHostController) {
                                     Text(
                                         text = "동아리를 검색해보세요 :D",
                                         fontSize = figmaTextSizeSp(12f),
+                                        fontFamily = NotoSansKR,
+                                        lineHeight = 12.sp * 1.5f, //행간
+                                        letterSpacing = (-0.011).em, //자간
                                         color = Color(0xFF595959)
                                     )
                                 }
@@ -135,7 +141,10 @@ fun SearchScreen(navController: NavHostController) {
                     Text(
                         text = "취소",
                         fontSize = figmaTextSizeSp(14f),
+                        fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
+                        lineHeight = 14.sp * 1.5f, //행간
+                        letterSpacing = (-0.011).em, //자간
                         color = Color.Black,
                         maxLines = 1
                     )
@@ -165,8 +174,11 @@ fun SearchScreen(navController: NavHostController) {
                     Text(
                         text = matchedClubName ?: "", //일치하는 이름만
                         fontSize = figmaTextSizeSp(14f),
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium
+                        fontFamily = NotoSansKR,
+                        fontWeight = FontWeight.Normal,
+                        lineHeight = 14.sp * 1.5f, //행간
+                        letterSpacing = (-0.011).em, //자간
+                        color = Color.Black
                     )
                 }
             }

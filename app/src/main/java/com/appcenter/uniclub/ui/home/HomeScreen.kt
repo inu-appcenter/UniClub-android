@@ -31,9 +31,11 @@ import com.appcenter.uniclub.ui.home.components.ClubCardCarousel
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.em
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.appcenter.uniclub.ui.home.components.MainTopBar
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
@@ -96,9 +98,11 @@ fun RecommendTitle() {
     Text(
         text = "이런 동아리는 어떠세요?",
         fontSize = figmaTextSizeSp(16f),
+        fontFamily = NotoSansKR,
         fontWeight = FontWeight.Bold,
+        lineHeight = 16.sp * 1.5f, //행간
+        letterSpacing = (-0.03).em, //자간
         color = Color(0xFF000000),
-        lineHeight = 24.sp,
         modifier = Modifier
             .figmaPadding(startPx = 26f, topPx = 27f)
     )
@@ -121,15 +125,20 @@ fun CategorySection(
             Text(
                 text = "카테고리",
                 fontSize = figmaTextSizeSp(16f),
+                fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF000000),
-                lineHeight = 24.sp
+                lineHeight = 16.sp * 1.5f, //행간
+                letterSpacing = (-0.02).em, //자간
+                color = Color(0xFF000000)
             )
 
             Text(
                 text = "전체보기",
                 fontSize = figmaTextSizeSp(10f),
+                fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Medium,
+                lineHeight = 10.sp * 1.5f, //행간
+                letterSpacing = (-0.011).em, //자간
                 color = Color(0xFFB1B1B1),
                 modifier = Modifier.clickable {
                     navController.navigate("clublist/전체")
@@ -191,7 +200,10 @@ fun CategoryItem(
         Text(
             text = label,
             fontSize = figmaTextSizeSp(11f),
+            fontFamily = NotoSansKR,
             fontWeight = FontWeight.Medium,
+            lineHeight = 11.sp * 1.5f, //행간
+            letterSpacing = (-0.03).em, //자간
             color = Color(0xFF3C3C3C),
             textAlign = TextAlign.Center
         )

@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.components
 
+import android.R.attr.letterSpacing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,12 +21,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.model.Club
 import com.appcenter.uniclub.model.RecruitStatus
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.ClubCategory
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
@@ -95,7 +99,10 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                         Text( //동아리 이름
                             text = club.name,
                             fontSize = figmaTextSizeSp(14f),
+                            fontFamily = NotoSansKR,
                             fontWeight = FontWeight.Bold,
+                            lineHeight = 14.sp * 1.5f, //행간
+                            letterSpacing = (-0.011).em, //자간
                             color = Color.White
                         )
 
@@ -112,7 +119,10 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                     Text( //추가정보
                         text = club.description,
                         fontSize = figmaTextSizeSp(9f),
+                        fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
+                        lineHeight = 9.sp * 1.39f, //행간
+                        letterSpacing = (-0.011).em, //자간
                         color = Color.White
                     )
                 }
