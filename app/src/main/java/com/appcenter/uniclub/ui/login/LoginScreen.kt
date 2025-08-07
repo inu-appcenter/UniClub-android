@@ -28,6 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
@@ -98,6 +101,9 @@ fun LoginScreen(
                 Text(
                     text = "회원가입",
                     fontSize = figmaTextSizeSp(12f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 12.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
                     color = Color.Black,
                     modifier = Modifier.clickable { onSignUpClick() }
                 )
@@ -141,6 +147,9 @@ fun LoginInputField(
         Text(
             text = label,
             fontSize = figmaTextSizeSp(14f),
+            fontFamily = NotoSansKR,
+            lineHeight = 14.sp * 1.5f,
+            letterSpacing = (-0.011).em,
             color = Color.Black
         )
 
@@ -160,6 +169,9 @@ fun LoginInputField(
                 visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = figmaTextSizeSp(18f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 18.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
                     color = Color.Black
                 ),
                 modifier = Modifier
