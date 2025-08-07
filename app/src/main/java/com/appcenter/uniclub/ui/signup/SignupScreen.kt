@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.signup
 
+import android.R.attr.top
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,8 +18,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 @Composable
 fun SignUpScreen() {
@@ -35,13 +41,16 @@ fun SignUpScreen() {
     val canProceed = isVerified && name.isNotBlank() && department.isNotBlank() //인증 완료 후 이름,학과 모두 입력 시 다음 버튼 활성화
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(top = 79.dp, bottom = 113.dp)) {
+        Column(modifier = Modifier.figmaPadding(topPx = 79f, bottomPx = 113f)) {
             Text( //상단 타이틀
                 text = "회원가입",
-                fontSize = 32.sp,
+                fontSize = figmaTextSizeSp(32f),
+                fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Bold,
+                lineHeight = 32.sp * 1.5f,
+                letterSpacing = (-0.011).em,
                 color = Color.Black,
-                modifier = Modifier.padding(start = 30.dp)
+                modifier = Modifier.figmaPadding(startPx = 30f)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -50,8 +59,8 @@ fun SignUpScreen() {
                 painter = painterResource(id = R.drawable.banner_school_account),
                 contentDescription = "학교 포털 계정 안내",
                 modifier = Modifier
-                    .padding(start = 30.dp)
-                    .size(width = 184.dp, height = 26.dp)
+                    .figmaPadding(startPx = 30f)
+                    .figmaSize(widthPx = 184f, heightPx = 26f)
             )
 
             Spacer(modifier = Modifier.height(35.dp))
@@ -70,15 +79,14 @@ fun SignUpScreen() {
 
             Box( //인증 실패 시 오류 메시지 출력
                 modifier = Modifier
-                    .padding(start = 30.dp)
+                    .figmaPadding(startPx = 30f)
                     .height(26.dp) //항상 고정된 공간 확보
             ) {
                 if (showError) {
                     Image(
                         painter = painterResource(id = R.drawable.error_invalid_credentials),
                         contentDescription = "오류 메시지",
-                        modifier = Modifier
-                            .size(width = 193.dp, height = 26.dp)
+                        modifier = Modifier.figmaSize(widthPx = 193f, heightPx = 26f)
                     )
                 }
             }
@@ -106,7 +114,7 @@ fun SignUpScreen() {
             contentDescription = "하단 버튼",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 51.dp)
+                .figmaPadding(bottomPx = 51f)
                 .clickable(enabled = if (!isVerified) canVerify else canProceed) {
                     if (!isVerified) {
                         //인증 로직 처리
@@ -128,9 +136,12 @@ fun SignUpScreen() {
 fun InputLabel(text: String, isEnabled: Boolean) {
     Text(
         text = text,
-        fontSize = 14.sp,
+        fontSize = figmaTextSizeSp(14f),
+        fontFamily = NotoSansKR,
+        lineHeight = 14.sp * 1.5f,
+        letterSpacing = (-0.011).em,
         color = if (isEnabled) Color.Black else Color(0xFFBFBFBF), //비활성화 시 회색
-        modifier = Modifier.padding(start = 30.dp, bottom = 10.dp)
+        modifier = Modifier.figmaPadding(startPx = 30f, bottomPx = 10f)
     )
 }
 
@@ -145,7 +156,7 @@ fun UnderlineInputField(
 
     Column(modifier = Modifier
         .fillMaxWidth()
-        .padding(start = 30.dp, end = 145.dp)
+        .figmaPadding(startPx = 30f, endPx = 145f)
     ) {
         BasicTextField(
             value = value,
@@ -154,12 +165,15 @@ fun UnderlineInputField(
             enabled = enabled,
             textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
                 fontSize = 15.sp,
+                fontFamily = NotoSansKR,
+                lineHeight = 15.sp * 1.5f,
+                letterSpacing = (-0.011).em,
                 color = if (enabled) Color.Black else Color.Gray
             ),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 4.dp)
+                .figmaPadding(bottomPx = 4f)
         )
 
         Box(
