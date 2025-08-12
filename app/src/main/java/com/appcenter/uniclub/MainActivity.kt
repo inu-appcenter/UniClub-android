@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,17 +27,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.components.BottomNavigationBar
 import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
 import com.appcenter.uniclub.ui.login.LoginScreen
+import com.appcenter.uniclub.ui.login.LoginViewModel
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.notification.NotificationScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
 import com.appcenter.uniclub.ui.search.SearchScreen
 import com.appcenter.uniclub.ui.signup.SignUpScreen
+import com.appcenter.uniclub.ui.signup.SignUpViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +50,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContent {
+            val app = application as App
+            val authService = ServiceLocator.authService(app) // AuthService 생성
+            val repo = AuthRepository(authService, app.tokenStore) // Repository 생성
             UniClubTheme {
                 val navController = rememberNavController()
                 NavHost(
@@ -52,17 +60,25 @@ class MainActivity : ComponentActivity() {
                     startDestination = "login",
                 ) {
                     composable("login") {
+                        val vm = remember { LoginViewModel(repo) }
                         LoginScreen(
                             onLoginSuccess = {
                                 navController.navigate("main") {
                                     popUpTo("login") { inclusive = true }
                                 }
                             },
-                            onSignUpClick = { navController.navigate("signup") }
+                            onSignUpClick = { navController.navigate("signup") },
+                            vm = vm
                         )
                     }
 
-                    composable("signup") { SignUpScreen()  }
+                    composable("signup") {
+                        val vm = remember { SignUpViewModel(repo) }
+                        SignUpScreen(
+                            onFinished = { navController.popBackStack() },
+                            vm = vm
+                        )
+                    }
 
                     composable("main") {
                             MainScaffold(navController)
@@ -102,7 +118,7 @@ fun MainScaffold(rootNavController: NavHostController) {
                         }
                         composable("promotion") { UserPromotionScreen(navController = bottomNavController) }
                         composable("search") { SearchScreen(navController = bottomNavController) }
-                        composable("notification") { NotificationScreen() }
+                        composable("notification") { NotificationScreen(navController = bottomNavController) }
                     }
                 }
             }
