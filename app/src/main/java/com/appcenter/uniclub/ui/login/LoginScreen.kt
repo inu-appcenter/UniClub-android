@@ -15,13 +15,13 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.appcenter.uniclub.R
 import androidx.compose.runtime.getValue
@@ -38,17 +38,17 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onSignUpClick: () -> Unit
+    onLoginSuccess: () -> Unit, //로그인 성공 시 호출
+    onSignUpClick: () -> Unit, //회원가입 화면으로 이동
+    vm: LoginViewModel
 ) {
-    //학번과 비밀번호 입력 상태
-    var studentId by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val ui by vm.ui.collectAsState()
+
     //회원가입 안내 이미지 표시 여부
     var showJoinWarning by remember { mutableStateOf(false) }
 
     //로그인 버튼 활성화 조건 (둘다 비어있지 X)
-    val isLoginEnabled = studentId.isNotBlank() && password.isNotBlank()
+    val isLoginEnabled = ui.studentId.isNotBlank() && ui.password.isNotBlank() && !ui.loading
 
     Box(modifier = Modifier.fillMaxSize()) {
         //로고 이미지
@@ -68,9 +68,18 @@ fun LoginScreen(
                     .figmaPadding(startPx = 37f, endPx = 37f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                LoginInputField("학번", studentId, { studentId = it })
+                LoginInputField( //학번 입력
+                    label = "학번",
+                    text = ui.studentId,
+                    onTextChange = vm::onIdChange
+                )
                 Spacer(modifier = Modifier.height(20.dp))
-                LoginInputField("비밀번호", password, { password = it }, isPassword = true)
+                LoginInputField( //비밀번호 입력
+                    label = "비밀번호",
+                    text = ui.password,
+                    onTextChange = vm::onPwChange,
+                    isPassword = true
+                )
                 Spacer(modifier = Modifier.height(40.dp))
 
                 //로그인 버튼
@@ -78,11 +87,7 @@ fun LoginScreen(
                     modifier = Modifier
                         .figmaSize(widthPx = 180f, heightPx = 54f)
                         .clickable(enabled = isLoginEnabled) {
-                            if (studentId == "1111" && password == "1111") {
-                                onLoginSuccess() //성공 시 콜백 호출
-                            } else {
-                                showJoinWarning = true //실패 시 안내 이미지 표시
-                            }
+                            vm.login(onSuccess = onLoginSuccess)
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -97,7 +102,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                //회원가입 버튼
+                //회원가입 이동 버튼
                 Text(
                     text = "회원가입",
                     fontSize = figmaTextSizeSp(12f),
@@ -112,8 +117,9 @@ fun LoginScreen(
 
         //회원가입 안내 이미지
         //3초 후 자동으로 사라지는 로직
-        LaunchedEffect(showJoinWarning) {
-            if (showJoinWarning) {
+        LaunchedEffect(ui.error) {
+            if (ui.error != null) {
+                showJoinWarning = true
                 delay(3000) // 3초
                 showJoinWarning = false
             }
@@ -141,9 +147,7 @@ fun LoginInputField(
     //밑줄 색상 결정: 값이 있으면 검정, 없으면 회색
     val underlineColor = if (text.isNotBlank()) Color.Black else Color(0xFFBFBFBF)
 
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
             fontSize = figmaTextSizeSp(14f),
