@@ -11,8 +11,28 @@ class AuthRepository(
     suspend fun verifyStudent(id: String, pw: String): Result<Unit> =
         runCatching {
             val res = service.studentVerification(StudentVerificationRequestDto(id, pw))
-            if (!res.isSuccessful) error("verify failed: ${res.code()}")
+
+            if (!res.isSuccessful) {
+                // HTTP 에러는 그대로 실패 처리
+                val code = res.code()
+                error(
+                    when (code) {
+                        400 -> "요청 형식이 올바르지 않습니다."
+                        401, 403 -> "학번/비밀번호가 올바르지 않습니다."
+                        404 -> "계정을 찾을 수 없습니다."
+                        else -> "인증 실패($code)"
+                    }
+                )
+            }
+
+            val body = res.body() ?: error("인증 응답이 비어 있습니다.")
+            if (!body.verification) {
+                // 200이라도 비즈니스 실패면 반드시 실패로 전환
+                error("학번/비밀번호가 올바르지 않습니다.")
+            }
+            // verification==true 이면 성공(Unit 반환)
         }
+
 
     // 회원가입
     suspend fun register(req: RegisterRequestDto): Result<Unit> =

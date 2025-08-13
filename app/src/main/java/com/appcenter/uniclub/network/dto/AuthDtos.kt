@@ -15,6 +15,11 @@ data class StudentVerificationRequestDto(
     val password: String
 )
 
+// 재학생 인증 응답
+data class StudentVerificationResponseDto(
+    val verification: Boolean
+)
+
 // 로그인 요청: POST /api/v1/auth/login
 data class LoginRequestDto(
     val studentId: String,

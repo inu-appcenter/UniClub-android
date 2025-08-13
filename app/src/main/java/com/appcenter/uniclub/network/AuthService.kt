@@ -19,7 +19,7 @@ interface AuthService {
     @POST("api/v1/auth/register/student-verification")
     suspend fun studentVerification(
         @Body body: StudentVerificationRequestDto
-    ): Response<Unit>
+    ): retrofit2.Response<StudentVerificationResponseDto>
 
     // 로그인
     @POST("api/v1/auth/login")
