@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.signup
 
+import android.util.Log.e
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.AuthRepository
@@ -36,11 +37,11 @@ class SignUpViewModel(private val repo: AuthRepository) : ViewModel() {
     fun verify() {
         val s = _ui.value
         if (!s.canVerify) return
-        _ui.value = s.copy(loading = true, error = null)
+        _ui.value = s.copy(loading = true, error = null, verified = false)
         viewModelScope.launch {
             repo.verifyStudent(s.studentId, s.password)
-                .onSuccess { _ui.value = _ui.value.copy(verified = true, loading = false) }
-                .onFailure { _ui.value = _ui.value.copy(error = it.message, loading = false) }
+                .onSuccess { _ui.value = _ui.value.copy(verified = true, loading = false, error = null) }
+                .onFailure { _ui.value = _ui.value.copy(verified = false, loading = false, error = it.message) }
         }
     }
 
@@ -58,7 +59,10 @@ class SignUpViewModel(private val repo: AuthRepository) : ViewModel() {
                 agreed = s.agreed
             )
             repo.register(req)
-                .onSuccess { onDone() }
+                .onSuccess {
+                    _ui.value = _ui.value.copy(loading = false, error = null)
+                    onDone()
+                }
                 .onFailure { _ui.value = _ui.value.copy(error = it.message, loading = false) }
         }
     }

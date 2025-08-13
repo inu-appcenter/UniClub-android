@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.signup
 
-import android.R.attr.enabled
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,9 +30,6 @@ fun SignUpScreen(
     vm: SignUpViewModel
 ) {
     val ui by vm.ui.collectAsState()
-
-    //인증 실패 등 에러 메시지 노출용
-    var showError by remember { mutableStateOf(false) }
 
     //버튼 활성화 조건 정의
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
@@ -87,10 +83,10 @@ fun SignUpScreen(
 
             Box( //인증 실패 시 오류 메시지 출력
                 modifier = Modifier
-                    .figmaPadding(startPx = 30f)
+                    .figmaPadding(startPx = 10f)
                     .height(26.dp) //항상 고정된 공간 확보
             ) {
-                if (showError) {
+                if (ui.error != null) {
                     Image(
                         painter = painterResource(id = R.drawable.error_invalid_credentials),
                         contentDescription = "오류 메시지",
