@@ -27,6 +27,7 @@ import com.appcenter.uniclub.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -35,6 +36,9 @@ import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 import kotlinx.coroutines.delay
+import android.content.pm.ApplicationInfo
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Button
 
 @Composable
 fun LoginScreen(
@@ -112,6 +116,26 @@ fun LoginScreen(
                     color = Color.Black,
                     modifier = Modifier.clickable { onSignUpClick() }
                 )
+
+                // 🔽🔽🔽 여기 아래에 개발용 우회 버튼 추가 🔽🔽🔽
+                // 디버그gable 여부 (Debug build면 true)
+                val context = LocalContext.current
+                val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+                if (isDebug) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { vm.devBypass(onSuccess = onLoginSuccess) },
+                        modifier = Modifier.figmaSize(widthPx = 180f, heightPx = 40f)
+                    ) {
+                        Text(
+                            text = "개발용: 인증 건너뛰고 들어가기",
+                            fontSize = figmaTextSizeSp(12f),
+                            fontFamily = NotoSansKR,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
 
