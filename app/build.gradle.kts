@@ -82,4 +82,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 }
