@@ -43,7 +43,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
+import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
@@ -56,7 +58,6 @@ fun UserPromotionScreen(navController: NavHostController) {
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -78,6 +79,8 @@ fun UserPromotionScreen(navController: NavHostController) {
                     isLiked = isLiked,
                     onBackClick = { navController.popBackStack() },
                     onLikeClick = { isLiked = !isLiked },
+                    showEdit = true, // 권한 체크 후 false로 숨길 수 있음
+                    onEditClick = { navController.navigate("admin_promotion") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(63.dp)
@@ -141,7 +144,10 @@ fun UserPromotionScreen(navController: NavHostController) {
                         color = Color.White,
                         modifier = Modifier.padding(start = 12.dp),
                         fontSize = figmaTextSizeSp(14f),
-                        fontWeight = FontWeight.Medium
+                        fontFamily = NotoSansKR,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 14.sp * 1.5f, //행간
+                        letterSpacing = (-0.011).em //자간
                     )
                 }
 
@@ -221,13 +227,18 @@ fun InfoItem(title: String, value: String) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
+            letterSpacing = (-0.011).em,
             color = Color.Black
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            fontSize = 11.sp,
+            fontSize = figmaTextSizeSp(11f),
+            fontFamily = NotoSansKR,
+            lineHeight = 11.sp * 1.5f,
             color = Color.Black
         )
     }
@@ -259,7 +270,9 @@ fun TextShadowBanner(text: String) {
         Text(
             text = text,
             color = Color(0xFFFF5900),
-            fontSize = 12.sp,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -278,14 +291,18 @@ fun AnnouncementItem(label: String, content: String) {
         Text(
             text = label,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
             color = Color.Black,
             modifier = Modifier.width(70.dp)
         )
         Text(
             text = content,
             fontWeight = FontWeight.Medium,
-            fontSize = 12.sp,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
             color = Color.Black
         )
     }
@@ -301,9 +318,11 @@ fun ClubDescription(description: String) {
     ) {
         Text(
             text = description,
-            fontSize = 13.sp,
-            color = Color.Black,
-            lineHeight = 20.sp
+            fontSize = figmaTextSizeSp(13f),
+            fontFamily = NotoSansKR,
+            lineHeight = 13.sp * 1.75f,
+            letterSpacing = (-0.03).em,
+            color = Color.Black
         )
     }
 }

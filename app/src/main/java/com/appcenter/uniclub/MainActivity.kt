@@ -37,6 +37,7 @@ import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.login.LoginViewModel
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.notification.NotificationScreen
+import com.appcenter.uniclub.ui.promotion.AdminPromotionScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
 import com.appcenter.uniclub.ui.search.SearchScreen
@@ -117,6 +118,7 @@ fun MainScaffold(rootNavController: NavHostController) {
                             ClubListScreen(navController = bottomNavController, categoryName = category)
                         }
                         composable("promotion") { UserPromotionScreen(navController = bottomNavController) }
+                        composable("admin_promotion") { AdminPromotionScreen(navController = bottomNavController) }
                         composable("search") { SearchScreen(navController = bottomNavController) }
                         composable("notification") { NotificationScreen(navController = bottomNavController) }
                     }
