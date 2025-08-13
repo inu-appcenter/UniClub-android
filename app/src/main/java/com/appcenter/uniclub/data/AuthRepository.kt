@@ -58,4 +58,10 @@ class AuthRepository(
             val res = service.updateMe(UpdateMeRequestDto(major))
             if (!res.isSuccessful) error("update failed: ${res.code()}")
         }
+
+    // 🔵 개발용: 더미 토큰 저장
+    suspend fun saveDummyToken() {
+        // 실제 API 인증이 필요한 호출들에서 헤더만 필요하다면 이걸로 충분
+        tokenStore.saveAuthHeader("Bearer DEV_DUMMY_TOKEN")
+    }
 }
