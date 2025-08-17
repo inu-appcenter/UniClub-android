@@ -192,7 +192,8 @@ fun SearchScreen(navController: NavHostController) {
                 items(filteredClubs) { club ->
                     ClubCard(
                         club = club,
-                        onClick = { navController.navigate("promotion") })
+                        onClick = { navController.navigate("promotion") }
+                    )
                 }
                 item { Spacer(modifier = Modifier.height(70.dp)) }
             }

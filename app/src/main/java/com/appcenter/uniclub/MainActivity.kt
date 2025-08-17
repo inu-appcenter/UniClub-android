@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.Navigation
@@ -37,6 +40,8 @@ import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.login.LoginViewModel
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.notification.NotificationScreen
+import com.appcenter.uniclub.ui.notification.NotificationViewModel
+import com.appcenter.uniclub.ui.notification.NotificationViewModelFactory
 import com.appcenter.uniclub.ui.promotion.AdminPromotionScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
@@ -45,6 +50,14 @@ import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 
 class MainActivity : ComponentActivity() {
+    private val notificationVm: NotificationViewModel by viewModels {
+        NotificationViewModelFactory(
+            ServiceLocator.authService(application as App).let { authService ->
+                AuthRepository(authService, (application as App).tokenStore)
+            }
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -81,8 +94,34 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    composable("notification") { backStackEntry ->
+                        NotificationScreen(
+                            navController = navController,
+                            vm = notificationVm
+                        )
+                    }
+
+                    composable("notification_promotion") {
+                        MainScaffold(
+                            rootNavController = navController,
+                            startDestination = "promotion",
+                            onBackToNotification = {
+                                navController.popBackStack("notification", false)
+                            }
+                        )
+                    }
+                    composable("notification_qna") {
+                        MainScaffold(
+                            rootNavController = navController,
+                            startDestination = "qna",
+                            onBackToNotification = {
+                                navController.popBackStack("notification", false)
+                            }
+                        )
+                    }
+
                     composable("main") {
-                            MainScaffold(navController)
+                            MainScaffold(navController, startDestination = "home")
                     }
                 }
             }
@@ -91,7 +130,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScaffold(rootNavController: NavHostController) {
+fun MainScaffold(
+    rootNavController: NavHostController,
+    startDestination: String,
+    onBackToNotification: (() -> Unit)? = null
+) {
     val bottomNavController = rememberNavController()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -103,10 +146,10 @@ fun MainScaffold(rootNavController: NavHostController) {
                     .windowInsetsPadding(WindowInsets.navigationBars)) {
                     NavHost(
                         navController = bottomNavController,
-                        startDestination = "home"
+                        startDestination = startDestination
                     ) {
                         composable("qna")      { QnAScreen() }
-                        composable("home")     { HomeScreen(navController = bottomNavController) }
+                        composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController) }
                         composable("mypage")   { MypageScreen() }
                         composable("clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {
@@ -117,10 +160,22 @@ fun MainScaffold(rootNavController: NavHostController) {
                             val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
                             ClubListScreen(navController = bottomNavController, categoryName = category)
                         }
-                        composable("promotion") { UserPromotionScreen(navController = bottomNavController) }
+                        composable("promotion") {
+                            UserPromotionScreen(
+                                navController = bottomNavController,
+                                onBackClick = {
+                                    if (onBackToNotification != null) {
+                                        // 알림에서 들어왔을 때
+                                        onBackToNotification()
+                                    } else {
+                                        // 홈/클럽리스트에서 들어왔을 때
+                                        bottomNavController.popBackStack()
+                                    }
+                                }
+                            )
+                        }
                         composable("admin_promotion") { AdminPromotionScreen(navController = bottomNavController) }
                         composable("search") { SearchScreen(navController = bottomNavController) }
-                        composable("notification") { NotificationScreen(navController = bottomNavController) }
                     }
                 }
             }
@@ -138,20 +193,20 @@ fun MainScaffold(rootNavController: NavHostController) {
 }
 
 
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    val navController = rememberNavController()  // 📌 더미 NavController 생성
-
-    UniClubTheme {
-        Scaffold(
-            bottomBar = { BottomNavigationBar(navController = navController) }
-        ) { innerPadding ->
-            HomeScreen(
-                modifier = Modifier.padding(innerPadding),
-                navController = navController    // 📌 넘겨주기
-            )
-        }
-    }
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun MainScreenPreview() {
+//    val navController = rememberNavController()  // 📌 더미 NavController 생성
+//
+//    UniClubTheme {
+//        Scaffold(
+//            bottomBar = { BottomNavigationBar(navController = navController) }
+//        ) { innerPadding ->
+//            HomeScreen(
+//                modifier = Modifier.padding(innerPadding),
+//                navController = navController    // 📌 넘겨주기
+//            )
+//        }
+//    }
+//}

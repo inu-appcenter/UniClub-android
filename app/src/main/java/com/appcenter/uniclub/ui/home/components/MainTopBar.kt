@@ -17,7 +17,7 @@ import com.appcenter.uniclub.ui.util.figmaSize
 
 //메인상단바: 로고, 검색, 알림 아이콘 설정
 @Composable
-fun MainTopBar(navController: NavHostController){
+fun MainTopBar(navController: NavHostController, rootNavController: NavHostController){
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,7 +54,7 @@ fun MainTopBar(navController: NavHostController){
                 contentDescription = "알림",
                 modifier = Modifier
                     .figmaSize(widthPx = 20f, heightPx = 21f)
-                    .clickable { navController.navigate("notification") }
+                    .clickable { rootNavController.navigate("notification") }
             )
         }
     }
