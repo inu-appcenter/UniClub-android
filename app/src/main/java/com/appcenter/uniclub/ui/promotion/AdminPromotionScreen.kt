@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,9 +33,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,18 +62,34 @@ import androidx.compose.ui.window.Dialog
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
+import java.util.UUID
 
+//관리자용 홍보 페이지
+
+//SNS 플랫폼 구분
 private enum class SnsPlatform { YOUTUBE, INSTAGRAM }
+
+//활동 사진 캐러셀의 각 아이템 모델
+data class ImageSlot(
+    val id: String = UUID.randomUUID().toString(), //절대 변하지 않는 식별자
+    val uri: Uri //실제 이미지 리소스를 가리키는 Uri
+)
+//리스트 내 아이템 순서 변경 헬퍼
+//from 위치의 요소를 제거하고 to 위치에 그대로 삽입
+private fun <T> MutableList<T>.move(from: Int, to: Int) {
+    if (from == to) return
+    add(to, removeAt(from))
+}
 
 @Composable
 fun AdminPromotionScreen(navController: NavHostController) {
-    // --- 화면 상태 (서버 연동 전 임시) ---
-    var bannerUri by remember { mutableStateOf<Uri?>(null) }
-    var profileUri by remember { mutableStateOf<Uri?>(null) }
-    var isRecruiting by remember { mutableStateOf(true) }
-    var intro by remember { mutableStateOf("") }
+    //서버 연동 전 임시 화면 상태
+    var bannerUri by remember { mutableStateOf<Uri?>(null) } //상단 배너
+    var profileUri by remember { mutableStateOf<Uri?>(null) } //프로필
+    var isRecruiting by remember { mutableStateOf(true) } //모집중 토글
+    var intro by remember { mutableStateOf("") } //한줄 소개
 
-    // --- Photo Picker 런처들 ---
+    //포토 피커 런처들
     val bannerPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) bannerUri = uri }
@@ -85,15 +98,13 @@ fun AdminPromotionScreen(navController: NavHostController) {
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) profileUri = uri }
 
-    // SNS 링크 저장용 (서버 연결 전 임시)
+    //SNS 링크 저장용
     var youtubeLink by remember { mutableStateOf("") }
     var instagramLink by remember { mutableStateOf("") }
-
-    // 다이얼로그 제어용
-    var showLinkDialog by remember { mutableStateOf(false) }
-    var editingSns by remember { mutableStateOf<SnsPlatform?>(null) }
-    var tempLink by remember { mutableStateOf("") } // 다이얼로그 입력 임시 값
-
+    var showLinkDialog by remember { mutableStateOf(false) } //다이얼로그 표시 여부
+    var editingSns by remember { mutableStateOf<SnsPlatform?>(null) } //어떤 SNS를 편집중인지
+    var tempLink by remember { mutableStateOf("") } //다이얼로그 입력 임시값
+    //http/https 빠진 경우 자동으로 https:// 붙여줌
     fun normalizeUrl(raw: String): String {
         val t = raw.trim()
         return if (t.isNotEmpty() && !t.startsWith("http://") && !t.startsWith("https://")) {
@@ -103,31 +114,33 @@ fun AdminPromotionScreen(navController: NavHostController) {
     fun isValidUrl(raw: String): Boolean =
         Patterns.WEB_URL.matcher(normalizeUrl(raw)).matches()
 
-    var clubRoom by remember { mutableStateOf("") }
-    var leaderName by remember { mutableStateOf("") }
-    var contact by remember { mutableStateOf("") }
+    var clubRoom by remember { mutableStateOf("") } //동아리방
+    var leaderName by remember { mutableStateOf("") } //회장명
+    var contact by remember { mutableStateOf("") } //연락처
 
-    var recruitPeriod by remember { mutableStateOf("") }   // 모집기간 입력값
-    var noticeText   by remember { mutableStateOf("") }    // 공지 입력값
+    var recruitPeriod by remember { mutableStateOf("") } //모집기간
+    var noticeText   by remember { mutableStateOf("") } //공지
 
-    var clubDescription by remember { mutableStateOf("") }
+    var clubDescription by remember { mutableStateOf("") } //동아리 소개
 
-    // 활동 이미지들
-    var activityImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    //활동 이미지 리스트 상태
+    var activityImages by remember { mutableStateOf<List<ImageSlot>>(emptyList()) }
+    //어떤 슬롯을 탭했는지 기억, 포토 피커 콜백에서 교체/추가에 사용
     var selectedSlotIndex by remember { mutableStateOf<Int?>(null) }
-
+    //활동 이미지 추가,교체용 포토 피커 런처
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         val i = selectedSlotIndex
+        //사용자가 이미지를 고르고, 어느 슬롯을 눌렀는지 정보가 있을 때만 처리
         if (uri != null && i != null) {
-            activityImages = if (i < activityImages.size) {
-                // 교체
-                activityImages.toMutableList().also { it[i] = uri }
-            } else if (activityImages.size < 10) {
-                // 빈 슬롯(placeholder) → 추가 (끝에 붙임; i가 size여도 OK)
-                activityImages + uri
-            } else activityImages
+            activityImages = activityImages.toMutableList().apply {
+                if (i < size) { //i가 기존 슬롯 범위 안이면 교체
+                    this[i] = this[i].copy(uri = uri)
+                } else if (size < 10) { //i가 placeholder이고 현재 개수가 10 미만이면 추가
+                    add(ImageSlot(uri = uri))
+                }
+            }
         }
         selectedSlotIndex = null
     }
@@ -143,7 +156,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
         ) {
             //배너 + 상단바 + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {
-                // 배너 (클릭해서 교체)
+                //배너 (탭하여 업로드)
                 EditableBanner(
                     bannerUri = bannerUri,
                     onClick = {
@@ -153,14 +166,14 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     }
                 )
 
-                //상단바
+                //상단 뒤로가기 버튼
                 Box(
                     modifier = Modifier
                         .figmaPadding(startPx = 18f, topPx = 18f)
                         .size(20.dp)
                         .align(Alignment.TopStart)
                         .clickable { navController.popBackStack() }
-                        .zIndex(1f),
+                        .zIndex(1f), //배너 위로
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
@@ -196,8 +209,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     modifier = Modifier
                         .size(30.dp)
                         .clickable {
-                            editingSns = SnsPlatform.YOUTUBE
-                            tempLink = youtubeLink  // 기존 값 있으면 프리필
+                            editingSns = SnsPlatform.YOUTUBE //어떤 SNS 편집하는지 저장
+                            tempLink = youtubeLink //기존 값 프리필
                             showLinkDialog = true
                         }
                 )
@@ -281,7 +294,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     value = contact,
                     onValueChange = { contact = it },
                     placeholder = "010-1234-5678",
-                    phone = true,
+                    phone = true, //숫자,하이픈,공백만 허용 필터링
                     modifier = Modifier.width(100.dp)
                 )
             }
@@ -304,6 +317,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     .padding(horizontal = 30.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+                //서버 연결 후 날짜 형식 수정 필요해 보임
                 EditableAnnouncementItem(
                     label = "모집기간",
                     value = recruitPeriod,
@@ -322,6 +336,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
             Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(15.dp))
 
+            //동아리 설명
             EditableClubDescription(
                 text = clubDescription,
                 onTextChange = { clubDescription = it },
@@ -330,6 +345,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(5.dp))
 
+            //활동 사진 캐러셀 영역
             Text(
                 text = "대표이미지",
                 color = Color.Black,
@@ -345,25 +361,26 @@ fun AdminPromotionScreen(navController: NavHostController) {
             RepresentativeImagesCarousel(
                 images = activityImages,
                 onPickAt = { index ->
+                    //슬롯을 탭하면 해당 인덱스 저장, 이미지 피커 실행
                     selectedSlotIndex = index
                     imagePicker.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
                 },
                 onRemoveAt = { index ->
+                    //삭제: 해당 인덱스를 제외한 새 리스트 생성
                     activityImages = activityImages.filterIndexed { i, _ -> i != index }
                 },
                 onReorder = { from, to ->
-                    // ✅ 실제 리스트 재배치
-                    activityImages = activityImages.toMutableList().apply {
-                        add(to, removeAt(from))
-                    }
+                    //드래그 중 위치 교차될 때마다 즉시 리스트 갱신(실시간 재배치)
+                    activityImages = activityImages.toMutableList().apply { move(from, to) }
                 },
-                placeholderRes = R.drawable.img_rep_placeholder // 네가 가진 기본 카드 이미지
+                placeholderRes = R.drawable.img_rep_placeholder
             )
 
             Spacer(modifier = Modifier.height(30.dp))
 
+            //저장 버튼 (서버 연결 후 구현 예정)
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -378,13 +395,14 @@ fun AdminPromotionScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(75.dp))
         }
 
+        //SNS 링크 입력 다이얼로그
         if (showLinkDialog) {
             LinkInputDialog(
                 value = tempLink,
                 onValueChange = { tempLink = it },
                 title = "링크 추가",
                 placeholder = "http:// or https://",
-                onBack = { showLinkDialog = false }, // 저장 없이 닫기
+                onBack = { showLinkDialog = false },
                 onDone = {
                     val final = normalizeUrl(tempLink)
                     when (editingSns) {
@@ -400,6 +418,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
     }
 }
 
+//상단 배너 수정: 비어있으면 업로드 안내 텍스트, 탭으로 이미지 선택
 @Composable
 private fun EditableBanner(
     bannerUri: Uri?,
@@ -411,14 +430,14 @@ private fun EditableBanner(
             .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
             .clickable { onClick() }
     ) {
-        if (bannerUri != null) {
+        if (bannerUri != null) { //이미지가 있으면 꽉 채워서 표시
             AsyncImage(
                 model = bannerUri,
                 contentDescription = "Banner",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-        } else {
+        } else { //없으면 배경 + 문구
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -437,6 +456,7 @@ private fun EditableBanner(
     }
 }
 
+//프로필 이미지 수정: 비어있으면 업로드 안내 텍스트, 탭으로 이미지 선택
 @Composable
 private fun EditableProfile(
     profileUri: Uri?,
@@ -447,7 +467,7 @@ private fun EditableProfile(
             .size(113.dp)
             .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
             .clip(RoundedCornerShape(40.dp))
-            .zIndex(1f)
+            .zIndex(1f) //배너 위에 보이도록
             .clickable { onClick() }
     ) {
         if (profileUri != null) {
@@ -476,6 +496,7 @@ private fun EditableProfile(
     }
 }
 
+//SNS 링크 입력 다이얼로그
 @Composable
 private fun LinkInputDialog(
     value: String,
@@ -487,7 +508,7 @@ private fun LinkInputDialog(
     doneEnabled: Boolean
 ) {
     Dialog(onDismissRequest = onBack) {
-        // 반투명 배경 + 라운드 카드
+        //카드형 컨테이너
         Box(
             modifier = Modifier
                 .figmaSize(widthPx = 280f, heightPx = 120f)
@@ -499,14 +520,13 @@ private fun LinkInputDialog(
                     .background(Color.White)
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
-                // 상단 바: 뒤로, 제목, 완료
+                //상단 바: 뒤로, 제목, 완료
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(24.dp)
                 ) {
-                    // 뒤로 아이콘 (검정/회색 아무 아이콘으로, 필요하면 리소스 교체)
-                    Box(
+                    Box( //뒤로 버튼
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .clickable { onBack() },
@@ -520,7 +540,7 @@ private fun LinkInputDialog(
                         )
                     }
 
-                    Text(
+                    Text( //제목
                         text = title,
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
@@ -529,7 +549,7 @@ private fun LinkInputDialog(
                         modifier = Modifier.align(Alignment.Center)
                     )
 
-                    Text(
+                    Text( //완료 (유효할 때만 클릭 가능)
                         text = "완료",
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
@@ -544,7 +564,7 @@ private fun LinkInputDialog(
 
                 Spacer(modifier = Modifier.height(5.dp))
 
-                // 라벨
+                //입력 라벨
                 Text(
                     text = "URL",
                     fontFamily = NotoSansKR,
@@ -554,10 +574,9 @@ private fun LinkInputDialog(
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
 
-                // 입력 박스 (내용 있으면 주황 테두리 + X 버튼)
+                //입력 박스 (내용 있으면 주황 테두리 + X 버튼)
                 val borderColor = if (value.isNotBlank()) Color(0xFFFF5900) else Color.Transparent
 
-                // URL 입력 박스 (스샷처럼 심플한 회색 배경)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -595,8 +614,7 @@ private fun LinkInputDialog(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-
-                    // X 버튼 (내용 있을 때만 노출)
+                    //X 버튼 (내용 있을 때만 노출)
                     if (value.isNotBlank()) {
                         Box(
                             modifier = Modifier
@@ -605,7 +623,6 @@ private fun LinkInputDialog(
                                 .clickable { onValueChange("") },
                             contentAlignment = Alignment.Center
                         ) {
-                            // 아이콘 리소스가 없으면 문자로
                             Text("✕", color = Color(0xFFFF5900), fontSize = 12.sp)
                         }
                     }
@@ -615,6 +632,7 @@ private fun LinkInputDialog(
     }
 }
 
+//동아리 정보 수정
 @Composable
 fun EditableInfoItem(
     label: String,
@@ -628,7 +646,7 @@ fun EditableInfoItem(
         modifier = modifier,
         horizontalAlignment = Alignment.Start
     ) {
-        // 라벨 (기존 스타일과 동일)
+        //라벨
         Text(
             text = label,
             fontWeight = FontWeight.Bold,
@@ -640,15 +658,13 @@ fun EditableInfoItem(
         )
         Spacer(modifier = Modifier.height(4.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ){
-            // 값 입력 (텍스트 스타일은 기존 value 텍스트와 동일)
+        //입력 필드
+        Box(modifier = Modifier.fillMaxWidth()){
             BasicTextField(
                 value = value,
                 onValueChange = { s ->
-                    val v = if (phone) s.filter { it.isDigit() || it == '-' || it == '.' || it == ' ' } else s
+                    //전화번호 모드면 숫자, 하이픈, 공백만 허용
+                    val v = if (phone) s.filter { it.isDigit() || it == '-' || it == ' ' } else s
                     onValueChange(v)
                 },
                 singleLine = true,
@@ -678,6 +694,7 @@ fun EditableInfoItem(
     }
 }
 
+//한줄 소개 수정
 @Composable
 fun EditableTextShadowBanner(
     text: String,
@@ -688,8 +705,8 @@ fun EditableTextShadowBanner(
         modifier = Modifier
             .fillMaxWidth()
             .height(39.dp)
-            .graphicsLayer {
-                shadowElevation = 10.dp.toPx() //높이 조절
+            .graphicsLayer { //그림자 효과
+                shadowElevation = 10.dp.toPx()
                 shape = RoundedCornerShape(0.dp)
                 clip = false
             }
@@ -734,6 +751,7 @@ fun EditableTextShadowBanner(
     }
 }
 
+//모집기간 + 공지
 @Composable
 fun EditableAnnouncementItem(
     label: String,
@@ -745,7 +763,7 @@ fun EditableAnnouncementItem(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 라벨: 사용자 UI와 동일하게 고정 폭
+        //좌측 라벨
         Text(
             text = label,
             fontWeight = FontWeight.Bold,
@@ -756,7 +774,7 @@ fun EditableAnnouncementItem(
             modifier = Modifier.width(70.dp)
         )
 
-        // 오른쪽 content: 한 줄 입력
+        //우측 한 줄 입력
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -783,6 +801,7 @@ fun EditableAnnouncementItem(
     }
 }
 
+//동아리 설명 수정
 @Composable
 fun EditableClubDescription(
     text: String,
@@ -797,8 +816,7 @@ fun EditableClubDescription(
         BasicTextField(
             value = text,
             onValueChange = onTextChange,
-            // 여러 줄 입력
-            singleLine = false,
+            singleLine = false, //여러 줄 입력
             textStyle = androidx.compose.ui.text.TextStyle(
                 color = Color.Black,
                 fontSize = figmaTextSizeSp(13f),
@@ -821,38 +839,38 @@ fun EditableClubDescription(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 120.dp) // 에디터 영역 최소 높이
+                .heightIn(min = 120.dp) //최소 높이
         )
     }
 }
 
+//활동 사진 캐러셀
 @Composable
 fun RepresentativeImagesCarousel(
-    images: List<Uri>,
-    onPickAt: (Int) -> Unit,                 // 탭 → 해당 위치에 추가/교체
-    onRemoveAt: (Int) -> Unit,               // X 버튼 → 삭제
-    onReorder: (from: Int, to: Int) -> Unit, // 드래그 정렬 결과
-    placeholderRes: Int = R.drawable.img_rep_placeholder,
-    maxSlots: Int = 10
+    images: List<ImageSlot>, //안정 키(id) 포함된 이미지 리스트
+    onPickAt: (Int) -> Unit, //슬롯 탭 시 호출(해당 인덱스에 추가,교체)
+    onRemoveAt: (Int) -> Unit, //x 버튼 탭 시 삭제
+    onReorder: (from: Int, to: Int) -> Unit, //드래그 정렬 콜백
+    placeholderRes: Int = R.drawable.img_rep_placeholder, //비어있는 슬롯 표시 기본 이미지
+    maxSlots: Int = 10 //최대 등록 가능 수
 ) {
-    val listState = rememberLazyListState()
-    val totalSlots = minOf(maxSlots, images.size + 1)
+    //항상 최신 리스트 길이를 보도록 유지
+    val currentSize by rememberUpdatedState(images.size)
 
     val reorderState = rememberReorderableLazyListState(
-        listState = listState,
+        //드래그 중 아이템이 다른 위치로 넘어갈 때마다 자주 호출
+        //즉시 onReorder(f,t) 호출하여 리스트를 실시간으로 변경
         onMove = { from, to ->
-            val fromIdx = from.index
-            val rawTo   = to.index
-            if (fromIdx < images.size) {
-                // placeholder(마지막 슬롯)로 드롭하면 끝으로 취급
-                val target = rawTo.coerceIn(0, (images.size - 1).coerceAtLeast(0))
-                if (fromIdx != target) onReorder(fromIdx, target)
-            }
-        }
+            val f = from.index
+            val t = to.index.coerceIn(0, (currentSize - 1).coerceAtLeast(0))
+            if (f != t && currentSize > 0) onReorder(f, t)
+        },
+        //placeholder 위로는 드롭 불가
+        canDragOver = { _, to -> to.index < currentSize }
     )
 
     LazyRow(
-        state = listState,
+        state = reorderState.listState,
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 21.dp, top = 12.dp, bottom = 8.dp)
@@ -860,63 +878,80 @@ fun RepresentativeImagesCarousel(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        items(
-            count = totalSlots,
-            key = { index ->
-                if (index < images.size) images[index].toString() else "placeholder-$index"
-            }
-        ) { index ->
-            val hasImage = index < images.size
-            val itemKey = if (hasImage) images[index].toString() else "placeholder-$index"
-
-            ReorderableItem(reorderState, key = itemKey) { isDragging ->
+        //실제 이미지 아이템들
+        itemsIndexed(
+            items = images,
+            key = { _, item -> item.id } //절대 변하지 않는 안정 키
+        ) { index, item ->
+            //ReorderavleItem으로 감싸야 드래깅 중 레이아웃, 애니메이션이 올바르게 동작
+            ReorderableItem(reorderState, key = item.id) { isDragging ->
+                val elev = if (isDragging) 10.dp else 0.dp //드래그 중 살짝 떠 보이는 효과
                 Box(
                     modifier = Modifier
                         .figmaSize(widthPx = 139f, heightPx = 183f)
                         .clip(RoundedCornerShape(25.dp))
-                        .background(Color(0xFFEDEDED))
-                        // ✅ 이미지만 길게 눌러 드래그 시작 (placeholder는 드래그 불가)
-                        .then(if (hasImage) Modifier.detectReorderAfterLongPress(reorderState) else Modifier)
-                        .clickable { onPickAt(index) }
+                        .graphicsLayer { shadowElevation = elev.toPx() }
+                        .detectReorderAfterLongPress(reorderState) //길게 눌러 드래그
+                        .clickable { onPickAt(index) } //탭하면 교체용 피커 실행
                 ) {
-                    if (hasImage) {
-                        AsyncImage(
-                            model = images[index],
-                            contentDescription = "대표이미지 $index",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        // 삭제 버튼
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xAA000000))
-                                .clickable { onRemoveAt(index) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("✕", color = Color.White, fontSize = 12.sp)
-                        }
-                    } else {
+                    //실제 이미지 표시
+                    AsyncImage(
+                        model = item.uri,
+                        contentDescription = "활동사진 $index",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    //삭제 버튼
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .figmaPadding(topPx = 10f, endPx = 9f)
+                            .figmaSize(widthPx = 35f, heightPx = 35f)
+                            .clickable { onRemoveAt(index) },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Image(
-                            painter = painterResource(id = placeholderRes),
-                            contentDescription = "빈 슬롯 $index",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                            painter = painterResource(id = R.drawable.ic_delete),
+                            contentDescription = "삭제",
+                            modifier = Modifier.figmaSize(widthPx = 35f, heightPx = 35f)
                         )
                     }
                 }
             }
         }
+
+        //빈 슬롯 (정렬 대상 아님)
+        if (images.size < maxSlots) {
+            item(key = "placeholder") {
+                Box(
+                    modifier = Modifier
+                        .figmaSize(widthPx = 139f, heightPx = 183f)
+                        .clip(RoundedCornerShape(25.dp))
+                        .background(Color(0xFFEDEDED))
+                        .clickable { onPickAt(images.size) }
+                ) {
+                    Image(
+                        painter = painterResource(id = placeholderRes),
+                        contentDescription = "빈 슬롯",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
     }
 
+    //하단 개수 표시 (현재/최대)
     Row(
         modifier = Modifier.padding(start = 30.dp, top = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("${images.size} / $maxSlots", fontSize = figmaTextSizeSp(11f), fontFamily = NotoSansKR, color = Color(0xFF8A8A8A))
+        Text(
+            "${images.size} / $maxSlots",
+            fontSize = figmaTextSizeSp(11f),
+            fontFamily = NotoSansKR,
+            color = Color(0xFF8A8A8A)
+        )
     }
 }
 
