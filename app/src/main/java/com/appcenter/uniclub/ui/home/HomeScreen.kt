@@ -42,12 +42,13 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier,
-               navController: NavHostController) {
+               navController: NavHostController,
+               rootNavController: NavHostController) {
     LazyColumn(modifier = modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        item { MainTopBar(navController = navController) }
+        item { MainTopBar(navController = navController, rootNavController = rootNavController) }
 
         item {
             //예시 이미지 넣어둠 나중에 서버 연결 필요
@@ -208,11 +209,4 @@ fun CategoryItem(
             textAlign = TextAlign.Center
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    val navController = rememberNavController()
-    HomeScreen(navController = navController)
 }

@@ -83,7 +83,7 @@ fun ClubListScreen(
             items(filteredClubs.size) { index ->
                 ClubCard(
                     club = filteredClubs[index],
-                    onClick = { navController.navigate("promotion") }
+                    onClick = { navController.navigate("promotion")}
                 )
             }
 

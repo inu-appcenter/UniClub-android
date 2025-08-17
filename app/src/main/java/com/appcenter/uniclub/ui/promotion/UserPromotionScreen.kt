@@ -52,7 +52,7 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 //사용자용 홍보 페이지
 @Composable
-fun UserPromotionScreen(navController: NavHostController) {
+fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Unit) {
     var isLiked by remember { mutableStateOf(false) } //즐겨찾기 상태 저장
     var isRecruiting by remember { mutableStateOf(true) } //모집중, 모집예정 상태 저장
     val scrollState = rememberScrollState()
@@ -77,7 +77,7 @@ fun UserPromotionScreen(navController: NavHostController) {
 
                 PromotionTopBar( // 상단바
                     isLiked = isLiked,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = onBackClick,
                     onLikeClick = { isLiked = !isLiked },
                     showEdit = true, // 권한 체크 후 false로 숨길 수 있음
                     onEditClick = { navController.navigate("admin_promotion") },
@@ -390,10 +390,10 @@ fun ImageButtonItem(
             .clickable(onClick = onClick)
     )
 }
-
-@Preview(showBackground = true)
-@Composable
-fun UserPromotionScreenPreview() {
-    val navController = rememberNavController()
-    UserPromotionScreen(navController = navController)
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun UserPromotionScreenPreview() {
+//    val navController = rememberNavController()
+//    UserPromotionScreen(navController = navController)
+//}
