@@ -25,16 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.appcenter.uniclub.ui.home.components.EventImageCarousel
 import com.appcenter.uniclub.R
-import com.appcenter.uniclub.ui.home.components.ClubCardCarousel
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import com.appcenter.uniclub.ui.home.components.MainTopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
