@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.ui.home.components
+package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
