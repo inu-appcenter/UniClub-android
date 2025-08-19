@@ -122,16 +122,19 @@ fun SmallNotificationCard(item: NotificationItem, onClick: () -> Unit) {
         ) {
             //아이콘, 라벨
             val (iconRes, label) = when (item.type) {
-                NotificationType.ANSWER_RECEIVED -> R.drawable.ic_favorite_filled to "질의응답"
+                NotificationType.ANSWER_RECEIVED -> R.drawable.ic_answer to "질의응답"
                 NotificationType.NOTICE -> null to "총동연" //아이콘 없음
                 else -> null to "기타"
             }
             if (iconRes != null) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.figmaSize(widthPx = 17f, heightPx = 15f)
-                )
+                Box(modifier = Modifier.figmaSize(widthPx = 17f, heightPx = 15f),
+                    contentAlignment = Alignment.Center){
+                    Image(
+                        painter = painterResource(id = iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.figmaSize(widthPx = 8f, heightPx = 13f)
+                    )
+                }
             } else {
                 Spacer(modifier = Modifier.figmaSize(widthPx = 17f, heightPx = 15f)) // 🔹 아이콘 없을 때 여백
             }
