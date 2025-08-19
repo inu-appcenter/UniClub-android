@@ -1,2 +1,92 @@
 package com.appcenter.uniclub.ui.mypage
 
+import com.appcenter.uniclub.R
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import com.appcenter.uniclub.ui.components.TopBar
+import com.appcenter.uniclub.ui.components.InputLabel
+import com.appcenter.uniclub.ui.components.UnderlineInputField
+import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.ui.util.figmaPadding
+import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+
+//계정 삭제 화면
+@Composable
+fun DeleteAccountScreen(navController: NavHostController) {
+    var password by remember { mutableStateOf("") } //사용자가 입력한 비밀번호 상태
+    var isFieldEnabled by remember { mutableStateOf(false) } //입력 필드 활성화 여부
+    var isDeleted by remember { mutableStateOf(false) } //삭제 완료 상태 (ui에서만)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopBar( //상단바
+            onBackClick = { navController.popBackStack() },
+            title = "계정 삭제"
+        )
+        Spacer(Modifier.height(43.dp))
+
+        Column(modifier = Modifier.figmaPadding(startPx = 36f)) {
+            Text(
+                text = "계정을 삭제하시겠습니까?",
+                fontSize = figmaTextSizeSp(14f),
+                fontWeight = FontWeight.Bold,
+                fontFamily = NotoSansKR,
+                lineHeight = 14.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color.Black
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Text( //설명 텍스트
+                text = "계정 삭제 시 활동 내역이 영구 삭제되며 복구가 불가능합니다.\n정말 삭제하시겠습니까?",
+                fontSize = figmaTextSizeSp(11f),
+                fontFamily = NotoSansKR,
+                lineHeight = 11.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color(0xFF7D7D7D)
+            )
+
+            Spacer(Modifier.height(44.dp))
+
+            //입력 필드
+            InputLabel("비밀번호를 입력해주세요.", isEnabled = isFieldEnabled)
+            UnderlineInputField(
+                modifier = Modifier
+                    .figmaPadding(endPx = 132f)
+                    .clickable { isFieldEnabled = true },
+                value = password,
+                onValueChange = { password = it },
+                enabled = isFieldEnabled
+            )
+
+            Spacer(Modifier.height(50.dp))
+
+            Image(
+                painter = painterResource(
+                    id = if(isFieldEnabled) R.drawable.btn_delete else R.drawable.btn_delete_disabled),
+                contentDescription = "삭제 버튼",
+                modifier = Modifier
+                    .figmaSize(widthPx = 157f, heightPx = 30f)
+                    //비밀번호 입력이 되어있을 때만 클릭 가능
+                    .clickable(enabled = password.isNotBlank()) { //ui 전용
+                        isDeleted = true
+                    }
+            )
+        }
+    }
+}
