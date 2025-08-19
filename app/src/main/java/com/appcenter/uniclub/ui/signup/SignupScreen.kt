@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
@@ -30,6 +31,8 @@ fun SignUpScreen(
     vm: SignUpViewModel
 ) {
     val ui by vm.ui.collectAsState()
+
+    var selectedDept by remember { mutableStateOf("") }
 
     //버튼 활성화 조건 정의
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
@@ -110,10 +113,13 @@ fun SignUpScreen(
             //학과 입력 필드 (인증 후에만 활성화)
             //회의 후 드롭다운 수정
             InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
-            UnderlineInputField(
-                value = ui.major,
-                onValueChange = vm::onMajor,
-                enabled = ui.verified
+            DropdownField(
+                items = listOf("컴퓨터공학부", "전자공학과", "경영학과"),
+                selectedValue = selectedDept,
+                onItemSelected = { selectedDept = it },
+                modifier = Modifier
+                    .figmaSize(widthPx = 220f, heightPx = 35f)
+                    .figmaPadding(startPx = 30f)
             )
         }
 
