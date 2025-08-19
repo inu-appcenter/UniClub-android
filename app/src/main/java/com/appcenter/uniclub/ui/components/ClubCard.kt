@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.components
 
-import android.R.attr.letterSpacing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -64,10 +63,10 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
         ) {
             //동아리 프로필 이미지 영역
             //기본 이미지 여부 판단
-            val isDefaultImage = club.imageResId == null || club.imageResId == R.drawable.default_club_image
+            val isDefaultImage = club.imageResId == null || club.imageResId == R.drawable.default_image
 
             Image(
-                painter = painterResource(id = club.imageResId ?: R.drawable.default_club_image),
+                painter = painterResource(id = club.imageResId ?: R.drawable.default_image),
                 contentDescription = null,
                 modifier = if (isDefaultImage) {
                     Modifier
