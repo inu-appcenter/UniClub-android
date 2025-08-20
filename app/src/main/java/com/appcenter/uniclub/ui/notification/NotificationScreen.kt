@@ -50,7 +50,7 @@ fun NotificationScreen(navController: NavHostController, vm: NotificationViewMod
     }
 
     Column(modifier = Modifier.fillMaxSize()){
-        Spacer(modifier = Modifier.height(25.dp))
+        Spacer(modifier = Modifier.height(27.dp))
         //상단바
         TopBar(
             title = "알림",
@@ -133,7 +133,7 @@ fun navigateByNotification(rootNavController: NavHostController, item: Notificat
             rootNavController.navigate("notification_promotion") { launchSingleTop = true }
         }
         NotificationType.ANSWER_RECEIVED -> { //Q&A
-            rootNavController.navigate("notification_qna") { launchSingleTop = true }
+            rootNavController.navigate("qna") { launchSingleTop = true }
         }
         NotificationType.NOTICE -> {
             rootNavController.navigate("main")
