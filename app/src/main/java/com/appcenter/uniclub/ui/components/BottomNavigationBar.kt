@@ -24,8 +24,14 @@ import androidx.compose.ui.graphics.Color
 
 //하단 내비게이션 바 (수정 필요)
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+fun BottomNavigationBar(
+    rootNavController: NavHostController,
+    bottomNavController: NavHostController
+) {
+    val rootBackStackEntry = rootNavController.currentBackStackEntryAsState().value
+    val bottomBackStackEntry = bottomNavController.currentBackStackEntryAsState().value
+
+    val currentRoute = bottomBackStackEntry?.destination?.route ?: rootBackStackEntry?.destination?.route
 
     val barImage = remember(currentRoute) {
         when (currentRoute) {
@@ -55,31 +61,56 @@ fun BottomNavigationBar(navController: NavHostController) {
                 .matchParentSize()
                 .align(Alignment.BottomCenter) // 이미지 위에 딱 맞게
         ) {
-            val routes = listOf("qna", "home", "mypage")
-            routes.forEach { route ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable {
-                            if (currentRoute != route) {
-                                navController.navigate(route) {
-                                    launchSingleTop = true
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        inclusive = false
-                                    }
+            // QnA → rootNavController
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable {
+                        if (currentRoute != "qna") {
+                            rootNavController.navigate("qna") {
+                                launchSingleTop = true
+                                popUpTo(rootNavController.graph.startDestinationId) {
+                                    inclusive = false
                                 }
                             }
                         }
-                )
-            }
+                    }
+            )
+
+            // Home → bottomNavController
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable {
+                        if (currentRoute != "home") {
+                            bottomNavController.navigate("home") {
+                                launchSingleTop = true
+                                popUpTo(bottomNavController.graph.startDestinationId) {
+                                    inclusive = false
+                                }
+                            }
+                        }
+                    }
+            )
+
+            // MyPage → bottomNavController
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable {
+                        if (currentRoute != "mypage") {
+                            bottomNavController.navigate("mypage") {
+                                launchSingleTop = true
+                                popUpTo(bottomNavController.graph.startDestinationId) {
+                                    inclusive = false
+                                }
+                            }
+                        }
+                    }
+            )
         }
     }
-}
-
-@Preview(showBackground = false)
-@Composable
-fun BottomNavigationBarPreview() {
-    val navController = rememberNavController()
-    BottomNavigationBar(navController = navController)
 }

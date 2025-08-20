@@ -104,7 +104,6 @@ class MainActivity : ComponentActivity() {
                             vm = notificationVm
                         )
                     }
-
                     composable("notification_promotion") {
                         MainScaffold(
                             rootNavController = navController,
@@ -114,15 +113,8 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    composable("notification_qna") {
-                        MainScaffold(
-                            rootNavController = navController,
-                            startDestination = "qna",
-                            onBackToNotification = {
-                                navController.popBackStack("notification", false)
-                            }
-                        )
-                    }
+
+                    composable("qna") { QnAScreen(navController = navController) }
 
                     composable("main") {
                             MainScaffold(navController, startDestination = "home")
@@ -152,7 +144,6 @@ fun MainScaffold(
                         navController = bottomNavController,
                         startDestination = startDestination
                     ) {
-                        composable("qna")      { QnAScreen() }
                         composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
                         composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController) }
@@ -195,26 +186,10 @@ fun MainScaffold(
                 .align(Alignment.BottomCenter)
                 .wrapContentSize()
         ) {
-            BottomNavigationBar(navController = bottomNavController)
+            BottomNavigationBar(
+                rootNavController = rootNavController,
+                bottomNavController = bottomNavController
+            )
         }
     }
 }
-
-
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun MainScreenPreview() {
-//    val navController = rememberNavController()  // 📌 더미 NavController 생성
-//
-//    UniClubTheme {
-//        Scaffold(
-//            bottomBar = { BottomNavigationBar(navController = navController) }
-//        ) { innerPadding ->
-//            HomeScreen(
-//                modifier = Modifier.padding(innerPadding),
-//                navController = navController    // 📌 넘겨주기
-//            )
-//        }
-//    }
-//}

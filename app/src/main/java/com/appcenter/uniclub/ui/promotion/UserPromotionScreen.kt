@@ -22,10 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,14 +37,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Divider
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
@@ -210,7 +206,7 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
             )
             Column {
                 ActivityImageCarousel(imageResIds = sampleImages)
-                BottomActionButtons()
+                BottomActionButtons(navController)
             }
 
             Spacer(modifier = Modifier.height(75.dp))
@@ -357,7 +353,7 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
 
 //하단 버튼 정렬 컴포넌트
 @Composable
-fun BottomActionButtons() {
+fun BottomActionButtons(navController: NavHostController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -367,7 +363,7 @@ fun BottomActionButtons() {
         ImageButtonItem(
             imageRes = R.drawable.btn_question,
             contentDescription = "질문하기",
-            onClick = { /* TODO: 질문하기 기능 */ }
+            onClick = { navController.navigate("qna") }
         )
         ImageButtonItem(
             imageRes = R.drawable.btn_apply,
@@ -390,10 +386,3 @@ fun ImageButtonItem(
             .clickable(onClick = onClick)
     )
 }
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun UserPromotionScreenPreview() {
-//    val navController = rememberNavController()
-//    UserPromotionScreen(navController = navController)
-//}
