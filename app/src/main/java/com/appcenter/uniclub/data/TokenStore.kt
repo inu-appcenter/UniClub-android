@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
@@ -20,5 +21,9 @@ class TokenStore(private val context: Context) {
 
     suspend fun clear() {
         context.dataStore.edit { it.remove(KEY_AUTH_HEADER) }
+    }
+
+    suspend fun getAuthHeader(): String? {
+        return context.dataStore.data.map { it[KEY_AUTH_HEADER] }.firstOrNull()
     }
 }

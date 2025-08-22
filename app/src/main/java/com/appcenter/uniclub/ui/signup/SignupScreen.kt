@@ -25,12 +25,10 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 //회원가입 화면
 @Composable
 fun SignUpScreen(
-    onFinished: () -> Unit, //회원가입 완료 후 호출
+    onNext: () -> Unit, //회원가입 완료 후 호출
     vm: SignUpViewModel
 ) {
     val ui by vm.ui.collectAsState()
-
-    var selectedDept by remember { mutableStateOf("") }
 
     //버튼 활성화 조건 정의
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
@@ -114,8 +112,8 @@ fun SignUpScreen(
             InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
             DropdownField(
                 items = listOf("컴퓨터공학부", "전자공학과", "경영학과"),
-                selectedValue = selectedDept,
-                onItemSelected = { selectedDept = it },
+                selectedValue = ui.major,
+                onItemSelected = { vm.onMajor(it) },
                 modifier = Modifier
                     .figmaSize(widthPx = 210f, heightPx = 35f)
             )
@@ -140,7 +138,7 @@ fun SignUpScreen(
                         vm.verify()
                     } else {
                         //다음 화면으로 이동
-                        vm.register(onDone = onFinished)
+                        onNext()
                     }
                 }
         )

@@ -1,6 +1,7 @@
 package com.appcenter.uniclub
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -50,8 +51,10 @@ import com.appcenter.uniclub.ui.promotion.AdminPromotionScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
 import com.appcenter.uniclub.ui.search.SearchScreen
+import com.appcenter.uniclub.ui.signup.AgreementScreen
 import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
+import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
 
 class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
@@ -90,12 +93,47 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("signup") {
-                        val vm = remember { SignUpViewModel(repo) }
+                    composable("signup") { backStackEntry ->
+                        val vm: SignUpViewModel = viewModel(
+                            factory = SignUpViewModelFactory(repo),
+                            viewModelStoreOwner = backStackEntry
+                        )
                         SignUpScreen(
-                            onFinished = { navController.popBackStack() },
+                            onNext = { navController.navigate("agreement") },
                             vm = vm
                         )
+                    }
+
+                    composable("agreement") {
+                        // signup 화면에서 만든 ViewModel 재사용
+                        val parentEntry = remember(navController) {
+                            try {
+                                navController.getBackStackEntry("signup")
+                            } catch (e: IllegalArgumentException) {
+                                null
+                            }
+                        }
+
+                        if (parentEntry != null) {
+                            val vm: SignUpViewModel = viewModel(
+                                factory = SignUpViewModelFactory(repo),
+                                viewModelStoreOwner = parentEntry
+                            )
+                            AgreementScreen(
+                                onFinished = {
+                                    Log.d("AgreementScreen", "✅ onFinished 호출됨")
+                                    navController.navigate("login") {
+                                        popUpTo("signup") { inclusive = true }
+                                    }
+                                },
+                                vm = vm
+                            )
+                        } else {
+                            // signup이 없으면 fallback 처리 (예: 다시 signup으로 보내기)
+                            navController.navigate("signup") {
+                                popUpTo("agreement") { inclusive = true }
+                            }
+                        }
                     }
 
                     composable("notification") { backStackEntry ->
