@@ -35,20 +35,6 @@ fun NotificationScreen(navController: NavHostController, vm: NotificationViewMod
     val unread = notifications.filter { !it.isRead }
     val read = notifications.filter { it.isRead }
 
-    //다른 화면에서 돌아왔을 때 특정 알림을 읽음 처리
-    LaunchedEffect(Unit) {
-        navController.currentBackStackEntry
-            ?.savedStateHandle
-            ?.getLiveData<String>("notificationToRead")
-            ?.observeForever { id ->
-                vm.markAsRead(id) //읽음 처리
-                //처리 후 key 제거
-                navController.currentBackStackEntry
-                    ?.savedStateHandle
-                    ?.remove<String>("notificationToRead")
-            }
-    }
-
     Column(modifier = Modifier.fillMaxSize()){
         Spacer(modifier = Modifier.height(27.dp))
         //상단바
@@ -83,10 +69,8 @@ fun NotificationScreen(navController: NavHostController, vm: NotificationViewMod
                             item = item,
                             onDelete = { vm.delete(item.id) },  //삭제 동작
                             onClick = { //클릭 시 읽음 처리 + 해당 화면으로 이동
-                                navController.currentBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.set("notificationToRead", item.id)
-                                navigateByNotification(navController, item)
+                                vm.markAsRead(item.id)
+                                navigateByNotification(navController, item, vm)
                             }
                         )
                     }
@@ -101,7 +85,7 @@ fun NotificationScreen(navController: NavHostController, vm: NotificationViewMod
                             item = item,
                             onDelete = { vm.delete(item.id) },
                             //읽은 알림은 클릭해도 상태 변화 없이 화면만 이동
-                            onClick = { navigateByNotification(navController, item) }
+                            onClick = { navigateByNotification(navController, item, vm) }
                         )
                     }
                 }
@@ -127,7 +111,11 @@ fun SectionTitle(title: String) {
 }
 
 //알림 종류에 따라 다른 화면으로 이동
-fun navigateByNotification(rootNavController: NavHostController, item: NotificationItem) {
+fun navigateByNotification(
+    rootNavController: NavHostController,
+    item: NotificationItem,
+    vm: NotificationViewModel
+) {
     when (item.type) {
         NotificationType.INTERESTED_CLUB -> { //홍보
             rootNavController.navigate("notification_promotion") { launchSingleTop = true }
@@ -136,6 +124,7 @@ fun navigateByNotification(rootNavController: NavHostController, item: Notificat
             rootNavController.navigate("qna") { launchSingleTop = true }
         }
         NotificationType.NOTICE -> {
+            vm.markAsRead(item.id)
             rootNavController.navigate("main")
         }
     }
