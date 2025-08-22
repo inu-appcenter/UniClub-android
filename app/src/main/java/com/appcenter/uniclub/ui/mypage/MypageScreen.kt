@@ -162,7 +162,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
         )
         MenuItem(
             text = "이용약관",
-            onClick = { /* TODO: 이용약관 처리 */ }
+            onClick = { navController.navigate("terms") }
         )
 
         Spacer(modifier = Modifier.height(20.dp))

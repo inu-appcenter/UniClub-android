@@ -1,17 +1,13 @@
-package com.appcenter.uniclub.ui.signup
+package com.appcenter.uniclub.ui.mypage
 
-import com.appcenter.uniclub.R
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -19,28 +15,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.components.TopBar
+import com.appcenter.uniclub.ui.signup.descriptSection
+import com.appcenter.uniclub.ui.signup.titleSection
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
-import java.nio.file.WatchEvent
 
+//이용약관 화면
 @Composable
-fun AgreementScreen(
-    onBack: () -> Unit,
-    onFinished: () -> Unit,
-    vm: SignUpViewModel
-){
-    var isEssential by remember { mutableStateOf(false) }
-    var isChoice by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .figmaPadding(topPx = 18f)
-    ) {
+fun TermsScreen(navController: NavHostController){
+    Column(modifier = Modifier.fillMaxWidth()) {
         TopBar( //상단바
-            onBackClick = onBack
+            onBackClick = { navController.popBackStack() }
         )
         Spacer(modifier = Modifier.height(36.dp))
 
@@ -78,75 +68,8 @@ fun AgreementScreen(
                     titleSection("4. 동의 거부 권리 및 동의 거부 시 불이익")
                     descriptSection("    - 회원가입을 위한 필수항목에 대한 동의를 거부하실 수 있으나, 이 경우 회원가입 및 서비스 이용이 제한될 수 있습니다.")
                 }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(70.dp))
-                Text(
-                    text = "이용약관에 동의해 주세요.",
-                    fontSize = figmaTextSizeSp(20f),
-                    fontFamily = NotoSansKR,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 20.sp * 1.5f,
-                    letterSpacing = (-0.011).em,
-                    color = Color.Black,
-                    modifier = Modifier.figmaPadding(startPx = 34f)
-                )
-                Spacer(modifier = Modifier.height(29.dp))
-                Image(
-                    painter = painterResource(
-                        id = if (isEssential) R.drawable.btn_essential else R.drawable.btn_essential_disabled
-                    ),
-                    contentDescription = "필수 동의",
-                    modifier = Modifier
-                        .figmaPadding(startPx = 20f, endPx = 20f)
-                        .clickable { isEssential = !isEssential }
-                )
-                //Spacer(modifier = Modifier.height(5.dp))
-                Image(
-                    painter = painterResource(
-                        id = if (isChoice) R.drawable.btn_choice else R.drawable.btn_choice_disabled
-                    ),
-                    contentDescription = "선택 동의",
-                    modifier = Modifier
-                        .figmaPadding(startPx = 23f, endPx = 23f)
-                        .clickable { isChoice = !isChoice }
-                )
-                Spacer(modifier = Modifier.height(35.dp))
-                Image(
-                    painter = painterResource(
-                        id = if (isEssential) R.drawable.btn_agree else R.drawable.btn_next_disabled
-                    ),
-                    contentDescription = "약관 동의",
-                    modifier = Modifier
-                        .figmaPadding(startPx = 114f, endPx = 114f)
-                        .clickable { onFinished }
-                )
-                Spacer(modifier = Modifier.height(64.dp))
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
-}
-
-@Composable
-fun titleSection(title: String) {
-    Text(
-        text = title,
-        fontSize = figmaTextSizeSp(14f),
-        fontFamily = NotoSansKR,
-        fontWeight = FontWeight.Bold,
-        lineHeight = 14.sp * 1.8f,
-        color = Color.Black
-    )
-}
-
-@Composable
-fun descriptSection(des: String) {
-    Text(
-        text = des,
-        fontSize = figmaTextSizeSp(14f),
-        fontFamily = NotoSansKR,
-        lineHeight = 14.sp * 1.8f,
-        color = Color.Black
-    )
 }
