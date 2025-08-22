@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,32 +27,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.em
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.App
+import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.ui.notification.NotificationViewModel
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier,
-               navController: NavHostController,
-               rootNavController: NavHostController) {
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
+    rootNavController: NavHostController,
+    app: App = LocalContext.current.applicationContext as App,
+    viewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(ServiceLocator.mainRepository(app)) as T
+            }
+        }
+    ),
+    notificationViewModel: NotificationViewModel
+) {
+    val bannerList by viewModel.bannerList.collectAsState()
+    val hasUnread by notificationViewModel.hasUnread.collectAsState()
+
     LazyColumn(modifier = modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        item { MainTopBar(navController = navController, rootNavController = rootNavController) }
+        item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread) }
 
         item {
-            //예시 이미지 넣어둠 나중에 서버 연결 필요
-            val sampleEvents = listOf(
-                R.drawable.event_sample,
-                R.drawable.event_sample,
-                R.drawable.event_sample
-            )
-            EventImageCarousel(eventList = sampleEvents)
+            if (bannerList.isNotEmpty()) { //서버에서 이미지가 왔을 때
+                EventImageCarousel(eventList = bannerList)
+            } else { //서버에서 이미지가 없을 때 → 로컬 기본 이미지 사용
+                EventImageCarousel(eventList = listOf(R.drawable.event_sample))
+            }
         }
 
         item {
@@ -71,14 +91,14 @@ fun HomeScreen(modifier: Modifier = Modifier,
                 R.drawable.club3 to "크레퍼스(CREPERS)",
                 R.drawable.club1 to "멋쟁이사자처럼"
             )
-            ClubCardCarousel(fullList = sampleClubs)
+            ClubCardCarousel(fullList = sampleClubs, navController = navController)
         }
 
         item {
             CategorySection(
                 navController = navController,
                 onCategoryClick = { category ->
-                // 🔧 카테고리 클릭 시 ClubList로 이동
+                //카테고리 클릭 시 ClubList로 이동
                 navController.navigate("clublist/${category}")
             })
         }

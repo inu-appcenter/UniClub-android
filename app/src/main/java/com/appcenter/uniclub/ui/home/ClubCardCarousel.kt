@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.home
 
+import android.R.attr.onClick
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
@@ -49,6 +51,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ClubCardCarousel(
     fullList: List<Pair<Int, String>>,
+    navController: NavHostController
 ) {
     var clubList by remember { mutableStateOf(fullList.shuffled()) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -95,7 +98,12 @@ fun ClubCardCarousel(
                     CircularProgressIndicator(strokeWidth = 2.dp)
                 }
             } else {
-                ClubCard(imageResId = pair.first, clubName = pair.second)
+                ClubCard(
+                    imageResId = pair.first,
+                    clubName = pair.second,
+                    onClick = {
+                        navController.navigate("promotion")
+                    })
             }
         }
     }
@@ -104,7 +112,8 @@ fun ClubCardCarousel(
 @Composable
 fun ClubCard(
     imageResId: Int,
-    clubName: String
+    clubName: String,
+    onClick: () -> Unit
 ) {
     //좋아요 상태 기억
     var isLiked by remember { mutableStateOf(false) }
@@ -113,6 +122,7 @@ fun ClubCard(
         modifier = Modifier
             .figmaSize(widthPx = 136f, heightPx = 206f)
             .clip(RoundedCornerShape(17.dp)) //모서리
+            .clickable { onClick() }
     ) {
         Image(
             painter = painterResource(id = imageResId),

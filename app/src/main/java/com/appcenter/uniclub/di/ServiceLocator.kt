@@ -1,10 +1,13 @@
 package com.appcenter.uniclub.di
 
 import com.appcenter.uniclub.App
+import com.appcenter.uniclub.data.MainRepository
 import com.appcenter.uniclub.network.ApiClient
 import com.appcenter.uniclub.network.AuthService
+import com.appcenter.uniclub.network.MainService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlin.jvm.java
 
 object ServiceLocator {
     // AuthService 인스턴스 생성
@@ -14,5 +17,13 @@ object ServiceLocator {
             runBlocking { app.tokenStore.authHeaderFlow.first() }
         }
         return retrofit.create(AuthService::class.java)
+    }
+
+    fun mainRepository(app: App): MainRepository {
+        val retrofit = ApiClient.createRetrofit {
+            runBlocking { app.tokenStore.authHeaderFlow.first() }
+        }
+        val api = retrofit.create(MainService::class.java)
+        return MainRepository(api)
     }
 }

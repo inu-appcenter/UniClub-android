@@ -148,14 +148,15 @@ class MainActivity : ComponentActivity() {
                             startDestination = "promotion",
                             onBackToNotification = {
                                 navController.popBackStack("notification", false)
-                            }
+                            },
+                            notificationVm = notificationVm
                         )
                     }
 
                     composable("qna") { QnAScreen(navController = navController) }
 
                     composable("main") {
-                            MainScaffold(navController, startDestination = "home")
+                            MainScaffold(navController, startDestination = "home", notificationVm = notificationVm)
                     }
                 }
             }
@@ -167,7 +168,8 @@ class MainActivity : ComponentActivity() {
 fun MainScaffold(
     rootNavController: NavHostController,
     startDestination: String,
-    onBackToNotification: (() -> Unit)? = null
+    onBackToNotification: (() -> Unit)? = null,
+    notificationVm: NotificationViewModel
 ) {
     val bottomNavController = rememberNavController()
 
@@ -182,7 +184,7 @@ fun MainScaffold(
                         navController = bottomNavController,
                         startDestination = startDestination
                     ) {
-                        composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController) }
+                        composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
                         composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController) }
                         composable("profileEdit") { ProfileEditScreen(navController = bottomNavController) }
