@@ -44,6 +44,7 @@ import com.appcenter.uniclub.ui.mypage.DeleteAccountScreen
 import com.appcenter.uniclub.ui.mypage.InquiryScreen
 import com.appcenter.uniclub.ui.mypage.MypageScreen
 import com.appcenter.uniclub.ui.mypage.ProfileEditScreen
+import com.appcenter.uniclub.ui.mypage.TermsScreen
 import com.appcenter.uniclub.ui.notification.NotificationScreen
 import com.appcenter.uniclub.ui.notification.NotificationViewModel
 import com.appcenter.uniclub.ui.notification.NotificationViewModelFactory
@@ -191,6 +192,7 @@ fun MainScaffold(
                         composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController) }
                         composable("profileEdit") { ProfileEditScreen(navController = bottomNavController) }
                         composable("inquiry") { InquiryScreen(navController = bottomNavController) }
+                        composable("terms") { TermsScreen(navController = bottomNavController) }
                         composable("delete") { DeleteAccountScreen(navController = bottomNavController) }
                         composable("clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {

@@ -36,7 +36,7 @@ fun BottomNavigationBar(
     val barImage = remember(currentRoute) {
         when (currentRoute) {
             "qna" -> R.drawable.qna_navigation
-            "mypage", "alarmSetting", "profileEdit", "inquiry", "delete" -> R.drawable.my_navigation
+            "mypage", "alarmSetting", "profileEdit", "inquiry", "terms", "delete" -> R.drawable.my_navigation
             else -> R.drawable.home_navigation
         }
     }
