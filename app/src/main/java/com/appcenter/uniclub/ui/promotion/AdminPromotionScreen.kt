@@ -67,7 +67,7 @@ import java.util.UUID
 //관리자용 홍보 페이지
 
 //SNS 플랫폼 구분
-private enum class SnsPlatform { YOUTUBE, INSTAGRAM }
+private enum class Platform { APPLY, YOUTUBE, INSTAGRAM }
 
 //활동 사진 캐러셀의 각 아이템 모델
 data class ImageSlot(
@@ -99,10 +99,11 @@ fun AdminPromotionScreen(navController: NavHostController) {
     ) { uri -> if (uri != null) profileUri = uri }
 
     //SNS 링크 저장용
+    var applyLink by remember { mutableStateOf("") }
     var youtubeLink by remember { mutableStateOf("") }
     var instagramLink by remember { mutableStateOf("") }
     var showLinkDialog by remember { mutableStateOf(false) } //다이얼로그 표시 여부
-    var editingSns by remember { mutableStateOf<SnsPlatform?>(null) } //어떤 SNS를 편집중인지
+    var editingLink by remember { mutableStateOf<Platform?>(null) } //어떤 SNS를 편집중인지
     var tempLink by remember { mutableStateOf("") } //다이얼로그 입력 임시값
     //http/https 빠진 경우 자동으로 https:// 붙여줌
     fun normalizeUrl(raw: String): String {
@@ -202,14 +203,25 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     .padding(top = 17.dp, end = 15.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
-            ) {
+            ) {Image(
+                painter = painterResource(id = R.drawable.ic_apply),
+                contentDescription = "Apply",
+                modifier = Modifier
+                    .size(62.dp, 30.dp)
+                    .clickable {
+                        editingLink = Platform.APPLY
+                        tempLink = applyLink
+                        showLinkDialog = true
+                    }
+            )
+                Spacer(modifier = Modifier.width(6.dp))
                 Image(
                     painter = painterResource(id = R.drawable.ic_youtube),
                     contentDescription = "YouTube",
                     modifier = Modifier
                         .size(30.dp)
                         .clickable {
-                            editingSns = SnsPlatform.YOUTUBE //어떤 SNS 편집하는지 저장
+                            editingLink = Platform.YOUTUBE //어떤 SNS 편집하는지 저장
                             tempLink = youtubeLink //기존 값 프리필
                             showLinkDialog = true
                         }
@@ -221,7 +233,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     modifier = Modifier
                         .size(30.dp)
                         .clickable {
-                            editingSns = SnsPlatform.INSTAGRAM
+                            editingLink = Platform.INSTAGRAM
                             tempLink = instagramLink
                             showLinkDialog = true
                         }
@@ -395,7 +407,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(75.dp))
         }
 
-        //SNS 링크 입력 다이얼로그
+        //링크 입력 다이얼로그
         if (showLinkDialog) {
             LinkInputDialog(
                 value = tempLink,
@@ -405,9 +417,10 @@ fun AdminPromotionScreen(navController: NavHostController) {
                 onBack = { showLinkDialog = false },
                 onDone = {
                     val final = normalizeUrl(tempLink)
-                    when (editingSns) {
-                        SnsPlatform.YOUTUBE -> youtubeLink = final
-                        SnsPlatform.INSTAGRAM -> instagramLink = final
+                    when (editingLink) {
+                        Platform.APPLY -> applyLink = final
+                        Platform.YOUTUBE -> youtubeLink = final
+                        Platform.INSTAGRAM -> instagramLink = final
                         else -> {}
                     }
                     showLinkDialog = false
@@ -953,11 +966,4 @@ fun RepresentativeImagesCarousel(
             color = Color(0xFF8A8A8A)
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AdminPromotionScreenPreview() {
-    val nav = rememberNavController()
-    AdminPromotionScreen(navController = nav)
 }
