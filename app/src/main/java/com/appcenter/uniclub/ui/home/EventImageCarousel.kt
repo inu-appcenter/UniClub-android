@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.appcenter.uniclub.ui.util.figmaPadding
 import com.appcenter.uniclub.ui.util.figmaSize
 import com.google.accompanist.pager.*
@@ -19,7 +20,7 @@ import com.google.accompanist.pager.*
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun EventImageCarousel(
-    eventList: List<Int> //여러 장 이미지 받기
+    eventList: List<Any> //여러 장 이미지 받기
 ) {
     val pagerState = rememberPagerState()
 
@@ -42,12 +43,26 @@ fun EventImageCarousel(
                 contentPadding = PaddingValues(0.dp),
                 itemSpacing = 0.dp
             ) { page ->
-                Image(
-                    painter = painterResource(id = eventList[page]),
-                    contentDescription = "이벤트 이미지",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                when (val item = eventList[page]) {
+                    is Int -> {
+                        //로컬 Drawable
+                        Image(
+                            painter = painterResource(id = item),
+                            contentDescription = "배너 이미지",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    is String -> {
+                        //서버 URL (Coil 사용)
+                        AsyncImage(
+                            model = item,
+                            contentDescription = "배너 이미지",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
 
             //인디케이터 (박스 내부 하단 중앙) ...표시

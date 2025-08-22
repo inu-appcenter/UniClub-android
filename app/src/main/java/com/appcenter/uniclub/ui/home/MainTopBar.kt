@@ -17,7 +17,11 @@ import com.appcenter.uniclub.ui.util.figmaSize
 
 //메인상단바: 로고, 검색, 알림 아이콘 설정
 @Composable
-fun MainTopBar(navController: NavHostController, rootNavController: NavHostController){
+fun MainTopBar(
+    navController: NavHostController,
+    rootNavController: NavHostController,
+    hasUnread: Boolean
+){
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,9 +52,15 @@ fun MainTopBar(navController: NavHostController, rootNavController: NavHostContr
 
             Spacer(modifier = Modifier.figmaPadding(startPx = 22f)) //아이콘 사이 간격
 
-            //알림 아이콘
+            //알림 아이콘 (읽지 않은 알림 여부에 따라 교체)
+            val notificationIcon = if (hasUnread) { //안읽은 알림 아이콘
+                R.drawable.ic_notification_unread
+            } else { //기본 알림 아이콘
+                R.drawable.ic_notification
+            }
+
             Image(
-                painter = painterResource(id = R.drawable.ic_notification),
+                painter = painterResource(id = notificationIcon),
                 contentDescription = "알림",
                 modifier = Modifier
                     .figmaSize(widthPx = 20f, heightPx = 21f)
