@@ -15,14 +15,20 @@ class AuthInterceptor(
         val original = chain.request()
         val token = tokenProvider()
 
-        val req = if (!token.isNullOrBlank()) {
+        // student-verification 엔드포인트는 Authorization 헤더 제외
+        val isStudentVerification = original.url.encodedPath.contains("student-verification")
+
+        val req = if (!token.isNullOrBlank() && !isStudentVerification) {
             original.newBuilder()
-                .addHeader("Authorization", token) // "Bearer xxx" 형태 전체를 넘겨받아 그대로 사용
+                .addHeader("Authorization", token) // "Bearer xxx" 그대로 사용
                 .build()
-        } else original
+        } else {
+            original
+        }
 
         return chain.proceed(req)
     }
+
 }
 
 object ApiClient {

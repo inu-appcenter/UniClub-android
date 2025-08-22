@@ -9,17 +9,17 @@ import retrofit2.http.POST
 
 interface AuthService {
 
-    // 회원가입
+    //회원가입
     @POST("api/v1/auth/register")
     suspend fun register(
         @Body body: RegisterRequestDto
-    ): Response<Unit> // 스웨거에 응답 바디 명시 없으면 Unit로 받는 게 안전
+    ): Response<Unit>
 
     // 재학생 인증
     @POST("api/v1/auth/register/student-verification")
     suspend fun studentVerification(
         @Body body: StudentVerificationRequestDto
-    ): retrofit2.Response<StudentVerificationResponseDto>
+    ): Response<StudentVerificationResponseDto>
 
     // 로그인
     @POST("api/v1/auth/login")
@@ -35,5 +35,5 @@ interface AuthService {
     @PATCH("api/v1/users/me")
     suspend fun updateMe(
         @Body body: UpdateMeRequestDto
-    ): Response<Unit> // 서버가 갱신된 유저를 돌려주면 DTO 맞춰 변경
+    ): Response<Unit>
 }
