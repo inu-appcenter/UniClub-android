@@ -1,5 +1,7 @@
 package com.appcenter.uniclub.ui.signup
 
+import android.util.Log
+import android.util.Log.e
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.AuthRepository
@@ -38,12 +40,6 @@ class SignUpViewModel(private val repo: AuthRepository) : ViewModel() {
         val s = _ui.value
         if (!s.canVerify) return
         _ui.value = s.copy(loading = true, error = null, verified = false)
-
-        // ✅ 더미 계정 체크
-        if (s.studentId == "1234" && s.password == "1234") {
-            _ui.value = s.copy(verified = true, loading = false, error = null)
-            return
-        }
 
         viewModelScope.launch {
             repo.verifyStudent(s.studentId, s.password)

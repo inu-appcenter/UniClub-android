@@ -13,9 +13,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.InputLabel
+import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.UnderlineInputField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaPadding
@@ -25,6 +27,7 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 //회원가입 화면
 @Composable
 fun SignUpScreen(
+    onBack: () -> Unit,
     onNext: () -> Unit, //회원가입 완료 후 호출
     vm: SignUpViewModel
 ) {
@@ -34,7 +37,14 @@ fun SignUpScreen(
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
     val canProceed = ui.canProceed //이름/학과 등 추가 정보가 '다음 단계 가능'한지
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+            .fillMaxSize()
+            .figmaPadding(topPx = 18f)
+    ) {
+        TopBar( //상단바
+            onBackClick = onBack
+        )
+
         Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 79f, bottomPx = 113f)) {
             Text( //상단 타이틀
                 text = "회원가입",

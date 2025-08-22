@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                             viewModelStoreOwner = backStackEntry
                         )
                         SignUpScreen(
+                            onBack = { navController.popBackStack() },
                             onNext = { navController.navigate("agreement") },
                             vm = vm
                         )
@@ -120,6 +121,7 @@ class MainActivity : ComponentActivity() {
                                 viewModelStoreOwner = parentEntry
                             )
                             AgreementScreen(
+                                onBack = { navController.popBackStack() },
                                 onFinished = {
                                     Log.d("AgreementScreen", "✅ onFinished 호출됨")
                                     navController.navigate("login") {
