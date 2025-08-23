@@ -42,9 +42,9 @@ class AuthRepository(
         }
 
     //내 정보 수정
-    suspend fun updateMe(name: String, major: String): Result<Unit> =
+    suspend fun updateMe(name: String, major: String, nickname: String): Result<Unit> =
         runCatching {
-            val res = service.updateMe(UpdateMeRequestDto(name, major))
+            val res = service.updateMe(UpdateMeRequestDto(name, major, nickname))
             if (!res.isSuccessful) throw HttpException(res)
             Unit
         }
