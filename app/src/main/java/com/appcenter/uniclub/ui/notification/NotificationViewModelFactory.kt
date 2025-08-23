@@ -2,10 +2,10 @@ package com.appcenter.uniclub.ui.notification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 
 class NotificationViewModelFactory(
-    private val repo: AuthRepository
+    private val repo: UserRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NotificationViewModel::class.java)) {

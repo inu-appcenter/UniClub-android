@@ -2,7 +2,7 @@ package com.appcenter.uniclub.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,7 +17,7 @@ data class LoginUiState(
     val canLogin get() = studentId.isNotBlank() && password.isNotBlank() && !loading
 }
 
-class LoginViewModel(private val repo: AuthRepository) : ViewModel() {
+class LoginViewModel(private val repo: UserRepository) : ViewModel() {
     private val _ui = MutableStateFlow(LoginUiState()) //내부에서만 수정 가능한 상태
     val ui: StateFlow<LoginUiState> = _ui //외부(ui)에는 읽기 전용으로 노출
 

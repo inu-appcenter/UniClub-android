@@ -4,10 +4,11 @@ import com.appcenter.uniclub.network.dto.*
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 
-interface AuthService {
+interface UserService {
 
     //회원가입
     @POST("api/v1/auth/register")
@@ -36,4 +37,10 @@ interface AuthService {
     suspend fun updateMe(
         @Body body: UpdateMeRequestDto
     ): Response<Unit>
+
+    @GET("/api/v1/users/notification")
+    suspend fun getNotificationSetting(): NotificationSettingResponseDto
+
+    @PATCH("/api/v1/users/notification")
+    suspend fun toggleNotification(): ToggleNotificationResponseDto
 }

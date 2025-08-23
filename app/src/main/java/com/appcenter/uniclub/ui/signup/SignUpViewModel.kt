@@ -1,10 +1,8 @@
 package com.appcenter.uniclub.ui.signup
 
-import android.util.Log
-import android.util.Log.e
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.dto.RegisterRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +23,7 @@ data class SignUpUiState(
     val canProceed get() = verified && name.isNotBlank() && major.isNotBlank() && !loading //인증 완료 + 이름/전공이 채워졌고, 현재 로딩 중이 아닐 때 "다음" 버튼 활성화
 }
 
-class SignUpViewModel(private val repo: AuthRepository) : ViewModel() {
+class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
     private val _ui = MutableStateFlow(SignUpUiState()) //내부에서만 수정 가능한 상태
     val ui: StateFlow<SignUpUiState> = _ui //외부(ui)에는 읽기 전용으로 노출
 

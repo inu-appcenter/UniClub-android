@@ -24,10 +24,19 @@ import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appcenter.uniclub.data.UserRepository
 
 //알림 설정 화면
 @Composable
-fun AlarmSettingScreen(navController: NavHostController) {
+fun AlarmSettingScreen(
+    navController: NavHostController,
+    repository: UserRepository
+) {
+    val viewModel: AlarmSettingViewModel = viewModel(
+        factory = AlarmSettingViewModelFactory(repository)
+    )
+    val checked by viewModel.checked.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar( //상단바
@@ -50,7 +59,6 @@ fun AlarmSettingScreen(navController: NavHostController) {
         Spacer(Modifier.height(30.dp))
 
         //앱 푸시 알림 스위치
-        var checked by remember { mutableStateOf(false) }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -67,7 +75,7 @@ fun AlarmSettingScreen(navController: NavHostController) {
             )
             Switch(
                 checked = checked,
-                onCheckedChange = { checked = it },
+                onCheckedChange = { viewModel.onToggle() },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = Color(0xFFFF5900) //활성 시
