@@ -30,10 +30,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.*
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.TopBar
@@ -45,8 +49,13 @@ import com.appcenter.uniclub.ui.util.figmaTextSizeSp
 //프로필 수정 화면
 @Composable
 fun ProfileEditScreen(navController: NavHostController) {
-    var selectedDept by remember { mutableStateOf("") } //선택된 학과 상태
-    var nickname by remember { mutableStateOf("") } //닉네임 상태
+    val context = LocalContext.current.applicationContext as App
+    val viewModel: ProfileEditViewModel = viewModel(
+        factory = ProfileEditViewModelFactory(context)
+    )
+    val state by viewModel.uiState.collectAsState()
+    var NameFocused by remember { mutableStateOf(false) }
+    var NicknameFocused by remember { mutableStateOf(false) }
 
     //선택된 프로필 이미지 URI
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -118,16 +127,62 @@ fun ProfileEditScreen(navController: NavHostController) {
             //학과 리스트 서버 연결 후 수정
             DropdownField(
                 items = listOf("컴퓨터공학부", "전자공학과", "경영학과"),
-                selectedValue = selectedDept,
-                onItemSelected = { selectedDept = it },
+                selectedValue = state.major,
+                onItemSelected = { viewModel.updateMajor(it) },
                 modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f)
             )
+        }
+
+        //이름 입력 영역
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
+        ){
+            Text(
+                text = "이름",
+                fontSize = figmaTextSizeSp(12f),
+                fontFamily = NotoSansKR,
+                lineHeight = 12.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color.Black,
+                modifier = Modifier.width(85.dp)
+            )
+            Box( //입력 박스
+                modifier = Modifier
+                    .figmaSize(widthPx = 200f, heightPx = 35f)
+                    .border(
+                        width = 1.dp,
+                        color = if (NameFocused) Color(0xFFFF5900) else Color.Transparent,
+                        shape = RoundedCornerShape(13.dp)
+                    )
+                    .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                BasicTextField(
+                    value = state.name,
+                    onValueChange = { viewModel.updateName(it) },
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = figmaTextSizeSp(12f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 12.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color.Black
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            NameFocused = focusState.isFocused
+                        }
+                )
+            }
         }
 
         //닉네임 입력 영역
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.figmaPadding(startPx = 39f)
+            modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 6f)
         ){
             Text(
                 text = "닉네임",
@@ -142,8 +197,8 @@ fun ProfileEditScreen(navController: NavHostController) {
                 modifier = Modifier
                     .figmaSize(widthPx = 200f, heightPx = 35f)
                     .border(
-                        width = 0.dp,
-                        color = Color.Transparent,
+                        width = 1.dp,
+                        color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
                         shape = RoundedCornerShape(13.dp)
                     )
                     .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
@@ -151,8 +206,8 @@ fun ProfileEditScreen(navController: NavHostController) {
                 contentAlignment = Alignment.CenterStart
             ) {
                 BasicTextField(
-                    value = nickname,
-                    onValueChange = { nickname = it },
+                    value = state.nickname,
+                    onValueChange = { viewModel.updateNickname(it) },
                     singleLine = true,
                     textStyle = LocalTextStyle.current.copy(
                         fontSize = figmaTextSizeSp(12f),
@@ -161,9 +216,24 @@ fun ProfileEditScreen(navController: NavHostController) {
                         letterSpacing = (-0.011).em,
                         color = Color.Black
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            NicknameFocused = focusState.isFocused
+                        }
                 )
             }
         }
+
+        Text(
+            text = "기본적으로 활동명은 실명으로 표시되며, \n" +
+                    "닉네임을 설정하면 활동명이 닉네임으로 변경됩니다.",
+            fontSize = figmaTextSizeSp(9f),
+            fontFamily = NotoSansKR,
+            lineHeight = 9.sp * 1.5f,
+            letterSpacing = (-0.011).em,
+            color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
+            modifier = Modifier.figmaPadding(startPx = 125f)
+        )
     }
 }

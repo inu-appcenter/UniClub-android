@@ -9,12 +9,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,6 +47,11 @@ fun DropdownField(
             modifier = Modifier
                 .menuAnchor()
                 .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
+                .border(
+                    width = 1.dp,
+                    color = if (expanded) Color(0xFFFF5900) else Color.Transparent,
+                    shape = RoundedCornerShape(13.dp)
+                )
                 .padding(horizontal = 12.dp, vertical = 8.dp), //글자 잘리지 않도록 좌우상하 패딩
             contentAlignment = Alignment.CenterStart
         ) {
@@ -72,7 +78,11 @@ fun DropdownField(
                         }
                         //드롭다운 아이콘 Row 끝에 고정
                         Box(modifier = Modifier.wrapContentSize()) {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                tint = if (expanded) Color(0xFFFF5900) else Color.Gray
+                            )
                         }
                     }
                 }

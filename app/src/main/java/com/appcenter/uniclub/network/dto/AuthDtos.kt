@@ -1,5 +1,7 @@
 package com.appcenter.uniclub.network.dto
 
+import android.provider.ContactsContract
+
 //회원가입 요청: POST /api/v1/auth/register
 data class RegisterRequestDto(
     val studentId: String,
@@ -38,5 +40,6 @@ data class LoginResponseDto(
 //내 정보 수정: PATCH /api/v1/users/me
 data class UpdateMeRequestDto(
     val name: String,
-    val major: String
+    val major: String,
+    val nickname: String
 )
