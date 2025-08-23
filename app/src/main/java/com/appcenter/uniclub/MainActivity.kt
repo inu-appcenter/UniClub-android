@@ -20,18 +20,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.Navigation
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.ui.home.HomeScreen
@@ -61,7 +58,7 @@ class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
         NotificationViewModelFactory(
             ServiceLocator.authService(application as App).let { authService ->
-                AuthRepository(authService, (application as App).tokenStore)
+                UserRepository(authService, (application as App).tokenStore)
             }
         )
     }
@@ -74,7 +71,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val app = application as App
             val authService = ServiceLocator.authService(app) // AuthService 생성
-            val repo = AuthRepository(authService, app.tokenStore) // Repository 생성
+            val repo = UserRepository(authService, app.tokenStore) // Repository 생성
             UniClubTheme {
                 val navController = rememberNavController()
                 NavHost(
@@ -152,14 +149,15 @@ class MainActivity : ComponentActivity() {
                             onBackToNotification = {
                                 navController.popBackStack("notification", false)
                             },
-                            notificationVm = notificationVm
+                            notificationVm = notificationVm,
+                            repo = repo
                         )
                     }
 
                     composable("qna") { QnAScreen(navController = navController) }
 
                     composable("main") {
-                            MainScaffold(navController, startDestination = "home", notificationVm = notificationVm)
+                            MainScaffold(navController, startDestination = "home", notificationVm = notificationVm, repo = repo)
                     }
                 }
             }
@@ -172,7 +170,8 @@ fun MainScaffold(
     rootNavController: NavHostController,
     startDestination: String,
     onBackToNotification: (() -> Unit)? = null,
-    notificationVm: NotificationViewModel
+    notificationVm: NotificationViewModel,
+    repo: UserRepository
 ) {
     val bottomNavController = rememberNavController()
 
@@ -189,7 +188,7 @@ fun MainScaffold(
                     ) {
                         composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
-                        composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController) }
+                        composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController, repository = repo) }
                         composable("profileEdit") { ProfileEditScreen(navController = bottomNavController) }
                         composable("inquiry") { InquiryScreen(navController = bottomNavController) }
                         composable("terms") { TermsScreen(navController = bottomNavController) }

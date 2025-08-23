@@ -1,11 +1,10 @@
 package com.appcenter.uniclub.ui.mypage
 
-import android.R.attr.name
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.App
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.di.ServiceLocator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,7 @@ data class ProfileEditUiState(
 )
 
 class ProfileEditViewModel(
-    private val repo: AuthRepository
+    private val repo: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileEditUiState())
@@ -64,7 +63,7 @@ class ProfileEditViewModelFactory(
     private val app: App
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val repo = AuthRepository(
+        val repo = UserRepository(
             service = ServiceLocator.authService(app),
             tokenStore = app.tokenStore
         )

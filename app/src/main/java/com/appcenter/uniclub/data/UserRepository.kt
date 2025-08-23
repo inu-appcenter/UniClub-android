@@ -1,11 +1,11 @@
 package com.appcenter.uniclub.data
 
-import com.appcenter.uniclub.network.AuthService
+import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.dto.*
 import retrofit2.HttpException
 
-class AuthRepository(
-    private val service: AuthService,
+class UserRepository(
+    private val service: UserService,
     private val tokenStore: TokenStore
 ) {
     //재학생 인증
@@ -57,6 +57,10 @@ class AuthRepository(
             tokenStore.clear()
             Unit
         }
+
+    suspend fun getNotificationSetting() = service.getNotificationSetting()
+
+    suspend fun toggleNotification() = service.toggleNotification()
 
     // 🔵 개발용: 더미 토큰 저장
     suspend fun saveDummyToken() {

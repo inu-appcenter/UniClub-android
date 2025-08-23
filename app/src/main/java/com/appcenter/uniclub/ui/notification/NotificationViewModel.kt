@@ -2,14 +2,14 @@ package com.appcenter.uniclub.ui.notification
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.appcenter.uniclub.data.AuthRepository
+import com.appcenter.uniclub.data.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-class NotificationViewModel(private val repo: AuthRepository) : ViewModel() {
+class NotificationViewModel(private val repo: UserRepository) : ViewModel() {
     //서버 연동 전, 임시 더미 데이터로 초기화
     private val _notifications = MutableStateFlow(dummyNotifications)
     val notifications: StateFlow<List<NotificationItem>> = _notifications
