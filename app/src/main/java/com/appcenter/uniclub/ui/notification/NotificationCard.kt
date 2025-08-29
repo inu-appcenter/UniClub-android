@@ -16,9 +16,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 @Composable
 fun NotificationCard(item: NotificationItem, onClick: () -> Unit) {

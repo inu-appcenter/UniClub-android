@@ -3,7 +3,6 @@ package com.appcenter.uniclub.ui.notification
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
@@ -22,8 +21,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaTextSizeSp
+import androidx.compose.foundation.lazy.items
 
 //알림 페이지
 @Composable
