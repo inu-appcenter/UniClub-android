@@ -21,16 +21,20 @@ import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.InputLabel
 import com.appcenter.uniclub.ui.components.UnderlineInputField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //계정 삭제 화면
 @Composable
-fun DeleteAccountScreen(navController: NavHostController) {
+fun DeleteAccountScreen(
+    navController: NavHostController,
+    viewModel: DeleteAccountViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     var password by remember { mutableStateOf("") } //사용자가 입력한 비밀번호 상태
     var isFieldEnabled by remember { mutableStateOf(false) } //입력 필드 활성화 여부
-    var isDeleted by remember { mutableStateOf(false) } //삭제 완료 상태 (ui에서만)
+
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar( //상단바
@@ -78,13 +82,12 @@ fun DeleteAccountScreen(navController: NavHostController) {
 
             Image(
                 painter = painterResource(
-                    id = if(isFieldEnabled) R.drawable.btn_delete else R.drawable.btn_delete_disabled),
-                contentDescription = "삭제 버튼",
+                    id = if(password.isNotBlank()) R.drawable.btn_delete else R.drawable.btn_delete_disabled),
+                contentDescription = "계정 삭제 버튼",
                 modifier = Modifier
                     .figmaSize(widthPx = 157f, heightPx = 30f)
-                    //비밀번호 입력이 되어있을 때만 클릭 가능
-                    .clickable(enabled = password.isNotBlank()) { //ui 전용
-                        isDeleted = true
+                    .clickable(enabled = password.isNotBlank()) {
+                        viewModel.deleteAccount(password)
                     }
             )
         }
