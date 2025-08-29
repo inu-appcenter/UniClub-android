@@ -1,14 +1,15 @@
 package com.appcenter.uniclub.ui.mypage
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.appcenter.uniclub.data.UserRepository
+import com.appcenter.uniclub.data.NotificationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class AlarmSettingViewModel(
-    private val repository: UserRepository
+    private val repository: NotificationRepository
 ) : ViewModel() {
 
     private val _checked = MutableStateFlow(false)
@@ -37,5 +38,17 @@ class AlarmSettingViewModel(
                 // 에러 처리
             }
         }
+    }
+}
+
+class AlarmSettingViewModelFactory(
+    private val repository: NotificationRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AlarmSettingViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AlarmSettingViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
