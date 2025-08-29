@@ -38,9 +38,13 @@ interface UserService {
         @Body body: UpdateMeRequestDto
     ): Response<Unit>
 
-    @GET("/api/v1/users/notification")
-    suspend fun getNotificationSetting(): NotificationSettingResponseDto
+    //내 정보 조회
+    @GET("/api/v1/users/me")
+    suspend fun getMyPage(): MyPageResponseDto
 
-    @PATCH("/api/v1/users/notification")
-    suspend fun toggleNotification(): ToggleNotificationResponseDto
+    //계정 삭제
+    @DELETE("api/v1/users")
+    suspend fun deleteUser(
+        @Body request: UserDeleteRequestDto
+    ): Response<Unit>
 }

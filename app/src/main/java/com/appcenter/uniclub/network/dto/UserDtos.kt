@@ -39,15 +39,20 @@ data class LoginResponseDto(
 data class UpdateMeRequestDto(
     val name: String,
     val major: String,
-    val nickname: String
+    val nickname: String,
+    val profileImageLink: String? = null
 )
 
-// 알림 조회 응답
-data class NotificationSettingResponseDto(
-    val notificationEnabled: Boolean
+//내 정보 조회
+data class MyPageResponseDto(
+    val nickname: String?,
+    val name: String,
+    val studentId: String,
+    val major: String,
+    val profileImageLink: String?
 )
 
-// 알림 토글 응답
-data class ToggleNotificationResponseDto(
-    val message: String
+//계정 삭제
+data class UserDeleteRequestDto(
+    val password: String
 )

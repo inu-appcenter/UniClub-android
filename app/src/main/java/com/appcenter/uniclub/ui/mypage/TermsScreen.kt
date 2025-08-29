@@ -21,9 +21,9 @@ import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.signup.descriptSection
 import com.appcenter.uniclub.ui.signup.titleSection
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //이용약관 화면
 @Composable

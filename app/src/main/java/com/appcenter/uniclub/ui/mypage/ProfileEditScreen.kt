@@ -42,9 +42,9 @@ import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //프로필 수정 화면
 @Composable
@@ -66,12 +66,19 @@ fun ProfileEditScreen(navController: NavHostController) {
         profileImageUri = uri
     }
 
+    //저장 성공 시 자동 뒤로가기
+    LaunchedEffect(state.success) {
+        if (state.success) {
+            navController.popBackStack()
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "프로필 수정",
             rightIconResId = R.drawable.ic_save,
-            //TODO: onRightIconClick =
+            onRightIconClick = { viewModel.updateProfile() }
         )
         Spacer(Modifier.height(33.dp))
 

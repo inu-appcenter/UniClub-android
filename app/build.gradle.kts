@@ -84,4 +84,6 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
+
+    implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
 }

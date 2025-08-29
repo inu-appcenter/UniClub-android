@@ -30,15 +30,29 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.ui.components.Dialog
 
 //마이페이지 화면
 @Composable
 fun MypageScreen(navController: NavHostController, rootNavController: NavHostController) {
+    val context = LocalContext.current.applicationContext as App
+    val viewModel: MyPageViewModel = viewModel(
+        factory = MyPageViewModelFactory(context)
+    )
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadMyPage()
+    }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
@@ -68,23 +82,33 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
         .figmaPadding(startPx = 27f, endPx = 27f, topPx = 70f))
     {
         Row(verticalAlignment = Alignment.CenterVertically){
-            Image( //프로필
-                painter = painterResource(R.drawable.default_image),
-                contentDescription = null,
-                modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 75f)
-            )
+            if (state.profileImageLink != null) {
+                // 서버에서 저장된 프로필 이미지가 있으면 표시
+                Image(
+                    painter = rememberAsyncImagePainter(state.profileImageLink),
+                    contentDescription = "프로필 이미지",
+                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 75f)
+                )
+            } else {
+                // 없으면 기본 이미지
+                Image(
+                    painter = painterResource(R.drawable.default_image),
+                    contentDescription = "기본 프로필 이미지",
+                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 75f)
+                )
+            }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f)){
                 Text( //닉네임
-                    text = "닉네임을 설정해보세요!",
+                    text = state.nickname ?: "닉네임을 설정해보세요!",
                     fontSize = figmaTextSizeSp(10f),
                     fontFamily = NotoSansKR,
                     lineHeight = 10.sp * 1.5f, // 행간
                     letterSpacing = (-0.011).em, // 자간
-                    color = Color(0xFFD3D3D3)
+                    color = if (state.nickname == null) Color(0xFFD3D3D3) else Color(0xFFFF5900)
                 )
                 Text( //이름
-                    text = "홍길동",
+                    text = state.name,
                     fontSize = figmaTextSizeSp(16f),
                     fontFamily = NotoSansKR,
                     fontWeight = FontWeight.Bold,
@@ -94,7 +118,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
                 )
                 Spacer(Modifier.height(8.dp))
                 Text( //학과
-                    text = "디자인학부",
+                    text = state.major,
                     fontSize = figmaTextSizeSp(11f),
                     fontFamily = NotoSansKR,
                     fontWeight = FontWeight.Bold,
@@ -104,7 +128,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
                 )
                 Spacer(Modifier.height(3.dp))
                 Text( //학번
-                    text = "23학번",
+                    text = state.studentId,
                     fontSize = figmaTextSizeSp(11f),
                     fontFamily = NotoSansKR,
                     lineHeight = 11.sp * 1.5f, // 행간
