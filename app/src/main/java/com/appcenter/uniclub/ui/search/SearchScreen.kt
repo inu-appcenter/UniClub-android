@@ -27,37 +27,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.appcenter.uniclub.data.dummyClubs
 import com.appcenter.uniclub.R
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import com.appcenter.uniclub.ui.components.ClubCard
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.network.dto.toClub
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlin.collections.firstOrNull
 
 @Composable
-fun SearchScreen(navController: NavHostController) {
+fun SearchScreen(navController: NavHostController, vm: SearchViewModel = viewModel()) {
     var query by remember { mutableStateOf("") } //검색어 상태를 저장
 
-    //검색어에 따라 필터링된 동아리 리스트 생성
-    val filteredClubs = remember(query) {
-        if (query.isBlank()) emptyList()
-        else dummyClubs.filter {
-            it.name.contains(query, ignoreCase = true) //대소문자 무시 검색
-        }
-    }
+    val results by vm.results.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         //배경 이미지
         Image(
             painter = painterResource(id = R.drawable.search_bg_top),
@@ -98,7 +94,10 @@ fun SearchScreen(navController: NavHostController) {
                     ) {
                         BasicTextField(
                             value = query,
-                            onValueChange = { query = it },
+                            onValueChange = {
+                                query = it
+                                vm.search(it)
+                            },
                             singleLine = true,
                             modifier = Modifier.weight(1f),
                             decorationBox = { innerTextField ->
@@ -119,7 +118,10 @@ fun SearchScreen(navController: NavHostController) {
                         //입력값 있을 때만 지우기 버튼 표시
                         if (query.isNotEmpty()) {
                             IconButton(
-                                onClick = { query = "" },
+                                onClick = {
+                                    query = ""
+                                    vm.search("")
+                                },
                                 modifier = Modifier.size(18.dp)
                             ) {
                                 Icon(
@@ -166,13 +168,8 @@ fun SearchScreen(navController: NavHostController) {
 
                     Spacer(modifier = Modifier.width(20.dp))
 
-                    //검색어에 해당하는 첫 번째 동아리 이름 표시
-                    val matchedClubName = dummyClubs.firstOrNull {
-                        it.name.contains(query, ignoreCase = true)
-                    }?.name
-
                     Text(
-                        text = matchedClubName ?: "", //일치하는 이름만
+                        text = results.firstOrNull()?.name ?: "", //서버 결과에서 첫 번째 동아리 이름
                         fontSize = figmaTextSizeSp(14f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Normal,
@@ -189,10 +186,10 @@ fun SearchScreen(navController: NavHostController) {
                 modifier = Modifier.fillMaxWidth(), // ← 전체 너비 확보
                 horizontalAlignment = Alignment.CenterHorizontally // ← 가운데 정렬
             ) {
-                items(filteredClubs) { club ->
+                items(results) { clubDto ->
                     ClubCard(
-                        club = club,
-                        onClick = { navController.navigate("promotion") }
+                        club = clubDto.toClub(),
+                        onClick = { navController.navigate("promotion/${clubDto.id}") }
                     )
                 }
                 item { Spacer(modifier = Modifier.height(70.dp)) }
