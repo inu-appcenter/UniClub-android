@@ -11,8 +11,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,16 +20,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaTextSizeSp
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.appcenter.uniclub.data.UserRepository
+import com.appcenter.uniclub.data.NotificationRepository
 
 //알림 설정 화면
 @Composable
 fun AlarmSettingScreen(
     navController: NavHostController,
-    repository: UserRepository
+    repository: NotificationRepository
 ) {
     val viewModel: AlarmSettingViewModel = viewModel(
         factory = AlarmSettingViewModelFactory(repository)
