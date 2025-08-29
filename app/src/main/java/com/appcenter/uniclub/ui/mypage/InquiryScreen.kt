@@ -25,10 +25,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaTextSizeSp
 import com.appcenter.uniclub.R
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
 
 //문의하기 화면
 @Composable

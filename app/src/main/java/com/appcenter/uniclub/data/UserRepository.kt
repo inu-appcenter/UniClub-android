@@ -1,12 +1,16 @@
 package com.appcenter.uniclub.data
 
+import android.content.Context
+import android.net.Uri
 import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.dto.*
 import retrofit2.HttpException
+import retrofit2.Response
 
 class UserRepository(
     private val service: UserService,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val profileRepo: ProfileRepository
 ) {
     //재학생 인증
     suspend fun verifyStudent(id: String, pw: String): Result<Boolean> =
@@ -42,25 +46,28 @@ class UserRepository(
         }
 
     //내 정보 수정
-    suspend fun updateMe(name: String, major: String, nickname: String): Result<Unit> =
+    suspend fun updateMe(name: String, major: String, nickname: String, profileImageLink: String? = null): Result<Unit> =
         runCatching {
-            val res = service.updateMe(UpdateMeRequestDto(name, major, nickname))
+            val res = service.updateMe(UpdateMeRequestDto(name, major, nickname, profileImageLink))
             if (!res.isSuccessful) throw HttpException(res)
             Unit
         }
 
-    //회원 탈퇴
-    suspend fun deleteAccount(): Result<Unit> =
-        runCatching {
-            val res = service.deleteAccount()
-            if (!res.isSuccessful) throw HttpException(res)
-            tokenStore.clear()
-            Unit
+    suspend fun uploadProfileImage(context: Context, uri: Uri): String {
+        return profileRepo.uploadProfileImage(context, uri)
+    }
+
+    //내 정보 조회
+    suspend fun getMyPage(): Result<MyPageResponseDto> {
+        return runCatching {
+            service.getMyPage()
         }
+    }
 
-    suspend fun getNotificationSetting() = service.getNotificationSetting()
-
-    suspend fun toggleNotification() = service.toggleNotification()
+    //계정 삭제
+    suspend fun deleteUser(password: String): Response<Unit> {
+        return service.deleteUser(UserDeleteRequestDto(password))
+    }
 
     // 🔵 개발용: 더미 토큰 저장
     suspend fun saveDummyToken() {
