@@ -4,23 +4,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.dto.RegisterRequestDto
+import com.appcenter.uniclub.network.dto.RegisterTermsRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 //회원가입 ui 상태를 표현하는 데이터 클래스
 data class SignUpUiState(
-    val studentId: String = "", //학번 입력값
-    val password: String = "", //비밀번호 입력값
-    val name: String = "", //사용자 이름
-    val major: String = "", //전공
-    val agreed: Boolean = true, //약관 동의 여부
-    val verified: Boolean = false, //재학생 인증 성공 여부
-    val loading: Boolean = false, //네트워크 요청 중 여부
-    val error: String? = null //사용자에게 보여줄 에러 메시지
+    val studentId: String = "",
+    val password: String = "",
+    val name: String = "",
+    val major: String = "",
+    val personalInfoCollectionAgreement: Boolean = false, // 필수 동의
+    val marketingAdvertisement: Boolean = false,          // 선택 동의
+    val verified: Boolean = false,
+    val loading: Boolean = false,
+    val error: String? = null
 ) {
-    val canVerify get() = studentId.isNotBlank() && password.isNotBlank() && !loading //학번/비번이 유효하게 채워졌고, 현재 로딩 중이 아닐 때 "재학생확인" 버튼 활성화
-    val canProceed get() = verified && name.isNotBlank() && major.isNotBlank() && !loading //인증 완료 + 이름/전공이 채워졌고, 현재 로딩 중이 아닐 때 "다음" 버튼 활성화
+    val canVerify get() = studentId.isNotBlank() && password.isNotBlank() && !loading
+    val canProceed get() = verified && name.isNotBlank() && major.isNotBlank() && !loading
 }
 
 class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
@@ -31,7 +33,9 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
     fun onPw(v: String) { _ui.value = _ui.value.copy(password = v, error = null) }
     fun onName(v: String) { _ui.value = _ui.value.copy(name = v, error = null) }
     fun onMajor(v: String) { _ui.value = _ui.value.copy(major = v, error = null) }
-    fun onAgree(v: Boolean) { _ui.value = _ui.value.copy(agreed = v, error = null) }
+
+    fun onEssentialAgree(v: Boolean) { _ui.value = _ui.value.copy(personalInfoCollectionAgreement = v) }
+    fun onChoiceAgree(v: Boolean) { _ui.value = _ui.value.copy(marketingAdvertisement = v) }
 
     //재학생 인증 요청
     fun verify() {
@@ -46,26 +50,51 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
         }
     }
 
-    //회원가입 요청
-    fun register(onDone: () -> Unit) {
+    // (기존 register 대체) 약관 저장 + 회원가입을 한 번에
+    fun agreeAndRegister(onDone: () -> Unit) {
         val s = _ui.value
-        if (!s.canProceed) return
+        // 필수 동의 없으면 진행 불가
+        if (!s.personalInfoCollectionAgreement) {
+            _ui.value = s.copy(error = "필수 약관에 동의해 주세요.")
+            return
+        }
+        // SignUpScreen에서 이미 canProceed 통과 후 AgreementScreen으로 왔다고 가정
         _ui.value = s.copy(loading = true, error = null)
+
         viewModelScope.launch {
-            val req = RegisterRequestDto(
+            // 1) 약관 저장
+            val termsReq = RegisterTermsRequestDto(
                 studentId = s.studentId,
-                password = s.password,
-                name = s.name,
-                major = s.major,
-                agreed = s.agreed,
-                studentVerification = true
+                personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
+                marketingAdvertisement = s.marketingAdvertisement
             )
-            repo.register(req)
-                .onSuccess {
-                    _ui.value = _ui.value.copy(loading = false, error = null)
-                    onDone()
+            val termsResult = repo.saveRegisterTerms(termsReq)
+
+            termsResult.fold(
+                onSuccess = {
+                    // 2) 회원가입
+                    val regReq = RegisterRequestDto(
+                        studentId = s.studentId,
+                        password = s.password,
+                        name = s.name,
+                        major = s.major,
+                        personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
+                        marketingAdvertisement = s.marketingAdvertisement,
+                        studentVerification = true
+                    )
+                    repo.register(regReq)
+                        .onSuccess {
+                            _ui.value = _ui.value.copy(loading = false, error = null)
+                            onDone()
+                        }
+                        .onFailure {
+                            _ui.value = _ui.value.copy(loading = false, error = it.message)
+                        }
+                },
+                onFailure = {
+                    _ui.value = _ui.value.copy(loading = false, error = it.message)
                 }
-                .onFailure { _ui.value = _ui.value.copy(error = it.message, loading = false) }
+            )
         }
     }
 }

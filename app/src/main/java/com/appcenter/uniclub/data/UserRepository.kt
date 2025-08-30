@@ -24,11 +24,17 @@ class UserRepository(
             true
         }
 
-
     //회원가입
     suspend fun register(req: RegisterRequestDto): Result<Unit> =
         runCatching {
             val res = service.register(req)
+            if (!res.isSuccessful) throw HttpException(res)
+            Unit
+        }
+
+    suspend fun saveRegisterTerms(req: RegisterTermsRequestDto): Result<Unit> =
+        runCatching {
+            val res = service.saveRegisterTerms(req)
             if (!res.isSuccessful) throw HttpException(res)
             Unit
         }

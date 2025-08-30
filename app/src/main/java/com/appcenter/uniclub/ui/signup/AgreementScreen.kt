@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -21,10 +19,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
-import java.nio.file.WatchEvent
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 @Composable
 fun AgreementScreen(
@@ -32,16 +29,13 @@ fun AgreementScreen(
     onFinished: () -> Unit,
     vm: SignUpViewModel
 ){
-    var isEssential by remember { mutableStateOf(false) }
-    var isChoice by remember { mutableStateOf(false) }
+    val ui by vm.ui.collectAsState()
 
     Column(modifier = Modifier
         .fillMaxWidth()
         .figmaPadding(topPx = 18f)
     ) {
-        TopBar( //상단바
-            onBackClick = onBack
-        )
+        TopBar(onBackClick = onBack)
         Spacer(modifier = Modifier.height(36.dp))
 
         Image(
@@ -95,32 +89,34 @@ fun AgreementScreen(
                 Spacer(modifier = Modifier.height(29.dp))
                 Image(
                     painter = painterResource(
-                        id = if (isEssential) R.drawable.btn_essential else R.drawable.btn_essential_disabled
+                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_essential else R.drawable.btn_essential_disabled
                     ),
                     contentDescription = "필수 동의",
                     modifier = Modifier
-                        .figmaPadding(startPx = 20f, endPx = 20f)
-                        .clickable { isEssential = !isEssential }
+                        .figmaPadding(startPx = 23f, endPx = 23f)
+                        .clickable { vm.onEssentialAgree(!ui.personalInfoCollectionAgreement) }
                 )
-                //Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(5.dp))
                 Image(
                     painter = painterResource(
-                        id = if (isChoice) R.drawable.btn_choice else R.drawable.btn_choice_disabled
+                        id = if (ui.marketingAdvertisement) R.drawable.btn_choice else R.drawable.btn_choice_disabled
                     ),
                     contentDescription = "선택 동의",
                     modifier = Modifier
                         .figmaPadding(startPx = 23f, endPx = 23f)
-                        .clickable { isChoice = !isChoice }
+                        .clickable { vm.onChoiceAgree(!ui.marketingAdvertisement) }
                 )
                 Spacer(modifier = Modifier.height(35.dp))
                 Image(
                     painter = painterResource(
-                        id = if (isEssential) R.drawable.btn_agree else R.drawable.btn_next_disabled
+                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_agree else R.drawable.btn_next_disabled
                     ),
                     contentDescription = "약관 동의",
                     modifier = Modifier
                         .figmaPadding(startPx = 114f, endPx = 114f)
-                        .clickable { onFinished }
+                        .clickable(enabled = ui.personalInfoCollectionAgreement && !ui.loading) {
+                            vm.agreeAndRegister(onDone = onFinished)
+                        }
                 )
                 Spacer(modifier = Modifier.height(64.dp))
             }
