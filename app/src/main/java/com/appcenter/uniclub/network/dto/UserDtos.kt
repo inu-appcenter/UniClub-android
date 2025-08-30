@@ -6,8 +6,16 @@ data class RegisterRequestDto(
     val password: String,
     val name: String,
     val major: String,
-    val agreed: Boolean,
+    val personalInfoCollectionAgreement: Boolean,
+    val marketingAdvertisement: Boolean,
     val studentVerification: Boolean
+)
+
+//개인정보 약관 동의 정보 저장 요청: POST /api/v1/users/terms
+data class RegisterTermsRequestDto(
+    val studentId: String,
+    val personalInfoCollectionAgreement: Boolean,
+    val marketingAdvertisement: Boolean
 )
 
 //재학생 인증 요청: POST /api/v1/auth/register/student-verification
@@ -52,7 +60,7 @@ data class MyPageResponseDto(
     val profileImageLink: String?
 )
 
-//계정 삭제
+//계정 삭제: DELETE /api/v1/users
 data class UserDeleteRequestDto(
     val password: String
 )

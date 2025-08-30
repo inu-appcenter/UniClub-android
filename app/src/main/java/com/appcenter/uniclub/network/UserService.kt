@@ -22,15 +22,17 @@ interface UserService {
         @Body body: StudentVerificationRequestDto
     ): Response<StudentVerificationResponseDto>
 
+    // 개인정보 약관 동의 정보 저장
+    @POST("api/v1/users/terms")
+    suspend fun saveRegisterTerms(
+        @Body body: RegisterTermsRequestDto
+    ): Response<Unit>
+
     // 로그인
     @POST("api/v1/auth/login")
     suspend fun login(
         @Body body: LoginRequestDto
     ): Response<LoginResponseDto>
-
-    // 회원 탈퇴
-    @DELETE("api/v1/users")
-    suspend fun deleteAccount(): Response<Unit>
 
     // 내 정보 수정 (예: 전공만 수정)
     @PATCH("api/v1/users/me")
