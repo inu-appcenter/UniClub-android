@@ -1,4 +1,4 @@
-package com.appcenter.uniclub.ui.util
+package com.appcenter.uniclub.util
 
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
