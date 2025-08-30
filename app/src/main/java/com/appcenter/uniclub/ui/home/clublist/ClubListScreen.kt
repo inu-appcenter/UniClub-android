@@ -10,16 +10,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.appcenter.uniclub.ui.components.TopBar
-import com.appcenter.uniclub.data.dummyClubs
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.ui.components.ClubCard
-import com.appcenter.uniclub.ui.util.figmaSize
+import com.appcenter.uniclub.util.figmaSize
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.appcenter.uniclub.App
+import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.network.dto.toClub
+import kotlinx.coroutines.flow.collectLatest
+
+enum class SortOption(val label: String, val serverValue: String) {
+    NAME("기본", "name"),
+    LIKE("즐겨찾기", "like"),
+    STATUS("모집중", "status") // 필요 시 "모집상태순" 등으로 라벨 변경
+}
 
 //동아리 리스트 페이지
 @Composable
@@ -27,13 +40,40 @@ fun ClubListScreen(
     navController: NavHostController,
     categoryName: String = "전체"
 ) {
-    var selectedSort by remember { mutableStateOf("기본") } //선택된 정렬 옵션 저장
+    val app = LocalContext.current.applicationContext as App
+    val vm: ClubListViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ClubListViewModel(ServiceLocator.clubRepository(app)) as T
+            }
+        }
+    )
+    val state by vm.uiState.collectAsState()
+
+    val category = ClubCategory.fromDisplayName(categoryName)
+        ?: ClubCategory.fromServerValue(categoryName)
+
+    var selectedSort by remember { mutableStateOf(SortOption.NAME) } //선택된 정렬 옵션 저장
     var dropdownExpanded by remember { mutableStateOf(false) } //드롭다운 메뉴 확장 여부 상태
 
-    val categoryFilter = categoryName.toClubCategoryOrNull() //카테고리명 문자열을 enum으로 변환 (null이면 전체)
-    val filteredClubs = remember(categoryFilter) { //카테고리 필터링된 동아리 리스트 (dummy data 기반)
-        if (categoryFilter != null) dummyClubs.filter { it.category == categoryFilter }
-        else dummyClubs
+    // ✅ 화면 진입 시 서버에서 데이터 불러오기
+    LaunchedEffect(categoryName, selectedSort) {
+        val serverCategory = category?.primaryServerValue
+        vm.reset()
+        vm.loadClubs(category = serverCategory, sortBy = selectedSort.serverValue, reset = true)
+    }
+
+    val listState = rememberLazyListState()
+
+    // ✅ 끝까지 스크롤 시 다음 페이지 로드
+    LaunchedEffect(listState, state.clubs, state.hasNext) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collectLatest { lastVisible ->
+                val lastIndex = state.clubs.lastIndex
+                if (lastVisible != null && lastIndex >= 0 && lastVisible >= lastIndex - 1 && state.hasNext && !state.loading) {
+                    vm.loadNextPage()
+                }
+            }
     }
 
     //Box로 감싸서 드롭다운 메뉴가 LazyColumn 위에 겹쳐 보이게 처리
@@ -46,7 +86,11 @@ fun ClubListScreen(
             item { //상단바
                 TopBar(
                     onBackClick = { navController.navigateUp() },
-                    title = categoryName,
+                    title = when {
+                        categoryName == "전체" -> "전체"
+                        category != null -> category.displayName
+                        else -> categoryName // fallback
+                    },
                     rightIconResId = R.drawable.ic_search,
                     onRightIconClick = { navController.navigate("search") }
                 )
@@ -79,11 +123,11 @@ fun ClubListScreen(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
-            //동아리 카드 리스트 출력
-            items(filteredClubs.size) { index ->
+            // ✅ 서버에서 불러온 club 리스트
+            items(state.clubs) { clubDto ->
                 ClubCard(
-                    club = filteredClubs[index],
-                    onClick = { navController.navigate("promotion")}
+                    club = clubDto.toClub(),
+                    onClick = { navController.navigate("promotion/${clubDto.id}") }
                 )
             }
 
@@ -117,7 +161,7 @@ fun ClubListScreen(
                         verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        listOf("즐겨찾기", "모집중", "기본").forEach { option ->
+                        listOf(SortOption.LIKE, SortOption.STATUS, SortOption.NAME).forEach { option ->
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -133,22 +177,4 @@ fun ClubListScreen(
             }
         }
     }
-}
-
-
-fun String.toClubCategoryOrNull(): ClubCategory? = when (this) {
-    "교양학술" -> ClubCategory.ACADEMIC
-    "취미전시" -> ClubCategory.HOBBY
-    "체육" -> ClubCategory.SPORTS
-    "종교" -> ClubCategory.RELIGION
-    "봉사" -> ClubCategory.VOLUNTEER
-    "문화" -> ClubCategory.CULTURE
-    else -> null
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ClubListScreenPreview() {
-    val navController = rememberNavController()
-    ClubListScreen(navController = navController)
 }

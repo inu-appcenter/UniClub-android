@@ -19,23 +19,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.appcenter.uniclub.model.Club
-import com.appcenter.uniclub.model.RecruitStatus
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
+import coil.compose.AsyncImage
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.model.Club
 import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
 @Composable
 fun ClubCard(club: Club, onClick: () -> Unit) {
     //즐겨찾기 상태 기억
-    var isLiked by remember { mutableStateOf(false) }
+    var isLiked by remember { mutableStateOf(club.favorite) }
 
     //카드 컨테이너
     Box(
@@ -50,7 +49,7 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxSize() //Box 전체 채우기
+                .fillMaxSize()
                 .clip(RoundedCornerShape(28.dp))
         )
 
@@ -62,25 +61,27 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                 .figmaPadding(startPx = 20f, endPx = 30f)
         ) {
             //동아리 프로필 이미지 영역
-            //기본 이미지 여부 판단
-            val isDefaultImage = club.imageResId == null || club.imageResId == R.drawable.default_image
-
-            Image(
-                painter = painterResource(id = club.imageResId ?: R.drawable.default_image),
-                contentDescription = null,
-                modifier = if (isDefaultImage) {
-                    Modifier
-                        .figmaSize(widthPx = 54f, heightPx = 59f) //기본 이미지일 때 더 큰 사이즈
-                        .offset(y = 4.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                } else {
-                    Modifier
-                        .figmaSize(widthPx = 54f, heightPx = 53f) //일반 동아리 이미지
-                        .clip(RoundedCornerShape(20.dp))
-                },
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.BottomCenter
-            )
+            if (club.profileUrl.isNullOrBlank()) {
+                // 기본 이미지
+                Image(
+                    painter = painterResource(id = R.drawable.default_image),
+                    contentDescription = "기본 프로필",
+                    modifier = Modifier
+                        .figmaSize(widthPx = 54f, heightPx = 59f)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // 서버에서 불러온 이미지
+                AsyncImage(
+                    model = club.profileUrl,
+                    contentDescription = "동아리 프로필",
+                    modifier = Modifier
+                        .figmaSize(widthPx = 54f, heightPx = 53f)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
             Spacer(modifier = Modifier.width(20.dp))
 
@@ -92,9 +93,7 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.Top
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text( //동아리 이름
                             text = club.name,
                             fontSize = figmaTextSizeSp(14f),
@@ -107,16 +106,24 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
 
                         Spacer(modifier = Modifier.width(7.dp))
 
-                        Image( //카테고리 이미지
-                            painter = painterResource(id = club.category.getIconRes()),
-                            contentDescription = club.category.toDisplayName(),
+                        //카테고리 이미지
+                        val categoryRes = when (club.category) {
+                            ClubCategory.ACADEMIC -> R.drawable.academic
+                            ClubCategory.HOBBY -> R.drawable.hobby
+                            ClubCategory.SPORTS -> R.drawable.sports
+                            ClubCategory.RELIGION -> R.drawable.religion
+                            ClubCategory.VOLUNTEER -> R.drawable.volunteer
+                            ClubCategory.CULTURE -> R.drawable.culture
+                        }
+                        Image(
+                            painter = painterResource(id = categoryRes),
+                            contentDescription = club.category.displayName,
                             contentScale = ContentScale.FillBounds,
-                            modifier = Modifier
-                                .scale(1.1f)
+                            modifier = Modifier.scale(1.1f)
                         )
                     }
                     Text( //추가정보
-                        text = club.description,
+                        text = club.info,
                         fontSize = figmaTextSizeSp(9f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
@@ -157,16 +164,17 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.weight(1f))
 
                 //모집 상태에 따른 이미지 설정
-                val statusImageRes = when (club.isRecruiting) {
-                    RecruitStatus.RECRUITING -> R.drawable.label_recruiting
-                    RecruitStatus.UPCOMING -> R.drawable.label_upcoming
-                    RecruitStatus.CLOSED -> R.drawable.label_closed
+                val statusImageRes = when (club.status) {
+                    "ACTIVE" -> R.drawable.label_recruiting
+                    "SCHEDULED" -> R.drawable.label_upcoming
+                    "CLOSED" -> R.drawable.label_closed
+                    else -> R.drawable.label_closed
                 }
                 //모집 상태에 따라 사이즈 조정
-                val statusModifier = if (club.isRecruiting == RecruitStatus.RECRUITING) {
+                val statusModifier = if (club.status == "ACTIVE") {
                     Modifier
-                        .figmaSize(widthPx = 46f, heightPx = 31f) // 모집중일 때 더 큼
-                        .padding(bottom = 6.dp) // 아래 위치 고정
+                        .figmaSize(widthPx = 46f, heightPx = 31f) //모집중일 때 더 큼
+                        .padding(bottom = 6.dp) //아래 위치 고정
                 } else {
                     Modifier
                         .figmaSize(widthPx = 43f, heightPx = 28f)
@@ -181,37 +189,4 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
             }
         }
     }
-}
-
-fun ClubCategory.toDisplayName(): String = when (this) {
-    ClubCategory.ACADEMIC -> "교양학술"
-    ClubCategory.HOBBY -> "취미전시"
-    ClubCategory.SPORTS -> "체육"
-    ClubCategory.RELIGION -> "종교"
-    ClubCategory.VOLUNTEER -> "봉사"
-    ClubCategory.CULTURE -> "문화"
-}
-
-fun ClubCategory.getIconRes(): Int = when (this) {
-    ClubCategory.ACADEMIC -> R.drawable.academic
-    ClubCategory.HOBBY -> R.drawable.hobby
-    ClubCategory.SPORTS -> R.drawable.sports
-    ClubCategory.RELIGION -> R.drawable.religion
-    ClubCategory.VOLUNTEER -> R.drawable.volunteer
-    ClubCategory.CULTURE -> R.drawable.culture
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ClubCardPreview() {
-    val sampleClub = Club(
-        name = "appcenter",
-        description = "앱 개발 동아리",
-        isRecruiting = RecruitStatus.RECRUITING,
-        isLiked = true,
-        category = ClubCategory.ACADEMIC,
-        imageResId = R.drawable.club1
-    )
-
-    ClubCard(club = sampleClub, onClick = {})
 }
