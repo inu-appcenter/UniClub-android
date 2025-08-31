@@ -35,20 +35,39 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.network.dto.toClub
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import kotlin.collections.firstOrNull
+import androidx.lifecycle.ViewModelProvider
+import com.appcenter.uniclub.di.ServiceLocator
+
 
 @Composable
-fun SearchScreen(navController: NavHostController, vm: SearchViewModel = viewModel()) {
+fun SearchScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    val app = remember { context.applicationContext as App }
+    val repo = remember(app) { ServiceLocator.searchRepository(app) }
+
+    val vm: SearchViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return SearchViewModel(repo) as T
+            }
+        }
+    )
+
     var query by remember { mutableStateOf("") } //검색어 상태를 저장
 
     val results by vm.results.collectAsState()
