@@ -43,8 +43,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //사용자용 홍보 페이지
 @Composable
