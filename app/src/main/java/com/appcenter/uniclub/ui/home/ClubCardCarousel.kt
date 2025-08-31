@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -32,10 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
@@ -49,28 +54,28 @@ import kotlinx.coroutines.delay
 //추후 서버 연동 후 랜덤 값 불러오기, 새로고침 기능 등 추가해야함
 @Composable
 fun ClubCardCarousel(
-    fullList: List<Pair<Int, String>>,
-    navController: NavHostController
+    navController: NavHostController,
+    vm: ClubCarouselViewModel = viewModel()
 ) {
-    var clubList by remember { mutableStateOf(fullList.shuffled()) }
-    var isRefreshing by remember { mutableStateOf(false) }
+    val state by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    val visibleClubs = clubList.take(6)
-    val displayList: List<Pair<Int, String>?> = visibleClubs + listOf(null) // 마지막 null은 로딩 카드
+    //화면에 보여줄 리스트(마지막 null은 로딩 카드)
+    val displayList = remember(state.clubs, state.isRefreshing) {
+        state.clubs + listOf(null)
+    }
 
-    // 마지막 아이템 도달 감지
-    LaunchedEffect(listState, clubList) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                val lastIndex = visibleItems.lastOrNull()?.index
-                if (!isRefreshing && lastIndex == displayList.lastIndex) {
-                    isRefreshing = true
+    // 마지막 아이템 도달 감지 → API 재호출
+    LaunchedEffect(listState, state.isRefreshing, state.clubs) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex == displayList.lastIndex && !state.isRefreshing) {
+                    vm.refresh()
+                    // 네트워크 직후 스크롤 맨 앞으로
                     coroutineScope.launch {
-                        delay(1000L)
-                        clubList = fullList.shuffled()
-                        isRefreshing = false
+                        // 한 프레임 양보 후 스크롤
+                        kotlinx.coroutines.yield()
                         listState.scrollToItem(0)
                     }
                 }
@@ -86,23 +91,22 @@ fun ClubCardCarousel(
         contentPadding = PaddingValues(start = startPadding.dp),
         horizontalArrangement = Arrangement.spacedBy(spacing.dp) //카드 간 간격
     ) {
-        items(displayList) { pair ->
-            if (pair == null) {
+        items(displayList) { item ->
+            if (item == null) {
                 // 새로고침 아이콘
                 Box(
-                    modifier = Modifier
-                        .figmaSize(widthPx = 136f, heightPx = 206f),
+                    modifier = Modifier.figmaSize(widthPx = 136f, heightPx = 206f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(strokeWidth = 2.dp)
+                    if (state.isRefreshing) CircularProgressIndicator(strokeWidth = 2.dp)
                 }
             } else {
                 ClubCard(
-                    imageResId = pair.first,
-                    clubName = pair.second,
-                    onClick = {
-                        navController.navigate("promotion")
-                    })
+                    imageUrl = item.imageUrl,
+                    clubName = item.name,
+                    isFavorite = item.favorite,
+                    onClick = { navController.navigate("promotion") }
+                )
             }
         }
     }
@@ -110,12 +114,13 @@ fun ClubCardCarousel(
 
 @Composable
 fun ClubCard(
-    imageResId: Int,
+    imageUrl: String,
     clubName: String,
+    isFavorite: Boolean,
     onClick: () -> Unit
 ) {
     //좋아요 상태 기억
-    var isLiked by remember { mutableStateOf(false) }
+    var isLiked by remember { mutableStateOf(isFavorite) }
 
     Box(
         modifier = Modifier
@@ -123,8 +128,11 @@ fun ClubCard(
             .clip(RoundedCornerShape(17.dp)) //모서리
             .clickable { onClick() }
     ) {
-        Image(
-            painter = painterResource(id = imageResId),
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
+                .crossfade(true)
+                .build(),
             contentDescription = clubName,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
