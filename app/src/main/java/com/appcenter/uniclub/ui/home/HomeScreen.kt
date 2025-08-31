@@ -16,26 +16,23 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.appcenter.uniclub.R
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.em
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.App
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.model.getIconRes
@@ -51,29 +48,34 @@ fun HomeScreen(
     navController: NavHostController,
     rootNavController: NavHostController,
     app: App = LocalContext.current.applicationContext as App,
-    viewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(ServiceLocator.mainRepository(app)) as T
-            }
-        }
-    ),
     notificationViewModel: NotificationViewModel
 ) {
-    val bannerList by viewModel.bannerList.collectAsState()
+    val homeVm: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(ServiceLocator.mainRepository(app))
+    )
+    val clubVm: ClubCarouselViewModel = viewModel(
+        factory = ClubCarouselViewModelFactory(ServiceLocator.mainRepository(app))
+    )
+
+    val bannerList by homeVm.bannerList.collectAsState()          // 로컬 fallback
+    val remoteBanner by homeVm.remoteBanner.collectAsState()       // 서버 배너
     val hasUnread by notificationViewModel.hasUnread.collectAsState()
 
     LazyColumn(modifier = modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars)
+        .fillMaxSize()
+        .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread) }
 
         item {
             if (bannerList.isNotEmpty()) { //서버에서 이미지가 왔을 때
-                EventImageCarousel(eventList = bannerList)
+                EventImageCarousel(eventList = remoteBanner.map { it.mediaLink } as List<Any>)
             } else { //서버에서 이미지가 없을 때 → 로컬 기본 이미지 사용
-                EventImageCarousel(eventList = listOf(R.drawable.event_default))
+                val localList: List<Int> =
+                    if (bannerList.isNotEmpty()) bannerList else listOf(R.drawable.event_default)
+                EventImageCarousel(
+                    eventList = localList as List<Any>
+                )
             }
         }
 
@@ -83,26 +85,13 @@ fun HomeScreen(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            //예시 이미지 넣어둠 나중에 서버 연결 필요
-            val sampleClubs = listOf(
-                R.drawable.club1 to "IUDC",
-                R.drawable.club2 to "하양검정",
-                R.drawable.club3 to "기우회",
-                R.drawable.club1 to "appcenter",
-                R.drawable.club2 to "봉사동아리",
-                R.drawable.club3 to "크레퍼스(CREPERS)",
-                R.drawable.club1 to "멋쟁이사자처럼"
-            )
-            ClubCardCarousel(fullList = sampleClubs, navController = navController)
+            ClubCardCarousel(navController = navController, vm = clubVm)
         }
 
         item {
-            CategorySection(
-                navController = navController,
-                onCategoryClick = { category ->
-                //카테고리 클릭 시 ClubList로 이동
-                navController.navigate("clublist/${category}")
-            })
+            CategorySection(navController = navController) { category ->
+                navController.navigate("clublist/$category")
+            }
         }
 
         item {

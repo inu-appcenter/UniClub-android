@@ -5,6 +5,7 @@ import com.appcenter.uniclub.data.ClubRepository
 import com.appcenter.uniclub.data.MainRepository
 import com.appcenter.uniclub.data.NotificationRepository
 import com.appcenter.uniclub.data.ProfileRepository
+import com.appcenter.uniclub.data.SearchRepository
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.ApiClient
 import com.appcenter.uniclub.network.ClubService
@@ -12,6 +13,7 @@ import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.MainService
 import com.appcenter.uniclub.network.NotificationService
 import com.appcenter.uniclub.network.ProfileService
+import com.appcenter.uniclub.network.SearchService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.jvm.java
@@ -54,12 +56,15 @@ object ServiceLocator {
         )
     }
 
-    fun mainRepository(app: App): MainRepository {
+    fun mainService(app: App): MainService {
         val retrofit = ApiClient.createRetrofit {
             runBlocking { app.tokenStore.authHeaderFlow.first() }
         }
-        val api = retrofit.create(MainService::class.java)
-        return MainRepository(api)
+        return retrofit.create(MainService::class.java)
+    }
+
+    fun mainRepository(app: App): MainRepository {
+        return MainRepository(mainService(app))
     }
 
     fun clubRepository(app: App): ClubRepository {
@@ -76,5 +81,13 @@ object ServiceLocator {
         }
         val api = retrofit.create(NotificationService::class.java)
         return NotificationRepository(api)
+    }
+
+    fun searchRepository(app: App): SearchRepository {
+        val retrofit = ApiClient.createRetrofit {
+            runBlocking { app.tokenStore.authHeaderFlow.first() }
+        }
+        val api = retrofit.create(SearchService::class.java)
+        return SearchRepository(api) // ← SearchRepository(SearchService) 생성자 형태
     }
 }
