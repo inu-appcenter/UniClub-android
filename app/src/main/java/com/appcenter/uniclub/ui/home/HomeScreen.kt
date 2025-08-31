@@ -37,11 +37,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.model.ClubCategory
+import com.appcenter.uniclub.model.getIconRes
 import com.appcenter.uniclub.ui.notification.NotificationViewModel
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.ui.util.figmaPadding
-import com.appcenter.uniclub.ui.util.figmaSize
-import com.appcenter.uniclub.ui.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
 
 @Composable
 fun HomeScreen(
@@ -71,7 +73,7 @@ fun HomeScreen(
             if (bannerList.isNotEmpty()) { //서버에서 이미지가 왔을 때
                 EventImageCarousel(eventList = bannerList)
             } else { //서버에서 이미지가 없을 때 → 로컬 기본 이미지 사용
-                EventImageCarousel(eventList = listOf(R.drawable.event_sample))
+                EventImageCarousel(eventList = listOf(R.drawable.event_default))
             }
         }
 
@@ -127,7 +129,7 @@ fun RecommendTitle() {
 @Composable
 fun CategorySection(
     navController: NavHostController,
-    onCategoryClick: (String) -> Unit
+    onCategoryClick: (ClubCategory) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         //상단: '카테고리' 제목 + '전체보기' 버튼
@@ -162,14 +164,7 @@ fun CategorySection(
             )
         }
 
-        val categories = listOf(
-            "교양학술" to R.drawable.ic_category_academic,
-            "취미전시" to R.drawable.ic_category_hobby,
-            "체육" to R.drawable.ic_category_sports,
-            "종교" to R.drawable.ic_category_religion,
-            "봉사" to R.drawable.ic_category_volunteer,
-            "문화" to R.drawable.ic_category_culture
-        )
+        val categories = ClubCategory.values()
 
         //카테고리 버튼 배치
         LazyVerticalGrid(
@@ -182,11 +177,12 @@ fun CategorySection(
             horizontalArrangement = Arrangement.spacedBy(38.dp), //가로간격
             verticalArrangement = Arrangement.spacedBy(12.dp) //세로간격
         ) {
-            items(categories) { (label, icon) ->
+            items(categories) { category ->
+                val iconRes = category.getIconRes()
                 CategoryItem(
-                    label = label,
-                    iconResId = icon,
-                    onClick = { selectedLabel -> onCategoryClick(selectedLabel) }
+                    label = category.displayName,
+                    iconResId = iconRes,
+                    onClick = { onCategoryClick(category) }
                 )
             }
         }
@@ -196,21 +192,22 @@ fun CategorySection(
 @Composable
 fun CategoryItem(
     label: String,
-    iconResId: Int,
-    onClick: (String) -> Unit) {
-
+    iconResId: Int?,
+    onClick: () -> Unit
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.wrapContentHeight()
     ) {
-        Image(
-            painter = painterResource(id = iconResId),
-            contentDescription = label,
-            modifier = Modifier
-                .figmaSize(widthPx = 80f, heightPx = 60.4f)
-                .clickable { onClick(label) }
-        )
-
+        if (iconResId != null) {
+            Image(
+                painter = painterResource(id = iconResId),
+                contentDescription = label,
+                modifier = Modifier
+                    .figmaSize(widthPx = 80f, heightPx = 60.4f)
+                    .clickable { onClick() }
+            )
+        }
         Spacer(modifier = Modifier.height(5.dp))
 
         Text(

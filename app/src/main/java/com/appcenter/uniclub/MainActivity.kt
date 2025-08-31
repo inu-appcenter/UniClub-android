@@ -1,7 +1,6 @@
 package com.appcenter.uniclub
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.di.ServiceLocator.userService
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.components.BottomNavigationBar
@@ -57,9 +57,7 @@ import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
 class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
         NotificationViewModelFactory(
-            ServiceLocator.authService(application as App).let { authService ->
-                UserRepository(authService, (application as App).tokenStore)
-            }
+            ServiceLocator.notificationRepository(application as App)
         )
     }
 
@@ -70,8 +68,7 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContent {
             val app = application as App
-            val authService = ServiceLocator.authService(app) // AuthService 생성
-            val repo = UserRepository(authService, app.tokenStore) // Repository 생성
+            val repo = ServiceLocator.userRepository(app)
             UniClubTheme {
                 val navController = rememberNavController()
                 NavHost(
@@ -121,7 +118,6 @@ class MainActivity : ComponentActivity() {
                             AgreementScreen(
                                 onBack = { navController.popBackStack() },
                                 onFinished = {
-                                    Log.d("AgreementScreen", "✅ onFinished 호출됨")
                                     navController.navigate("login") {
                                         popUpTo("signup") { inclusive = true }
                                     }
@@ -149,15 +145,14 @@ class MainActivity : ComponentActivity() {
                             onBackToNotification = {
                                 navController.popBackStack("notification", false)
                             },
-                            notificationVm = notificationVm,
-                            repo = repo
+                            notificationVm = notificationVm
                         )
                     }
 
                     composable("qna") { QnAScreen(navController = navController) }
 
                     composable("main") {
-                            MainScaffold(navController, startDestination = "home", notificationVm = notificationVm, repo = repo)
+                            MainScaffold(navController, startDestination = "home", notificationVm = notificationVm)
                     }
                 }
             }
@@ -170,8 +165,7 @@ fun MainScaffold(
     rootNavController: NavHostController,
     startDestination: String,
     onBackToNotification: (() -> Unit)? = null,
-    notificationVm: NotificationViewModel,
-    repo: UserRepository
+    notificationVm: NotificationViewModel
 ) {
     val bottomNavController = rememberNavController()
 
@@ -188,7 +182,11 @@ fun MainScaffold(
                     ) {
                         composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
-                        composable("alarmSetting") { AlarmSettingScreen(navController = bottomNavController, repository = repo) }
+                        composable("alarmSetting") {
+                            val app = rootNavController.context.applicationContext as App
+                            val notificationRepo = ServiceLocator.notificationRepository(app)
+                            AlarmSettingScreen(navController = bottomNavController, repository = notificationRepo)
+                        }
                         composable("profileEdit") { ProfileEditScreen(navController = bottomNavController) }
                         composable("inquiry") { InquiryScreen(navController = bottomNavController) }
                         composable("terms") { TermsScreen(navController = bottomNavController) }
