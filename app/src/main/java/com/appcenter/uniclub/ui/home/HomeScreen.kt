@@ -54,7 +54,10 @@ fun HomeScreen(
         factory = HomeViewModelFactory(ServiceLocator.mainRepository(app))
     )
     val clubVm: ClubCarouselViewModel = viewModel(
-        factory = ClubCarouselViewModelFactory(ServiceLocator.mainRepository(app))
+        factory = ClubCarouselViewModelFactory(
+            mainRepo = ServiceLocator.mainRepository(app),
+            clubRepo = ServiceLocator.clubRepository(app)
+        )
     )
 
     val bannerList by homeVm.bannerList.collectAsState()          // 로컬 fallback

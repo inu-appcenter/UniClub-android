@@ -41,10 +41,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -55,7 +57,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun ClubCardCarousel(
     navController: NavHostController,
-    vm: ClubCarouselViewModel = viewModel()
+    vm: ClubCarouselViewModel
 ) {
     val state by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -105,7 +107,8 @@ fun ClubCardCarousel(
                     imageUrl = item.imageUrl,
                     clubName = item.name,
                     isFavorite = item.favorite,
-                    onClick = { navController.navigate("promotion") }
+                    onClick = { navController.navigate("promotion") },
+                    onToggleFavorite = { vm.onFavoriteClick(item.clubId) }
                 )
             }
         }
@@ -117,11 +120,9 @@ fun ClubCard(
     imageUrl: String,
     clubName: String,
     isFavorite: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit
 ) {
-    //좋아요 상태 기억
-    var isLiked by remember { mutableStateOf(isFavorite) }
-
     Box(
         modifier = Modifier
             .figmaSize(widthPx = 136f, heightPx = 206f)
@@ -161,20 +162,20 @@ fun ClubCard(
                 modifier = Modifier
                     .figmaSize(widthPx = 28f, heightPx = 28f) //고정 박스 크기
                     .figmaPadding(endPx = 14f) //오른쪽 여백
-                    .clickable { isLiked = !isLiked },
+                    .clickable { onToggleFavorite() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(
-                        id = if (isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
+                        id = if (isFavorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
                     ),
-                    contentDescription = if (isLiked) "즐겨찾기 취소" else "즐겨찾기",
+                    contentDescription = if (isFavorite) "즐겨찾기 취소" else "즐겨찾기",
                     modifier = Modifier
                         .fillMaxSize()
-                        .scale(if (isLiked) 1.6f else 1f) //빨간 하트 확대
+                        .scale(if (isFavorite) 1.6f else 1f) //빨간 하트 확대
                         .offset( //빨간 하트 위치조정
-                            x = if (isLiked) (-0.5).dp else 0.dp,
-                            y = if (isLiked) (-0.5).dp else 0.dp)
+                            x = if (isFavorite) (-0.5).dp else 0.dp,
+                            y = if (isFavorite) (-0.5).dp else 0.dp)
                 )
             }
         }

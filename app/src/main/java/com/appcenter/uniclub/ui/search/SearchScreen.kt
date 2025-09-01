@@ -208,7 +208,8 @@ fun SearchScreen(navController: NavHostController) {
                 items(results) { clubDto ->
                     ClubCard(
                         club = clubDto.toClub(),
-                        onClick = { navController.navigate("promotion/${clubDto.id}") }
+                        onClick = { navController.navigate("promotion/${clubDto.id}") },
+                        onToggleFavorite = { vm.onFavoriteClick(clubDto.id) }
                     )
                 }
                 item { Spacer(modifier = Modifier.height(70.dp)) }

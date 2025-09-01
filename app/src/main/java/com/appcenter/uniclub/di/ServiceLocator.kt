@@ -13,7 +13,6 @@ import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.MainService
 import com.appcenter.uniclub.network.NotificationService
 import com.appcenter.uniclub.network.ProfileService
-import com.appcenter.uniclub.network.SearchService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.jvm.java
@@ -87,7 +86,7 @@ object ServiceLocator {
         val retrofit = ApiClient.createRetrofit {
             runBlocking { app.tokenStore.authHeaderFlow.first() }
         }
-        val api = retrofit.create(SearchService::class.java)
+        val api = retrofit.create(ClubService::class.java)
         return SearchRepository(api) // ← SearchRepository(SearchService) 생성자 형태
     }
 }
