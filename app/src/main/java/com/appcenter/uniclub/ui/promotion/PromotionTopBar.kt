@@ -97,16 +97,3 @@ fun PromotionTopBar(
         }
     }
 }
-
-@Preview(showBackground = false)
-@Composable
-fun PromotionTopBarPreview() {
-    var isLiked by remember { mutableStateOf(false) }
-    PromotionTopBar(
-        isLiked = isLiked,
-        onBackClick = {},
-        onLikeClick = { isLiked = !isLiked },
-        showEdit = true,
-        onEditClick = { /* TODO: 이동/다이얼로그 등 */ }
-    )
-}

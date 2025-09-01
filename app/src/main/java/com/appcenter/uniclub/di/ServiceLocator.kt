@@ -15,9 +15,18 @@ import com.appcenter.uniclub.network.NotificationService
 import com.appcenter.uniclub.network.ProfileService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import kotlin.jvm.java
 
 object ServiceLocator {
+    private fun s3OkHttp(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+
     // AuthService 인스턴스 생성
     fun userService(app: App): UserService {
         val retrofit = ApiClient.createRetrofit {
@@ -66,13 +75,20 @@ object ServiceLocator {
         return MainRepository(mainService(app))
     }
 
-    fun clubRepository(app: App): ClubRepository {
+    fun clubService(app: App): ClubService {
         val retrofit = ApiClient.createRetrofit {
+            // 로그인 토큰을 헤더에 싣기
             runBlocking { app.tokenStore.authHeaderFlow.first() }
         }
-        val api = retrofit.create(ClubService::class.java)
-        return ClubRepository(api)
+        return retrofit.create(ClubService::class.java)
     }
+
+    fun clubRepository(app: App): ClubRepository =
+        ClubRepository(
+            service = clubService(app),
+            okHttp = s3OkHttp(),
+            app = app
+        )
 
     fun notificationRepository(app: App): NotificationRepository {
         val retrofit = ApiClient.createRetrofit {

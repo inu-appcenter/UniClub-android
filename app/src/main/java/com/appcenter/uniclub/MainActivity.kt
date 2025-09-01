@@ -27,9 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.di.ServiceLocator
-import com.appcenter.uniclub.di.ServiceLocator.userService
 import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.components.BottomNavigationBar
@@ -53,6 +51,7 @@ import com.appcenter.uniclub.ui.signup.AgreementScreen
 import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
@@ -200,7 +199,11 @@ fun MainScaffold(
                             val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
                             ClubListScreen(navController = bottomNavController, categoryName = category)
                         }
-                        composable("promotion") {
+                        composable("promotion/{clubId}", arguments = listOf(navArgument("clubId") { type = NavType.LongType })
+                        ) {backStackEntry ->
+                            val clubId = backStackEntry.arguments?.getLong("clubId")!!
+                            val app = (LocalContext.current.applicationContext as App)
+
                             UserPromotionScreen(
                                 navController = bottomNavController,
                                 onBackClick = {
@@ -211,7 +214,9 @@ fun MainScaffold(
                                         // 홈/클럽리스트에서 들어왔을 때
                                         bottomNavController.popBackStack()
                                     }
-                                }
+                                },
+                                clubId = clubId,
+                                app = app
                             )
                         }
                         composable("admin_promotion") { AdminPromotionScreen(navController = bottomNavController) }

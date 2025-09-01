@@ -33,3 +33,9 @@ fun ClubResponseDto.toClub(): Club {
 data class ToggleFavoriteResponseDto(
     val message: String
 )
+
+data class ClubMediaUploadRequestDto(
+    val mediaLink: String,
+    val mediaType: String,
+    val main: Boolean
+)
