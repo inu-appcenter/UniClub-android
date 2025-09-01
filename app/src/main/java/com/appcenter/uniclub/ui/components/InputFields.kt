@@ -57,7 +57,6 @@ fun UnderlineInputField(
                 fontSize = 15.sp,
                 fontFamily = NotoSansKR,
                 lineHeight = 15.sp * 1.5f,
-                letterSpacing = (-0.011).em,
                 color = if (enabled) Color.Black else Color.Gray
             ),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
