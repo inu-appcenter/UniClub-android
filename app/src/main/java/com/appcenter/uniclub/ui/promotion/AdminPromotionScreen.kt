@@ -57,6 +57,7 @@ import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import org.burnoutcrew.reorderable.ReorderableItem
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
@@ -67,80 +68,32 @@ import java.util.UUID
 //SNS 플랫폼 구분
 private enum class Platform { APPLY, YOUTUBE, INSTAGRAM }
 
-//활동 사진 캐러셀의 각 아이템 모델
-data class ImageSlot(
-    val id: String = UUID.randomUUID().toString(), //절대 변하지 않는 식별자
-    val uri: Uri //실제 이미지 리소스를 가리키는 Uri
-)
-//리스트 내 아이템 순서 변경 헬퍼
-//from 위치의 요소를 제거하고 to 위치에 그대로 삽입
-private fun <T> MutableList<T>.move(from: Int, to: Int) {
-    if (from == to) return
-    add(to, removeAt(from))
-}
-
 @Composable
-fun AdminPromotionScreen(navController: NavHostController) {
-    //서버 연동 전 임시 화면 상태
-    var bannerUri by remember { mutableStateOf<Uri?>(null) } //상단 배너
-    var profileUri by remember { mutableStateOf<Uri?>(null) } //프로필
-    var isRecruiting by remember { mutableStateOf(true) } //모집중 토글
-    var intro by remember { mutableStateOf("") } //한줄 소개
+fun AdminPromotionScreen(
+    navController: NavHostController,
+    vm: AdminPromotionViewModel = viewModel()
+) {
+    val ui by vm.ui.collectAsState()
 
-    //포토 피커 런처들
+    // 링크 다이얼로그 상태 (화면 지역 상태로 OK)
+    var showLinkDialog by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<Platform?>(null) }
+    var tempLink by remember { mutableStateOf("") }
+
     val bannerPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) bannerUri = uri }
+    ) { uri -> if (uri != null) vm.uploadBanner(uri) }
 
     val profilePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) profileUri = uri }
+    ) { uri -> if (uri != null) vm.uploadProfile(uri) }
 
-    //SNS 링크 저장용
-    var applyLink by remember { mutableStateOf("") }
-    var youtubeLink by remember { mutableStateOf("") }
-    var instagramLink by remember { mutableStateOf("") }
-    var showLinkDialog by remember { mutableStateOf(false) } //다이얼로그 표시 여부
-    var editingLink by remember { mutableStateOf<Platform?>(null) } //어떤 SNS를 편집중인지
-    var tempLink by remember { mutableStateOf("") } //다이얼로그 입력 임시값
-    //http/https 빠진 경우 자동으로 https:// 붙여줌
-    fun normalizeUrl(raw: String): String {
-        val t = raw.trim()
-        return if (t.isNotEmpty() && !t.startsWith("http://") && !t.startsWith("https://")) {
-            "https://$t"
-        } else t
-    }
-    fun isValidUrl(raw: String): Boolean =
-        Patterns.WEB_URL.matcher(normalizeUrl(raw)).matches()
-
-    var clubRoom by remember { mutableStateOf("") } //동아리방
-    var leaderName by remember { mutableStateOf("") } //회장명
-    var contact by remember { mutableStateOf("") } //연락처
-
-    var recruitPeriod by remember { mutableStateOf("") } //모집기간
-    var noticeText   by remember { mutableStateOf("") } //공지
-
-    var clubDescription by remember { mutableStateOf("") } //동아리 소개
-
-    //활동 이미지 리스트 상태
-    var activityImages by remember { mutableStateOf<List<ImageSlot>>(emptyList()) }
-    //어떤 슬롯을 탭했는지 기억, 포토 피커 콜백에서 교체/추가에 사용
     var selectedSlotIndex by remember { mutableStateOf<Int?>(null) }
-    //활동 이미지 추가,교체용 포토 피커 런처
-    val imagePicker = rememberLauncherForActivityResult(
+    val activityPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        val i = selectedSlotIndex
-        //사용자가 이미지를 고르고, 어느 슬롯을 눌렀는지 정보가 있을 때만 처리
-        if (uri != null && i != null) {
-            activityImages = activityImages.toMutableList().apply {
-                if (i < size) { //i가 기존 슬롯 범위 안이면 교체
-                    this[i] = this[i].copy(uri = uri)
-                } else if (size < 10) { //i가 placeholder이고 현재 개수가 10 미만이면 추가
-                    add(ImageSlot(uri = uri))
-                }
-            }
-        }
+        val idx = selectedSlotIndex ?: return@rememberLauncherForActivityResult
+        if (uri != null) vm.uploadActivityAt(idx, uri)
         selectedSlotIndex = null
     }
 
@@ -157,7 +110,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
             Box(modifier = Modifier.height(209.dp)) {
                 //배너 (탭하여 업로드)
                 EditableBanner(
-                    bannerUri = bannerUri,
+                    bannerUri = ui.bannerUri,
                     onClick = {
                         bannerPicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -178,14 +131,13 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_back_white),
                         contentDescription = "Back",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 11f, heightPx = 20f)
+                        modifier = Modifier.figmaSize(widthPx = 11f, heightPx = 20f)
                     )
                 }
 
                 //프로필 이미지
                 EditableProfile(
-                    profileUri = profileUri,
+                    profileUri = ui.profileUri,
                     onClick = {
                         profilePicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -207,8 +159,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
                 modifier = Modifier
                     .size(62.dp, 30.dp)
                     .clickable {
-                        editingLink = Platform.APPLY
-                        tempLink = applyLink
+                        editing = Platform.APPLY
+                        tempLink = ui.applyLink
                         showLinkDialog = true
                     }
             )
@@ -219,8 +171,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     modifier = Modifier
                         .size(30.dp)
                         .clickable {
-                            editingLink = Platform.YOUTUBE //어떤 SNS 편집하는지 저장
-                            tempLink = youtubeLink //기존 값 프리필
+                            editing= Platform.YOUTUBE //어떤 SNS 편집하는지 저장
+                            tempLink = ui.youtubeLink //기존 값 프리필
                             showLinkDialog = true
                         }
                 )
@@ -231,8 +183,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     modifier = Modifier
                         .size(30.dp)
                         .clickable {
-                            editingLink = Platform.INSTAGRAM
-                            tempLink = instagramLink
+                            editing = Platform.INSTAGRAM
+                            tempLink = ui.instagramLink
                             showLinkDialog = true
                         }
                 )
@@ -253,7 +205,7 @@ fun AdminPromotionScreen(navController: NavHostController) {
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text( //동아리명
-                        text = "크레퍼스(CREPERS)",
+                        text = ui.clubName.ifBlank { "동아리명" },
                         color = Color.White,
                         modifier = Modifier.padding(start = 12.dp),
                         fontSize = figmaTextSizeSp(14f),
@@ -268,12 +220,26 @@ fun AdminPromotionScreen(navController: NavHostController) {
 
                 Image( //모집상태
                     painter = painterResource(
-                        id = if (isRecruiting) R.drawable.ic_recruiting else R.drawable.ic_upcoming
+                        id = when (ui.recruitStatus) {
+                            RecruitStatus.ACTIVE -> R.drawable.ic_recruiting
+                            RecruitStatus.SCHEDULED -> R.drawable.ic_upcoming
+                            RecruitStatus.CLOSED -> R.drawable.ic_closed
+                        }
                     ),
-                    contentDescription = if (isRecruiting) "모집중" else "모집예정",
+                    contentDescription = ui.recruitStatus.name,
                     modifier = Modifier
                         .offset(x = (-18).dp)
-                        .clickable { isRecruiting = !isRecruiting }
+                        .clickable {
+                            vm.update {
+                                it.copy(
+                                    recruitStatus = when (it.recruitStatus) {
+                                        RecruitStatus.SCHEDULED -> RecruitStatus.ACTIVE
+                                        RecruitStatus.ACTIVE -> RecruitStatus.CLOSED
+                                        RecruitStatus.CLOSED -> RecruitStatus.SCHEDULED
+                                    }
+                                )
+                            }
+                        }
                 )
             }
 
@@ -287,22 +253,22 @@ fun AdminPromotionScreen(navController: NavHostController) {
             ) {
                 EditableInfoItem(
                     label = "동아리방",
-                    value = clubRoom,
-                    onValueChange = { clubRoom = it },
+                    value = ui.clubRoom,
+                    onValueChange = { v -> vm.update { it.copy(clubRoom = v) } },
                     placeholder = "예) 4호관 107호",
                     modifier = Modifier.width(90.dp)
                 )
                 EditableInfoItem(
                     label = "회장",
-                    value = leaderName,
-                    onValueChange = { leaderName = it },
+                    value = ui.leaderName,
+                    onValueChange = { v -> vm.update { it.copy(leaderName = v) } },
                     placeholder = "예) 홍길동",
                     modifier = Modifier.width(55.dp)
                 )
                 EditableInfoItem(
                     label = "연락처",
-                    value = contact,
-                    onValueChange = { contact = it },
+                    value = ui.contact,
+                    onValueChange = { v -> vm.update { it.copy(contact = v) } },
                     placeholder = "010-1234-5678",
                     phone = true, //숫자,하이픈,공백만 허용 필터링
                     modifier = Modifier.width(100.dp)
@@ -313,8 +279,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
 
             //한줄 소개
             EditableTextShadowBanner(
-                text = intro,
-                onTextChange = { intro = it },
+                text = ui.intro,
+                onTextChange = { v -> vm.update { it.copy(intro = v) } },
                 placeholder = "동아리를 한 줄로 표현해보세요"
             )
 
@@ -330,14 +296,14 @@ fun AdminPromotionScreen(navController: NavHostController) {
                 //서버 연결 후 날짜 형식 수정 필요해 보임
                 EditableAnnouncementItem(
                     label = "모집기간",
-                    value = recruitPeriod,
-                    onValueChange = { recruitPeriod = it },
-                    placeholder = "예) 7월 16일 ~ 24일 오후 6시"
+                    value = ui.recruitPeriod,
+                    onValueChange = { v -> vm.update { it.copy(recruitPeriod = v) } },
+                    placeholder = "YYYY-MM-DD HH:mm ~ YYYY-MM-DD HH:mm"
                 )
                 EditableAnnouncementItem(
                     label = "공지",
-                    value = noticeText,
-                    onValueChange = { noticeText = it },
+                    value = ui.noticeText,
+                    onValueChange = { v -> vm.update { it.copy(noticeText = v) } },
                     placeholder = "예) 25일 동아리실 출입금지"
                 )
             }
@@ -348,8 +314,8 @@ fun AdminPromotionScreen(navController: NavHostController) {
 
             //동아리 설명
             EditableClubDescription(
-                text = clubDescription,
-                onTextChange = { clubDescription = it },
+                text = ui.clubDescription,
+                onTextChange = { v -> vm.update { it.copy(clubDescription = v) } },
                 placeholder =  "동아리 소개글을 작성해보세요"
             )
 
@@ -369,22 +335,16 @@ fun AdminPromotionScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(7.dp))
 
             RepresentativeImagesCarousel(
-                images = activityImages,
+                images = ui.activityImages,
                 onPickAt = { index ->
                     //슬롯을 탭하면 해당 인덱스 저장, 이미지 피커 실행
                     selectedSlotIndex = index
-                    imagePicker.launch(
+                    activityPicker.launch(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
                 },
-                onRemoveAt = { index ->
-                    //삭제: 해당 인덱스를 제외한 새 리스트 생성
-                    activityImages = activityImages.filterIndexed { i, _ -> i != index }
-                },
-                onReorder = { from, to ->
-                    //드래그 중 위치 교차될 때마다 즉시 리스트 갱신(실시간 재배치)
-                    activityImages = activityImages.toMutableList().apply { move(from, to) }
-                },
+                onRemoveAt = { index -> vm.removeActivityAt(index) },
+                onReorder = { from, to -> vm.reorderActivity(from, to) },
                 placeholderRes = R.drawable.img_rep_placeholder
             )
 
@@ -395,10 +355,10 @@ fun AdminPromotionScreen(navController: NavHostController) {
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ){
-                ImageButtonItem(
-                    imageRes = R.drawable.btn_save,
+                Image(
+                    painter = painterResource(id = R.drawable.btn_save),
                     contentDescription = "저장하기",
-                    onClick = { /* TODO: 저장하기 기능 */ }
+                    modifier = Modifier.clickable { vm.save() }
                 )
             }
 
@@ -414,16 +374,19 @@ fun AdminPromotionScreen(navController: NavHostController) {
                 placeholder = "http:// or https://",
                 onBack = { showLinkDialog = false },
                 onDone = {
-                    val final = normalizeUrl(tempLink)
-                    when (editingLink) {
-                        Platform.APPLY -> applyLink = final
-                        Platform.YOUTUBE -> youtubeLink = final
-                        Platform.INSTAGRAM -> instagramLink = final
-                        else -> {}
+                    fun normalize(raw: String) = raw.trim().let {
+                        if (it.isNotEmpty() && !it.startsWith("http://") && !it.startsWith("https://")) "https://$it" else it
+                    }
+                    val v = normalize(tempLink)
+                    when (editing) {
+                        Platform.APPLY -> vm.update { it.copy(applyLink = v) }
+                        Platform.YOUTUBE -> vm.update { it.copy(youtubeLink = v) }
+                        Platform.INSTAGRAM -> vm.update { it.copy(instagramLink = v) }
+                        null -> {}
                     }
                     showLinkDialog = false
                 },
-                doneEnabled = isValidUrl(tempLink)
+                doneEnabled = Patterns.WEB_URL.matcher(tempLink).matches()
             )
         }
     }
@@ -858,11 +821,11 @@ fun EditableClubDescription(
 //활동 사진 캐러셀
 @Composable
 fun RepresentativeImagesCarousel(
-    images: List<ImageSlot>, //안정 키(id) 포함된 이미지 리스트
+    images: List<PromotionImage>, //안정 키(id) 포함된 이미지 리스트
     onPickAt: (Int) -> Unit, //슬롯 탭 시 호출(해당 인덱스에 추가,교체)
     onRemoveAt: (Int) -> Unit, //x 버튼 탭 시 삭제
     onReorder: (from: Int, to: Int) -> Unit, //드래그 정렬 콜백
-    placeholderRes: Int = R.drawable.img_rep_placeholder, //비어있는 슬롯 표시 기본 이미지
+    placeholderRes: Int, //비어있는 슬롯 표시 기본 이미지
     maxSlots: Int = 10 //최대 등록 가능 수
 ) {
     //항상 최신 리스트 길이를 보도록 유지
@@ -907,7 +870,7 @@ fun RepresentativeImagesCarousel(
                 ) {
                     //실제 이미지 표시
                     AsyncImage(
-                        model = item.uri,
+                        model = item.displayUri,
                         contentDescription = "활동사진 $index",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

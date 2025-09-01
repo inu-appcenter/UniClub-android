@@ -1,5 +1,8 @@
 package com.appcenter.uniclub.ui.promotion
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,18 +43,64 @@ import androidx.compose.material3.Divider
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.appcenter.uniclub.App
+import com.appcenter.uniclub.network.dto.DescriptionMediaDto
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 
+private fun recruitIconOf(status: String?): Int = when (status?.uppercase()) {
+    "SCHEDULED" -> R.drawable.ic_upcoming    // 모집예정
+    "ACTIVE"    -> R.drawable.ic_recruiting  // 모집중
+    "CLOSED"    -> R.drawable.ic_closed      // 모집마감
+    else        -> R.drawable.ic_upcoming
+}
+
+private fun openUrl(context: Context, url: String) {
+    if (url.isBlank()) return
+    runCatching {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+}
+
 //사용자용 홍보 페이지
 @Composable
-fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Unit) {
-    var isLiked by remember { mutableStateOf(false) } //즐겨찾기 상태 저장
-    var isRecruiting by remember { mutableStateOf(true) } //모집중, 모집예정 상태 저장
+fun UserPromotionScreen(
+    navController: NavHostController,
+    onBackClick: () -> Unit,
+    clubId: Long,
+    app: App,
+    vm: UserPromotionViewModel = viewModel(
+        factory = UserPromotionViewModelFactory(app, clubId)
+    )
+) {
+    val state by vm.uiState.collectAsState()
+
+    if (state.loading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            androidx.compose.material3.CircularProgressIndicator()
+        }
+        return
+    }
+    val data = state.data
+    if (state.error != null || data == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("불러오기 실패: ${state.error ?: "알 수 없는 오류"}")
+        }
+        return
+    }
+
     val scrollState = rememberScrollState()
+    val statusIcon = remember(data.status) { recruitIconOf(data.status) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -62,21 +111,35 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
         ) {
             //배너 + TopBar + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {
-                Image( //배너
-                    painter = painterResource(R.drawable.banner),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
-                )
+                //배너
+                if (!data.bannerUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(data.bannerUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
+                            .background(Color(0xFF585858))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
+                            .background(Color(0xFF585858))
+                    )
+                }
 
                 PromotionTopBar( // 상단바
-                    isLiked = isLiked,
+                    isLiked = data.favorite,
                     onBackClick = onBackClick,
-                    onLikeClick = { isLiked = !isLiked },
-                    showEdit = true, // 권한 체크 후 false로 숨길 수 있음
-                    onEditClick = { navController.navigate("admin_promotion") },
+                    onLikeClick = { vm.onFavoriteClick(clubId) },
+                    showEdit = data.canEdit,
+                    onEditClick = { navController.navigate("admin_promotion/$clubId") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(63.dp)
@@ -84,19 +147,35 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                 )
 
                 //프로필 이미지
-                Image(
-                    painter = painterResource(R.drawable.profile_example),
-                    contentDescription = "Profile Image",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(113.dp)
-                        .offset(x = 24.dp, y = 209.dp - 113.dp / 2) //배너 반쯤 걸쳐서
-                        .clip(RoundedCornerShape(40.dp))
-                        .zIndex(1f)
-                )
+                if (!data.profileUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(data.profileUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Profile Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(113.dp)
+                            .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
+                            .clip(RoundedCornerShape(40.dp))
+                            .background(Color(0xFFCDCDCD))
+                            .zIndex(1f)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(113.dp)
+                            .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
+                            .clip(RoundedCornerShape(40.dp))
+                            .background(Color(0xFFCDCDCD))
+                            .zIndex(1f)
+                    )
+                }
             }
 
             //SNS 버튼 (유튜브, 인스타)
+            val context = LocalContext.current
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,20 +183,30 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val yt = data.youtubeLink
                 Image(
-                    painter = painterResource(id = R.drawable.ic_youtube),
+                    painter = painterResource(R.drawable.ic_youtube),
                     contentDescription = "YouTube",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable { /* TODO */ }
+                        .clickable (
+                            enabled = !yt.isNullOrBlank(),
+                            onClick = { if (!yt.isNullOrBlank()) openUrl(context, yt) }
+                        )
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+
+                Spacer(Modifier.width(6.dp))
+
+                val ig = data.instagramLink
                 Image(
-                    painter = painterResource(id = R.drawable.ic_instagram),
+                    painter = painterResource(R.drawable.ic_instagram),
                     contentDescription = "Instagram",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable { /* TODO */ }
+                        .clickable (
+                            enabled = !ig.isNullOrBlank(),
+                            onClick = { if (!ig.isNullOrBlank()) openUrl(context, ig) }
+                        )
                 )
             }
 
@@ -136,7 +225,7 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text( //동아리명
-                        text = "크레퍼스(CREPERS)",
+                        text = data.name,
                         color = Color.White,
                         modifier = Modifier.padding(start = 12.dp),
                         fontSize = figmaTextSizeSp(14f),
@@ -150,13 +239,9 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Image( //모집상태
-                    painter = painterResource(
-                        id = if (isRecruiting) R.drawable.ic_recruiting else R.drawable.ic_upcoming
-                    ),
-                    contentDescription = if (isRecruiting) "모집중" else "모집예정",
-                    modifier = Modifier
-                        .offset(x = (-18).dp)
-                        .clickable { isRecruiting = !isRecruiting }
+                    painter = painterResource(id = statusIcon),
+                    contentDescription = null,
+                    modifier = Modifier.offset(x = (-18).dp)
                 )
             }
 
@@ -168,15 +253,16 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                 horizontalArrangement = Arrangement.spacedBy(35.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                InfoItem(title = "동아리방", value = "17호관 414호")
-                InfoItem(title = "회장", value = "이석준")
-                InfoItem(title = "연락처", value = "010.1234.5678")
+                fun safe(s: String?) = if (s.isNullOrBlank()) "-" else s
+                InfoItem(title = "동아리방", value = safe(data.location))
+                InfoItem(title = "회장", value = safe(data.presidentName))
+                InfoItem(title = "연락처", value = safe(data.presidentPhone))
             }
 
             Spacer(modifier = Modifier.height(25.dp))
 
             //한줄 소개
-            TextShadowBanner(text = "동아리에서 함께 연주하고 추억을 쌓아봐요!")
+            TextShadowBanner(text = if (data.simpleDescription.isNullOrBlank()) "-" else data.description!!)
 
             Spacer(modifier = Modifier.height(35.dp))
 
@@ -187,26 +273,26 @@ fun UserPromotionScreen(navController: NavHostController, onBackClick: () -> Uni
                     .padding(horizontal = 30.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                AnnouncementItem(label = "모집기간", content = "7월 16일 ~ 24일 오후 6시")
-                AnnouncementItem(label = "공지", content = "25일 동아리실 출입금지")
+                val period = if (!data.startTime.isNullOrBlank() && !data.endTime.isNullOrBlank())
+                    "${data.startTime} ~ ${data.endTime}" else "-"
+                AnnouncementItem(label = "모집기간", content = period)
+                AnnouncementItem(label = "공지", content = if (data.notice.isNullOrBlank()) "-" else data.notice!!)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
             Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(15.dp))
 
-            ClubDescription(
-                description = "이 글은 동아리 소개 예시글입니다. 저희 동아리는 전공과 학년을 넘어 다양한 사람들이 모여 공통의 관심사를 나누고, 함께 경험을 쌓아가는 공간입니다. 활동 하나하나에 진심을 담고, 소소한 일상도 특별하게 만드는 우리! 처음이라도 괜찮아요. 언제든 환영합니다. 당신의 자리를 만들어드릴게요."
-            )
+            ClubDescription(description = if (data.description.isNullOrBlank()) "-" else data.description!!)
 
-            //활동 사진 캐러셀, 질문지원 버튼
-            val sampleImages = listOf(
-                R.drawable.club1, R.drawable.club2, R.drawable.club3,
-                R.drawable.club1, R.drawable.club2
-            )
             Column {
-                ActivityImageCarousel(imageResIds = sampleImages)
-                BottomActionButtons(navController)
+                if (data.promoItems.isNotEmpty()) {
+                    ActivityImageCarouselUrls(items = data.promoItems)
+                }
+                BottomActionButtons(
+                    navController = navController,
+                    applicationFormLink = data.applicationFormLink
+                )
             }
 
             Spacer(modifier = Modifier.height(75.dp))
@@ -325,8 +411,8 @@ fun ClubDescription(description: String) {
 
 //활동사진 캐러셀
 @Composable
-fun ActivityImageCarousel(imageResIds: List<Int>) {
-    val limitedImages = imageResIds.take(10) //최대 10장 제한
+fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
+    val limited = remember(items) { items.take(10) } // 최대 10장
 
     LazyRow(
         modifier = Modifier
@@ -334,18 +420,19 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
             .padding(start = 21.dp, top = 15.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        itemsIndexed(limitedImages) { index, resId ->
-            val isLast = index == limitedImages.lastIndex
-            Image(
-                painter = painterResource(id = resId),
+        itemsIndexed(limited) { index, item ->
+            val isLast = index == limited.lastIndex
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.mediaLink)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .figmaSize(widthPx = 139f, heightPx = 183f)
                     .clip(RoundedCornerShape(25.dp))
-                    .then(
-                        if (isLast) Modifier.padding(end = 20.dp) else Modifier
-                    )
+                    .then(if (isLast) Modifier.padding(end = 20.dp) else Modifier)
             )
         }
     }
@@ -353,7 +440,12 @@ fun ActivityImageCarousel(imageResIds: List<Int>) {
 
 //하단 버튼 정렬 컴포넌트
 @Composable
-fun BottomActionButtons(navController: NavHostController) {
+fun BottomActionButtons(
+    navController: NavHostController,
+    applicationFormLink: String?
+) {
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,12 +455,14 @@ fun BottomActionButtons(navController: NavHostController) {
         ImageButtonItem(
             imageRes = R.drawable.btn_question,
             contentDescription = "질문하기",
+            enabled = true,
             onClick = { navController.navigate("qna") }
         )
         ImageButtonItem(
             imageRes = R.drawable.btn_apply,
             contentDescription = "지원하기",
-            onClick = { /* TODO: 지원하기 기능 */ }
+            enabled = !applicationFormLink.isNullOrBlank(),
+            onClick = { applicationFormLink?.let { openUrl(context, it) } }
         )
     }
 }
@@ -377,12 +471,12 @@ fun BottomActionButtons(navController: NavHostController) {
 fun ImageButtonItem(
     imageRes: Int,
     contentDescription: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Image(
         painter = painterResource(id = imageRes),
         contentDescription = contentDescription,
-        modifier = Modifier
-            .clickable(onClick = onClick)
+        modifier = Modifier.clickable(enabled = enabled ,onClick = onClick)
     )
 }
