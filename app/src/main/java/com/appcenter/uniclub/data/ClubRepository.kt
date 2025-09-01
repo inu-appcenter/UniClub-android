@@ -1,8 +1,10 @@
 package com.appcenter.uniclub.data
 
+import retrofit2.HttpException
 import com.appcenter.uniclub.network.ClubService
-import com.appcenter.uniclub.network.dto.ClubResponseDto
 import com.appcenter.uniclub.network.dto.PageClubResponseDto
+import com.appcenter.uniclub.network.dto.ToggleFavoriteResponseDto
+
 
 class ClubRepository(
     private val service: ClubService
@@ -49,5 +51,10 @@ class ClubRepository(
     fun resetPaging() {
         lastCursorName = null
         hasNext = true
+    }
+
+    suspend fun toggleFavorite(clubId: Long): Result<Unit> = runCatching {
+        service.toggleFavorite(clubId)
+        Unit
     }
 }

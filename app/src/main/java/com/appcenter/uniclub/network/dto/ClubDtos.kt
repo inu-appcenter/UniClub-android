@@ -29,3 +29,7 @@ fun ClubResponseDto.toClub(): Club {
         profileUrl = clubProfileUrl
     )
 }
+
+data class ToggleFavoriteResponseDto(
+    val message: String
+)

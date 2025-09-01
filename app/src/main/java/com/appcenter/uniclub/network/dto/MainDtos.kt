@@ -8,6 +8,7 @@ data class MainPageMediaResponseDto(
 
 // 메인페이지 동아리 응답
 data class MainPageClubResponseDto(
+    val clubId: Long,
     val name: String,
     val imageUrl: String,
     val favorite: Boolean

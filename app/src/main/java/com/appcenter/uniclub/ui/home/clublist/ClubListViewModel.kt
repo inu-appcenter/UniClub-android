@@ -22,6 +22,8 @@ class ClubListViewModel(
     private val _uiState = MutableStateFlow(ClubListUiState())
     val uiState: StateFlow<ClubListUiState> = _uiState
 
+    private val toggling = mutableSetOf<Long>()
+
     fun loadClubs(category: String?, sortBy: String, reset: Boolean = false) {
         viewModelScope.launch {
             try {
@@ -75,5 +77,25 @@ class ClubListViewModel(
     fun reset() {
         repository.resetPaging()
         _uiState.value = ClubListUiState()
+    }
+
+    fun onFavoriteClick(clubId: Long) {
+        if (toggling.contains(clubId)) return
+        toggling.add(clubId)
+
+        val before = _uiState.value.clubs
+        val optimistic = before.map { c ->
+            if (c.id == clubId) c.copy(favorite = !c.favorite) else c
+        }
+        _uiState.value = _uiState.value.copy(clubs = optimistic, error = null)
+
+        viewModelScope.launch {
+            val result = repository.toggleFavorite(clubId)
+            if (result.isFailure) {
+                // 실패 → 롤백
+                _uiState.value = _uiState.value.copy(clubs = before, error = result.exceptionOrNull()?.message)
+            }
+            toggling.remove(clubId)
+        }
     }
 }

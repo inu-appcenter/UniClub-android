@@ -32,10 +32,11 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 
 //동아리 리스트 화면의 동아리 카드
 @Composable
-fun ClubCard(club: Club, onClick: () -> Unit) {
-    //즐겨찾기 상태 기억
-    var isLiked by remember { mutableStateOf(club.favorite) }
-
+fun ClubCard(
+    club: Club,
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
     //카드 컨테이너
     Box(
         modifier = Modifier
@@ -144,20 +145,20 @@ fun ClubCard(club: Club, onClick: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .figmaSize(widthPx = 14f, heightPx = 12f) //고정된 박스 크기
-                        .clickable { isLiked = !isLiked },
+                        .clickable { onToggleFavorite() },
                     contentAlignment = Alignment.Center
                 ){
                     Image(
                         painter = painterResource(
-                            id = if (isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
+                            id = if (club.favorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
                         ),
-                        contentDescription = if (isLiked) "즐겨찾기 취소" else "즐겨찾기",
+                        contentDescription = if (club.favorite) "즐겨찾기 취소" else "즐겨찾기",
                         modifier = Modifier
                             .fillMaxSize()
-                            .scale(if (isLiked) 1.6f else 1f) //빨간 하트 확대
+                            .scale(if (club.favorite) 1.6f else 1f) //빨간 하트 확대
                             .offset( //빨간 하트 위치조정
-                                x = if (isLiked) (-0.5).dp else 0.dp,
-                                y = if (isLiked) (-0.5).dp else 0.dp
+                                x = if (club.favorite) (-0.5).dp else 0.dp,
+                                y = if (club.favorite) (-0.5).dp else 0.dp
                             )
                     )
                 }

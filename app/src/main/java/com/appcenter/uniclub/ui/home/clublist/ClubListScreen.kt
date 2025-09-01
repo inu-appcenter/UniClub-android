@@ -127,7 +127,8 @@ fun ClubListScreen(
             items(state.clubs) { clubDto ->
                 ClubCard(
                     club = clubDto.toClub(),
-                    onClick = { navController.navigate("promotion/${clubDto.id}") }
+                    onClick = { navController.navigate("promotion/${clubDto.id}") },
+                    onToggleFavorite = { vm.onFavoriteClick(clubDto.id) }
                 )
             }
 
