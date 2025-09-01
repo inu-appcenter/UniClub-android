@@ -3,7 +3,6 @@ package com.appcenter.uniclub.network.dto
 //회원가입 요청: POST /api/v1/auth/register
 data class RegisterRequestDto(
     val studentId: String,
-    val password: String,
     val name: String,
     val major: String,
     val personalInfoCollectionAgreement: Boolean,

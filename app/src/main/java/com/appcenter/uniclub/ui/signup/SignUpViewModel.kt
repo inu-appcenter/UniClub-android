@@ -75,7 +75,6 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
                     // 2) 회원가입
                     val regReq = RegisterRequestDto(
                         studentId = s.studentId,
-                        password = s.password,
                         name = s.name,
                         major = s.major,
                         personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
