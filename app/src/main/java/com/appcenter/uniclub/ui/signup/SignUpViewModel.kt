@@ -3,6 +3,7 @@ package com.appcenter.uniclub.ui.signup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
+import com.appcenter.uniclub.model.Major
 import com.appcenter.uniclub.network.dto.RegisterRequestDto
 import com.appcenter.uniclub.network.dto.RegisterTermsRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,13 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
     fun onId(v: String) { _ui.value = _ui.value.copy(studentId = v, error = null) }
     fun onPw(v: String) { _ui.value = _ui.value.copy(password = v, error = null) }
     fun onName(v: String) { _ui.value = _ui.value.copy(name = v, error = null) }
-    fun onMajor(v: String) { _ui.value = _ui.value.copy(major = v, error = null) }
+    fun onMajor(displayName: String) {
+        val enumValue = Major.values().find { it.displayName == displayName }
+        _ui.value = _ui.value.copy(
+            major = enumValue?.name ?: "",
+            error = null
+        )
+    }
 
     fun onEssentialAgree(v: Boolean) { _ui.value = _ui.value.copy(personalInfoCollectionAgreement = v) }
     fun onChoiceAgree(v: Boolean) { _ui.value = _ui.value.copy(marketingAdvertisement = v) }
