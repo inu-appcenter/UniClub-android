@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.model.Major
 import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.InputLabel
 import com.appcenter.uniclub.ui.components.TopBar
@@ -119,12 +120,18 @@ fun SignUpScreen(
             //학과 입력 필드 (인증 후에만 활성화)
             //회의 후 드롭다운 수정
             InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
+            val majorItems = Major.values().map { it.displayName }
+            val selectedDisplayName = Major.values()
+                .find { it.name == ui.major }   // ui.major == "COMPUTER_ENGINEERING"
+                ?.displayName                   // "컴퓨터공학부"
+                ?: ""   // 선택 안했을 때는 빈값
             DropdownField(
-                items = listOf("컴퓨터공학부", "전자공학과", "경영학과"),
-                selectedValue = ui.major,
-                onItemSelected = { vm.onMajor(it) },
-                modifier = Modifier
-                    .figmaSize(widthPx = 210f, heightPx = 35f)
+                items = majorItems,
+                selectedValue = selectedDisplayName,
+                onItemSelected = { displayName ->
+                    vm.onMajor(displayName) // ← displayName을 enum.name으로 바꿔서 상태에 저장
+                },
+                modifier = Modifier.figmaSize(widthPx = 210f, heightPx = 35f)
             )
         }
 

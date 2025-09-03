@@ -15,12 +15,13 @@ class AuthInterceptor(
         val original = chain.request()
         val token = tokenProvider()
 
-        // student-verification 엔드포인트는 Authorization 헤더 제외
-        val isStudentVerification = original.url.encodedPath.contains("student-verification")
+        val path = original.url.encodedPath
+        val isStudentVerification = path.contains("student-verification")
+        val isRegister = path.contains("auth/register")
 
-        val req = if (!token.isNullOrBlank() && !isStudentVerification) {
+        val req = if (!token.isNullOrBlank() && !isStudentVerification && !isRegister) {
             original.newBuilder()
-                .addHeader("Authorization", token) // "Bearer xxx" 그대로 사용
+                .addHeader("Authorization", token) // Bearer xxx
                 .build()
         } else {
             original
@@ -28,8 +29,8 @@ class AuthInterceptor(
 
         return chain.proceed(req)
     }
-
 }
+
 
 object ApiClient {
     private const val BASE_URL = "https://uniclub-server.inuappcenter.kr/" // 슬래시 필수
