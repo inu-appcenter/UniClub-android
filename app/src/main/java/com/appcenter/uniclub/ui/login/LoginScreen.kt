@@ -117,25 +117,25 @@ fun LoginScreen(
                     modifier = Modifier.clickable { onSignUpClick() }
                 )
 
-                // 🔽🔽🔽 여기 아래에 개발용 우회 버튼 추가 🔽🔽🔽
-                // 디버그gable 여부 (Debug build면 true)
-                val context = LocalContext.current
-                val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-
-                if (isDebug) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { vm.devBypass(onSuccess = onLoginSuccess) },
-                        modifier = Modifier.figmaSize(widthPx = 180f, heightPx = 40f)
-                    ) {
-                        Text(
-                            text = "개발용: 인증 건너뛰고 들어가기",
-                            fontSize = figmaTextSizeSp(12f),
-                            fontFamily = NotoSansKR,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
+//                // 🔽🔽🔽 여기 아래에 개발용 우회 버튼 추가 🔽🔽🔽
+//                // 디버그gable 여부 (Debug build면 true)
+//                val context = LocalContext.current
+//                val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+//
+//                if (isDebug) {
+//                    Spacer(modifier = Modifier.height(16.dp))
+//                    Button(
+//                        onClick = { vm.devBypass(onSuccess = onLoginSuccess) },
+//                        modifier = Modifier.figmaSize(widthPx = 180f, heightPx = 40f)
+//                    ) {
+//                        Text(
+//                            text = "개발용: 인증 건너뛰고 들어가기",
+//                            fontSize = figmaTextSizeSp(12f),
+//                            fontFamily = NotoSansKR,
+//                            fontWeight = FontWeight.SemiBold
+//                        )
+//                    }
+//                }
             }
         }
 

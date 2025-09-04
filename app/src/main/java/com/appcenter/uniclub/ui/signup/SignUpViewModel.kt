@@ -60,35 +60,33 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
     // (기존 register 대체) 약관 저장 + 회원가입을 한 번에
     fun agreeAndRegister(onDone: () -> Unit) {
         val s = _ui.value
-        // 필수 동의 없으면 진행 불가
         if (!s.personalInfoCollectionAgreement) {
             _ui.value = s.copy(error = "필수 약관에 동의해 주세요.")
             return
         }
-        // SignUpScreen에서 이미 canProceed 통과 후 AgreementScreen으로 왔다고 가정
         _ui.value = s.copy(loading = true, error = null)
 
         viewModelScope.launch {
-            // 1) 약관 저장
-            val termsReq = RegisterTermsRequestDto(
+            // 1) 회원가입
+            val regReq = RegisterRequestDto(
                 studentId = s.studentId,
+                name = s.name,
+                major = s.major,
                 personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
-                marketingAdvertisement = s.marketingAdvertisement
+                marketingAdvertisement = s.marketingAdvertisement,
+                studentVerification = true
             )
-            val termsResult = repo.saveRegisterTerms(termsReq)
+            val registerResult = repo.register(regReq)
 
-            termsResult.fold(
+            registerResult.fold(
                 onSuccess = {
-                    // 2) 회원가입
-                    val regReq = RegisterRequestDto(
+                    // 2) 약관 저장
+                    val termsReq = RegisterTermsRequestDto(
                         studentId = s.studentId,
-                        name = s.name,
-                        major = s.major,
                         personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
-                        marketingAdvertisement = s.marketingAdvertisement,
-                        studentVerification = true
+                        marketingAdvertisement = s.marketingAdvertisement
                     )
-                    repo.register(regReq)
+                    repo.saveRegisterTerms(termsReq)
                         .onSuccess {
                             _ui.value = _ui.value.copy(loading = false, error = null)
                             onDone()
