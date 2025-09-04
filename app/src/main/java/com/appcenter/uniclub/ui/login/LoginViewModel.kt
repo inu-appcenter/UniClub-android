@@ -34,16 +34,4 @@ class LoginViewModel(private val repo: UserRepository) : ViewModel() {
                 .onFailure { _ui.value = _ui.value.copy(error = it.message, loading = false) }
         }
     }
-
-    // 🔵 개발용: 토큰 저장 후 바로 진입
-    fun devBypass(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            // 필요하다면 로딩 플래그 잠깐 켤 수도 있음
-            // _ui.value = _ui.value.copy(loading = true)
-
-            repo.saveDummyToken()      // 더미 토큰 저장
-            // _ui.value = _ui.value.copy(loading = false)
-            onSuccess()                // 홈(또는 다음 화면)으로 이동
-        }
-    }
 }

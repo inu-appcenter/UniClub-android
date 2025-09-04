@@ -18,10 +18,11 @@ class AuthInterceptor(
         val path = original.url.encodedPath
         val isStudentVerification = path.contains("student-verification")
         val isRegister = path.contains("auth/register")
+        val isTerms = path.contains("users/terms")
 
-        val req = if (!token.isNullOrBlank() && !isStudentVerification && !isRegister) {
+        val req = if (!token.isNullOrBlank() && !isStudentVerification && !isRegister && !isTerms) {
             original.newBuilder()
-                .addHeader("Authorization", token) // Bearer xxx
+                .addHeader("Authorization", token)
                 .build()
         } else {
             original
