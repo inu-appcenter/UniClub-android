@@ -71,13 +71,13 @@ fun HomeScreen(
         item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread) }
 
         item {
-            if (bannerList.isNotEmpty()) { //서버에서 이미지가 왔을 때
-                EventImageCarousel(eventList = remoteBanner.map { it.mediaLink } as List<Any>)
+            if (remoteBanner.isNotEmpty()) { //서버에서 이미지가 왔을 때
+                EventImageCarousel(eventList = remoteBanner.map { it.mediaLink })
             } else { //서버에서 이미지가 없을 때 → 로컬 기본 이미지 사용
                 val localList: List<Int> =
                     if (bannerList.isNotEmpty()) bannerList else listOf(R.drawable.event_default)
                 EventImageCarousel(
-                    eventList = localList as List<Any>
+                    eventList = localList
                 )
             }
         }
