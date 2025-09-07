@@ -3,8 +3,8 @@ package com.appcenter.uniclub.model
 import com.appcenter.uniclub.R
 
 enum class ClubCategory(
-    val displayName: String,
-    val serverValues: List<String> // 여러 서버 값 허용
+    val displayName: String, //화면에 표시될 이름
+    val serverValues: List<String> //서버에서 사용하는 값
 ) {
     ACADEMIC("교양학술", listOf("LIBERAL_ACADEMIC", "ACADEMIC")),
     HOBBY("취미전시", listOf("HOBBY_EXHIBITION", "HOBBY")),
@@ -14,12 +14,14 @@ enum class ClubCategory(
     CULTURE("문화", listOf("CULTURE"));
 
     val primaryServerValue: String
-        get() = serverValues.first() // 서버로 보낼 기본 값
+        get() = serverValues.first() //서버로 보낼 기본 값
 
     companion object {
+        //displayName → ClubCategory 변환
         fun fromDisplayName(displayName: String): ClubCategory? =
             values().find { it.displayName == displayName }
 
+        //serverValue → ClubCategory 변환
         fun fromServerValue(serverValue: String): ClubCategory? =
             values().find { it.serverValues.contains(serverValue) }
     }
