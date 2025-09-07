@@ -25,7 +25,10 @@ class HomeViewModel(
     private fun loadBanner() {
         viewModelScope.launch {
             runCatching { repo.getMainBanner() }
-                .onSuccess { _remoteBanner.value = it }
+                .onSuccess { list ->
+                    // mediaLink 기준으로 중복 제거
+                    _remoteBanner.value = list.distinctBy { it.mediaLink }
+                }
                 .onFailure {
                     // 실패 시 로컬 기본 배너만 사용 (이미지 id 리스트 직접 세팅하고 싶으면 여기서 set)
                     _bannerList.value = emptyList()
