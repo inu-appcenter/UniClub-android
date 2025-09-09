@@ -47,6 +47,8 @@ import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 
 //프로필 수정 화면
 @Composable
@@ -102,21 +104,42 @@ fun ProfileEditScreen(navController: NavHostController) {
         Box(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .figmaSize(widthPx = 70f, heightPx = 69f)
+                .figmaSize(widthPx = 70f, heightPx = 75f)
         ){
             //프로필 이미지 (선택된 Uri가 있으면 표시, 없으면 기본 이미지)
-            if (profileImageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(profileImageUri),
-                    contentDescription = "프로필 이미지",
-                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 69f)
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.default_image),
-                    contentDescription = "프로필 이미지",
-                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 69f)
-                )
+            when {
+                profileImageUri != null -> {
+                    // 새로 선택한 이미지
+                    Image(
+                        painter = rememberAsyncImagePainter(profileImageUri),
+                        contentDescription = "프로필 이미지",
+                        modifier = Modifier
+                            .figmaSize(widthPx = 70f, heightPx = 69f)
+                            .clip(RoundedCornerShape(23.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                !state.profileUrl.isNullOrBlank() -> {
+                    // 서버에서 가져온 기존 프로필 이미지
+                    Image(
+                        painter = rememberAsyncImagePainter(state.profileUrl),
+                        contentDescription = "프로필 이미지",
+                        modifier = Modifier
+                            .figmaSize(widthPx = 70f, heightPx = 69f)
+                            .clip(RoundedCornerShape(23.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                else -> {
+                    // 기본 이미지
+                    Image(
+                        painter = painterResource(id = R.drawable.default_image),
+                        contentDescription = "기본 프로필 이미지",
+                        modifier = Modifier
+                            .figmaSize(widthPx = 70f, heightPx = 75f)
+                            .clip(RoundedCornerShape(23.dp))
+                    )
+                }
             }
             Image( //수정 버튼
                 painter = painterResource(id = R.drawable.ic_profile_edit),
