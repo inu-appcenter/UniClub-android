@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.Divider
@@ -39,6 +40,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.ui.components.Dialog
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 
 //마이페이지 화면
 @Composable
@@ -87,7 +90,10 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
                 Image(
                     painter = rememberAsyncImagePainter(state.profileImageLink),
                     contentDescription = "프로필 이미지",
-                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 75f)
+                    modifier = Modifier
+                        .figmaSize(widthPx = 70f, heightPx = 70f)
+                        .clip(RoundedCornerShape(23.dp)),
+                    contentScale = ContentScale.Crop
                 )
             } else {
                 // 없으면 기본 이미지
