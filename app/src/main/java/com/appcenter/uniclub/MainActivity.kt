@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,8 +69,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             val app = application as App
             val repo = ServiceLocator.userRepository(app)
+            val navController = rememberNavController()
+
+            //logoutEvent 구독 → 로그인 화면으로 이동
+            LaunchedEffect(Unit) {
+                app.logoutEvent.collect {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+
             UniClubTheme {
-                val navController = rememberNavController()
                 NavHost(
                     navController,
                     startDestination = "login",
