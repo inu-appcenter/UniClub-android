@@ -34,11 +34,16 @@ interface UserService {
         @Body body: LoginRequestDto
     ): Response<LoginResponseDto>
 
-    // 내 정보 수정 (예: 전공만 수정)
+    // 내 정보 수정
     @PATCH("api/v1/users/me")
     suspend fun updateMe(
         @Body body: UpdateMeRequestDto
     ): Response<Unit>
+
+    @POST("/api/v1/user/profile/s3-presigned")
+    suspend fun getPresignedUrl(
+        @Body request: S3PresignedRequestDto
+    ): S3PresignedResponseDto
 
     //내 정보 조회
     @GET("/api/v1/users/me")

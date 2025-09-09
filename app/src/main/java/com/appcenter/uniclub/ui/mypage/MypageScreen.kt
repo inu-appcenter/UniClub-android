@@ -82,7 +82,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
         .figmaPadding(startPx = 27f, endPx = 27f, topPx = 70f))
     {
         Row(verticalAlignment = Alignment.CenterVertically){
-            if (state.profileImageLink != null) {
+            if (!state.profileImageLink.isNullOrBlank()) {
                 // 서버에서 저장된 프로필 이미지가 있으면 표시
                 Image(
                     painter = rememberAsyncImagePainter(state.profileImageLink),

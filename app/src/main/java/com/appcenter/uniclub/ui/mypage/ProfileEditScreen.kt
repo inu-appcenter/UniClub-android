@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.mypage
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.model.Major
 import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
@@ -60,10 +62,9 @@ fun ProfileEditScreen(navController: NavHostController) {
     //선택된 프로필 이미지 URI
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        profileImageUri = uri
+    //화면 진입 시 기존 프로필 불러오기
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
     }
 
     //저장 성공 시 자동 뒤로가기
@@ -73,12 +74,28 @@ fun ProfileEditScreen(navController: NavHostController) {
         }
     }
 
+    //갤러리 실행 → 선택 시 updateProfileImage 호출
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        profileImageUri = uri
+        if (uri != null) {
+            viewModel.updateProfileImage(uri, context)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "프로필 수정",
             rightIconResId = R.drawable.ic_save,
-            onRightIconClick = { viewModel.updateProfile() }
+            onRightIconClick = {
+                if (state.profileUrl.isNullOrBlank()) {
+                    Log.d("ProfileEditScreen", "아직 업로드 중이라 저장 불가")
+                } else {
+                    viewModel.updateProfile()
+                }
+            }
         )
         Spacer(Modifier.height(33.dp))
 
@@ -131,11 +148,17 @@ fun ProfileEditScreen(navController: NavHostController) {
                 color = Color.Black,
                 modifier = Modifier.width(85.dp)
             )
-            //학과 리스트 서버 연결 후 수정
+            val majorItems = Major.values().map { it.displayName }
+            val selectedDisplayName = Major.values()
+                .find { it.name == state.major }   // ui.major == "COMPUTER_ENGINEERING"
+                ?.displayName                   // "컴퓨터공학부"
+                ?: ""   // 선택 안했을 때는 빈값
             DropdownField(
-                items = listOf("컴퓨터공학부", "전자공학과", "경영학과"),
-                selectedValue = state.major,
-                onItemSelected = { viewModel.updateMajor(it) },
+                items = majorItems,
+                selectedValue = selectedDisplayName,
+                onItemSelected = { displayName ->
+                    viewModel.updateMajor(displayName)
+                },
                 modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f)
             )
         }
