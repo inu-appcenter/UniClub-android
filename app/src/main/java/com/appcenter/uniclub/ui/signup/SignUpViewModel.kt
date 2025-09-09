@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.signup
 
+import android.provider.ContactsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
@@ -16,6 +17,7 @@ data class SignUpUiState(
     val password: String = "",
     val name: String = "",
     val major: String = "",
+    val nickname: String = "",
     val personalInfoCollectionAgreement: Boolean = false, // 필수 동의
     val marketingAdvertisement: Boolean = false,          // 선택 동의
     val verified: Boolean = false,
@@ -40,6 +42,7 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
             error = null
         )
     }
+    fun onNickname(v: String) { _ui.value = _ui.value.copy(nickname = v, error = null) }
 
     fun onEssentialAgree(v: Boolean) { _ui.value = _ui.value.copy(personalInfoCollectionAgreement = v) }
     fun onChoiceAgree(v: Boolean) { _ui.value = _ui.value.copy(marketingAdvertisement = v) }
@@ -72,6 +75,7 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
                 studentId = s.studentId,
                 name = s.name,
                 major = s.major,
+                nickname = s.nickname,
                 personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
                 marketingAdvertisement = s.marketingAdvertisement,
                 studentVerification = true
