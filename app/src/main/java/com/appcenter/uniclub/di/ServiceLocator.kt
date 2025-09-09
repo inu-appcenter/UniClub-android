@@ -4,7 +4,6 @@ import com.appcenter.uniclub.App
 import com.appcenter.uniclub.data.ClubRepository
 import com.appcenter.uniclub.data.MainRepository
 import com.appcenter.uniclub.data.NotificationRepository
-import com.appcenter.uniclub.data.ProfileRepository
 import com.appcenter.uniclub.data.SearchRepository
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.ApiClient
@@ -12,7 +11,6 @@ import com.appcenter.uniclub.network.ClubService
 import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.MainService
 import com.appcenter.uniclub.network.NotificationService
-import com.appcenter.uniclub.network.ProfileService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -37,30 +35,30 @@ object ServiceLocator {
     //UserRepository 인스턴스 생성
     //UserService, ProfileRepository, TokenStore 종합 관리
     fun userRepository(app: App): UserRepository {
-        val retrofit = ApiClient.createRetrofit {
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit)
+            }
+        )
         val userService = retrofit.create(UserService::class.java)
-
-        val profileRetrofit = ApiClient.createRetrofit {
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
-        val profileService = profileRetrofit.create(ProfileService::class.java)
-
-        val profileRepo = ProfileRepository(profileService)
 
         return UserRepository(
             service = userService,
-            tokenStore = app.tokenStore,
-            profileRepo = profileRepo
+            tokenStore = app.tokenStore
         )
     }
 
     //MainService, MainRepository 인스턴스 생성
     fun mainService(app: App): MainService {
-        val retrofit = ApiClient.createRetrofit {
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
+            }
+        )
         return retrofit.create(MainService::class.java)
     }
     fun mainRepository(app: App): MainRepository {
@@ -69,10 +67,13 @@ object ServiceLocator {
 
     //ClubService, ClubRepository 인스턴스 생성
     fun clubService(app: App): ClubService {
-        val retrofit = ApiClient.createRetrofit {
-            //로그인 토큰을 헤더에 싣기
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
+            }
+        )
         return retrofit.create(ClubService::class.java)
     }
     fun clubRepository(app: App): ClubRepository =
@@ -84,18 +85,26 @@ object ServiceLocator {
 
     //NotificationRepository 인스턴스 생성
     fun notificationRepository(app: App): NotificationRepository {
-        val retrofit = ApiClient.createRetrofit {
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
+            }
+        )
         val api = retrofit.create(NotificationService::class.java)
         return NotificationRepository(api)
     }
 
     //SearchRepository 인스턴스 생성
     fun searchRepository(app: App): SearchRepository {
-        val retrofit = ApiClient.createRetrofit {
-            runBlocking { app.tokenStore.authHeaderFlow.first() }
-        }
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
+            }
+        )
         val api = retrofit.create(ClubService::class.java) //ClubService 활용
         return SearchRepository(api)
     }
