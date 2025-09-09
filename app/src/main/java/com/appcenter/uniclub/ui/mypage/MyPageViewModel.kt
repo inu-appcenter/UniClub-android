@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.model.Major
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -32,11 +33,17 @@ class MyPageViewModel(
             val result = repo.getMyPage()
             result.fold(
                 onSuccess = { dto ->
+                    val majorDisplay = try {
+                        Major.valueOf(dto.major).displayName
+                    } catch (e: IllegalArgumentException) {
+                        dto.major // 매핑 실패 시 원래 값 표시
+                    }
+
                     _uiState.value = MyPageUiState(
                         nickname = dto.nickname,
                         name = dto.name,
                         studentId = dto.studentId,
-                        major = dto.major,
+                        major = majorDisplay,
                         profileImageLink = dto.profileImageLink,
                         loading = false
                     )

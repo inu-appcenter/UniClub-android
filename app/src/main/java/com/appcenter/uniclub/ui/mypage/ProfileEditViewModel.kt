@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.mypage
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -28,13 +29,36 @@ class ProfileEditViewModel(
     private val _uiState = MutableStateFlow(ProfileEditUiState())
     val uiState: StateFlow<ProfileEditUiState> = _uiState
 
+    // GET /users/me
+    fun loadProfile() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            val result = repo.getMyPage()
+            result.fold(
+                onSuccess = { dto ->
+                    _uiState.value = ProfileEditUiState(
+                        name = dto.name,
+                        major = dto.major,   // ex: "COMPUTER_ENGINEERING"
+                        nickname = dto.nickname ?: "",
+                        profileUrl = dto.profileImageLink,
+                        loading = false
+                    )
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(loading = false, error = e.message)
+                }
+            )
+        }
+    }
+
     fun updateProfileImage(uri: Uri, app: App) {
         viewModelScope.launch {
             try {
-                val url = repo.uploadProfileImage(app, uri) // presigned 요청 + S3 업로드
+                val url = repo.uploadProfileImage(app, uri)
+                Log.d("ProfileEditViewModel", "updateProfileImage url = $url")
                 _uiState.value = _uiState.value.copy(profileUrl = url)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "이미지 업로드 실패")
+                _uiState.value = _uiState.value.copy(error = "이미지 업로드 실패: ${e.message}")
             }
         }
     }
@@ -53,13 +77,14 @@ class ProfileEditViewModel(
 
     fun updateProfile() {
         val state = _uiState.value
+        Log.d("ProfileEditViewModel", "updateProfile state.profileUrl = ${state.profileUrl}")
         viewModelScope.launch {
             _uiState.value = state.copy(loading = true, error = null)
             val result = repo.updateMe(
                 name = state.name,       // 이름은 서버에 저장된 걸 그대로 두려면 공백 아닌 값 넣어야 함
                 major = state.major,
                 nickname = state.nickname,
-                profileImageLink = state.profileUrl
+                profileImageLink = state.profileUrl?.takeIf { it.isNotBlank() }
             )
             result.fold(
                 onSuccess = {
