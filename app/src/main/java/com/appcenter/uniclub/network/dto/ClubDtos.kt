@@ -7,8 +7,8 @@ import com.appcenter.uniclub.model.ClubCategory
 data class ClubResponseDto(
     val id: Long,
     val name: String,
-    val info: String,
-    val status: String, //"SCHEDULED", "ACTIVE", "CLOSED"
+    val info: String?,
+    val status: String?, //"SCHEDULED", "ACTIVE", "CLOSED"
     val favorite: Boolean,
     val category: String, //"LIBERAL_ACADEMIC", "HOBBY_EXHIBITION", "SPORTS", "RELIGION", "VOLUNTEER", "CULTURE"
     val clubProfileUrl: String?
@@ -24,10 +24,11 @@ fun ClubResponseDto.toClub(): Club {
     return Club(
         id = id,
         name = name,
-        info = info,
-        status = status,
+        info = info ?: "",
+        status = status ?: "CLOSED",
         favorite = favorite,
-        category = ClubCategory.valueOf(category),
+        category = ClubCategory.fromServerValue(category)
+            ?: throw IllegalArgumentException("Unknown category: $category"),
         profileUrl = clubProfileUrl
     )
 }

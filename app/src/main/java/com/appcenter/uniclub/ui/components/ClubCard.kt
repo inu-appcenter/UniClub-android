@@ -69,8 +69,7 @@ fun ClubCard(
                     contentDescription = "기본 프로필",
                     modifier = Modifier
                         .figmaSize(widthPx = 54f, heightPx = 59f)
-                        .clip(RoundedCornerShape(20.dp)),
-                    contentScale = ContentScale.Crop
+                        .offset(y=3.dp)
                 )
             } else {
                 // 서버에서 불러온 이미지
@@ -120,11 +119,13 @@ fun ClubCard(
                             painter = painterResource(id = categoryRes),
                             contentDescription = club.category.displayName,
                             contentScale = ContentScale.FillBounds,
-                            modifier = Modifier.scale(1.1f)
+                            modifier = Modifier
+                                .scale(1.1f)
+                                .offset(y=1.dp)
                         )
                     }
                     Text( //추가정보
-                        text = club.info,
+                        text = club.info ?: "",
                         fontSize = figmaTextSizeSp(9f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
