@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -50,10 +52,11 @@ import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.yield
 
 //동아리 추천 카드캐러셀
-//현재는 카드 6개만
-//추후 서버 연동 후 랜덤 값 불러오기, 새로고침 기능 등 추가해야함
 @Composable
 fun ClubCardCarousel(
     navController: NavHostController,
@@ -70,19 +73,27 @@ fun ClubCardCarousel(
 
     // 마지막 아이템 도달 감지 → API 재호출
     LaunchedEffect(listState, state.isRefreshing, state.clubs) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastIndex ->
-                if (lastIndex == displayList.lastIndex && !state.isRefreshing) {
+        snapshotFlow {
+            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            val totalItems = listState.layoutInfo.totalItemsCount
+            last?.let {
+                // 마지막 아이템이고, 오른쪽 끝까지 다 보였는지 체크
+                (it.index == totalItems - 1) &&
+                        (it.offset + it.size <= listState.layoutInfo.viewportEndOffset)
+            } ?: false
+        }
+            .distinctUntilChanged() // 같은 값이면 무시
+            .collectLatest { fullyVisible ->
+                if (fullyVisible && !state.isRefreshing) {
                     vm.refresh()
-                    // 네트워크 직후 스크롤 맨 앞으로
                     coroutineScope.launch {
-                        // 한 프레임 양보 후 스크롤
-                        kotlinx.coroutines.yield()
-                        listState.scrollToItem(0)
+                        yield() // 한 프레임 양보
+                        listState.scrollToItem(0) // 맨 앞으로 스크롤
                     }
                 }
             }
     }
+
 
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val startPadding = (18f / 360f) * screenWidthDp
@@ -103,7 +114,7 @@ fun ClubCardCarousel(
                     if (state.isRefreshing) CircularProgressIndicator(strokeWidth = 2.dp)
                 }
             } else {
-                ClubCard(
+                RecommendClub(
                     imageUrl = item.imageUrl,
                     clubName = item.name,
                     isFavorite = item.favorite,
@@ -116,8 +127,8 @@ fun ClubCardCarousel(
 }
 
 @Composable
-fun ClubCard(
-    imageUrl: String,
+fun RecommendClub(
+    imageUrl: String?,
     clubName: String,
     isFavorite: Boolean,
     onClick: () -> Unit,
@@ -129,15 +140,24 @@ fun ClubCard(
             .clip(RoundedCornerShape(17.dp)) //모서리
             .clickable { onClick() }
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = clubName,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (imageUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = clubName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .figmaSize(widthPx = 136f, heightPx = 206f)
+                    .background(Color.Gray) // 회색 배경
+            )
+        }
+
 
         Row(
             modifier = Modifier
