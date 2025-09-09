@@ -118,7 +118,6 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             //학과 입력 필드 (인증 후에만 활성화)
-            //회의 후 드롭다운 수정
             InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
             val majorItems = Major.values().map { it.displayName }
             val selectedDisplayName = Major.values()

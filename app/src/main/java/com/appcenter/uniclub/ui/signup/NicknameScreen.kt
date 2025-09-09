@@ -1,0 +1,88 @@
+package com.appcenter.uniclub.ui.signup
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.components.InputLabel
+import com.appcenter.uniclub.ui.components.TopBar
+import com.appcenter.uniclub.ui.components.UnderlineInputField
+import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.figmaPadding
+import com.appcenter.uniclub.util.figmaTextSizeSp
+
+@Composable
+fun NicknameScreen(
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+    vm: SignUpViewModel
+){
+    val ui by vm.ui.collectAsState()
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .figmaPadding(topPx = 18f)
+    ) {
+        TopBar( //상단바
+            onBackClick = onBack
+        )
+
+        Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 79f, bottomPx = 410f)) {
+            Text( //상단 타이틀
+                text = "회원가입",
+                fontSize = figmaTextSizeSp(32f),
+                fontFamily = NotoSansKR,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 32.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "기본적으로 활동명은 실명으로 표시되며,\n닉네임을 설정하면 활동명이 닉네임으로 변경됩니다.",
+                fontSize = figmaTextSizeSp(10f),
+                fontFamily = NotoSansKR,
+                lineHeight = 10.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color(0xFFFF5900)
+            )
+
+            Spacer(modifier = Modifier.height(25.dp))
+
+            InputLabel("닉네임을 입력해주세요.", isEnabled = true)
+            UnderlineInputField(
+                modifier = Modifier.figmaPadding(endPx = 145f),
+                value = ui.nickname,
+                onValueChange = vm::onNickname,
+                enabled = true
+            )
+        }
+
+        Image(
+            painter = painterResource(R.drawable.btn_next_enabled ),
+            contentDescription = "하단 버튼",
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .figmaPadding(bottomPx = 51f)
+                .clickable{ onNext() }
+        )
+    }
+}

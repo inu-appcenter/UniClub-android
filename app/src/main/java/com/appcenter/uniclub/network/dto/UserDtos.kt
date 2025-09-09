@@ -5,6 +5,7 @@ data class RegisterRequestDto(
     val studentId: String,
     val name: String,
     val major: String,
+    val nickname: String,
     val personalInfoCollectionAgreement: Boolean,
     val marketingAdvertisement: Boolean,
     val studentVerification: Boolean

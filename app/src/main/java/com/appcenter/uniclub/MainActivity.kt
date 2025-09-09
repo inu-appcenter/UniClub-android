@@ -53,6 +53,7 @@ import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import com.appcenter.uniclub.ui.signup.NicknameScreen
 
 class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
@@ -105,9 +106,38 @@ class MainActivity : ComponentActivity() {
                         )
                         SignUpScreen(
                             onBack = { navController.popBackStack() },
-                            onNext = { navController.navigate("agreement") },
+                            onNext = { navController.navigate("nickname") },
                             vm = vm
                         )
+                    }
+
+                    composable("nickname") {
+                        // signup 에서 만든 ViewModel 재사용
+                        val parentEntry = remember(navController) {
+                            try {
+                                navController.getBackStackEntry("signup")
+                            } catch (e: IllegalArgumentException) {
+                                null
+                            }
+                        }
+
+                        if (parentEntry != null) {
+                            val vm: SignUpViewModel = viewModel(
+                                factory = SignUpViewModelFactory(repo),
+                                viewModelStoreOwner = parentEntry
+                            )
+
+                            NicknameScreen(
+                                onBack = { navController.popBackStack() },
+                                onNext = { navController.navigate("agreement") },
+                                vm = vm
+                            )
+                        } else {
+                            // signup 이 없으면 fallback 처리
+                            navController.navigate("signup") {
+                                popUpTo("nickname") { inclusive = true }
+                            }
+                        }
                     }
 
                     composable("agreement") {
