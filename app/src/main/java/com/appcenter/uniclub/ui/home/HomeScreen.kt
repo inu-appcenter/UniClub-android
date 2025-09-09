@@ -86,10 +86,10 @@ fun HomeScreen(
             RecommendTitle()
         }
 
-//        item {
-//            Spacer(modifier = Modifier.height(16.dp))
-//            ClubCardCarousel(navController = navController, vm = clubVm)
-//        }
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            ClubCardCarousel(navController = navController, vm = clubVm)
+        }
 
         item {
             CategorySection(navController = navController) { category ->

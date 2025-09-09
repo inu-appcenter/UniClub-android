@@ -10,6 +10,6 @@ data class MainPageMediaResponseDto(
 data class MainPageClubResponseDto(
     val clubId: Long,
     val name: String,
-    val imageUrl: String,
+    val imageUrl: String? = null,
     val favorite: Boolean
 )
