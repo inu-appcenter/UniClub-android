@@ -118,7 +118,7 @@ fun ClubCardCarousel(
                     imageUrl = item.imageUrl,
                     clubName = item.name,
                     isFavorite = item.favorite,
-                    onClick = { navController.navigate("promotion") },
+                    onClick = { navController.navigate("promotion/${item.clubId}") },
                     onToggleFavorite = { vm.onFavoriteClick(item.clubId) }
                 )
             }

@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 data class PromotionViewData(
     val name: String,
-    val status: String,
+    val status: String?,
     val bannerUrl: String?,                // CLUB_BACKGROUND
     val profileUrl: String?,               // CLUB_PROFILE
     val promoItems: List<DescriptionMediaDto>, // CLUB_PROMOTION (정렬 완료)
