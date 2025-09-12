@@ -12,7 +12,7 @@ data class DescriptionMediaDto(
 data class ClubPromotionResponseDto(
     val role: Role,            // 서버에서 "ADMIN"/"PRESIDENT"/... 로 내려옴
     val name: String,
-    val status: String,
+    val status: String?,
     val startTime: String,
     val endTime: String,
     val simpleDescription: String,
