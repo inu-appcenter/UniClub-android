@@ -9,6 +9,8 @@ import com.appcenter.uniclub.network.dto.Role
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.format.DateTimeFormatter
 
 data class PromotionViewData(
     val name: String,
@@ -57,9 +59,16 @@ class UserPromotionViewModel(
                     .filter { it.mediaType == "CLUB_BACKGROUND" }
                     .maxByOrNull { it.updatedAt }?.mediaLink
 
+                val isoFormatter = DateTimeFormatter.ISO_DATE_TIME
                 val profileUrl = dto.mediaList
-                    .filter { it.mediaType == "CLUB_PROFILE" }
-                    .maxByOrNull { it.updatedAt }?.mediaLink
+                    .filter { it.mediaType == "CLUB_PROFILE" && !it.main }
+                    .maxByOrNull { LocalDateTime.parse(it.updatedAt, isoFormatter) }
+                    ?.mediaLink
+                    ?: dto.mediaList
+                        .filter { it.mediaType == "CLUB_PROFILE" }
+                        .maxByOrNull { LocalDateTime.parse(it.updatedAt, isoFormatter) }
+                        ?.mediaLink
+
 
                 val promos = dto.mediaList.filter { it.mediaType == "CLUB_PROMOTION" }
                 val firstMain = promos.indexOfFirst { it.main }

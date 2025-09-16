@@ -5,12 +5,15 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.data.ClubRepository
 import com.appcenter.uniclub.network.dto.ClubPromotionRegisterRequestDto
 import com.appcenter.uniclub.network.dto.ClubPromotionResponseDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.format.DateTimeFormatter
 
 enum class RecruitStatus { SCHEDULED, ACTIVE, CLOSED }
 
@@ -20,6 +23,32 @@ data class PromotionImage(
     val mediaLink: String? = null                  // 서버가 부여한 키 (uploads/....png)
 ) {
     val displayUri: String? get() = localUri ?: mediaLink
+}
+
+private fun now(): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm")
+    return LocalDateTime.now().format(formatter)
+}
+
+private val serverFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+private val uiFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+// 서버에서 받은 값을 UI-friendly string 으로
+fun isoToUi(iso: String): String {
+    return try {
+        LocalDateTime.parse(iso, serverFormatter).format(uiFormatter)
+    } catch (e: Exception) {
+        "" // 잘못된 값이면 공백
+    }
+}
+
+// UI-friendly string 을 서버용 ISO string 으로
+fun uiToIso(ui: String): String {
+    return try {
+        LocalDateTime.parse(ui, uiFormatter).format(serverFormatter)
+    } catch (e: Exception) {
+        "" // 잘못된 값이면 공백
+    }
 }
 
 data class AdminPromotionUi(
@@ -101,122 +130,100 @@ class AdminPromotionViewModel(
     }
 
     /** 저장 */
-    fun save() {
+    fun save(app: App, onSuccess: (() -> Unit)? = null) {
         val s = _ui.value
 
-        val (startIso, endIso) = when {
-            s.recruitPeriod.isNotBlank() -> {
-                parseRecruitPeriodOneLine(s.recruitPeriod)
-                    ?: run {
-                        _ui.value = s.copy(
-                            error = "모집기간은 'YYYY-MM-DD HH:mm ~ YYYY-MM-DD HH:mm' 형식으로 입력해 주세요."
-                        )
-                        return
-                    }
-            }
-            // 2) 아니면 개별 ISO 값을 사용(이미 채워져 있다면)
-            s.recruitStartIso.isNotBlank() && s.recruitEndIso.isNotBlank() ->
-                s.recruitStartIso to s.recruitEndIso
-
-            else -> {
-                _ui.value = s.copy(error = "모집기간을 입력해 주세요.")
-                return
-            }
-        }
-
-        // 최소 유효성 검사 (필요에 맞게 보강)
-        when {
-            s.recruitStartIso.isBlank() -> {
-                _ui.value = s.copy(error = "모집 시작 시간을 입력해 주세요 (ISO-8601).")
-                return
-            }
-            s.recruitEndIso.isBlank() -> {
-                _ui.value = s.copy(error = "모집 마감 시간을 입력해 주세요 (ISO-8601).")
-                return
-            }
-            s.leaderName.isBlank() -> {
-                _ui.value = s.copy(error = "회장 이름을 입력해 주세요.")
-                return
-            }
-            s.contact.isBlank() -> {
-                _ui.value = s.copy(error = "연락처를 입력해 주세요.")
-                return
-            }
-            s.clubRoom.isBlank() -> {
-                _ui.value = s.copy(error = "동아리방 위치를 입력해 주세요.")
-                return
-            }
-        }
+        val startIso = if (s.recruitStartIso.isNotBlank()) uiToIso(s.recruitStartIso) else null
+        val endIso   = if (s.recruitEndIso.isNotBlank()) uiToIso(s.recruitEndIso) else null
 
         val body = ClubPromotionRegisterRequestDto(
-            // 서버 스키마에 name 이 존재함. 필수일 수 있으므로 비어있으면 한 칸이라도 넣어 서버 검증을 피함.
             name = s.clubName.ifBlank { " " },
             status = when (s.recruitStatus) {
                 RecruitStatus.ACTIVE -> "ACTIVE"
                 RecruitStatus.CLOSED -> "CLOSED"
                 RecruitStatus.SCHEDULED -> "SCHEDULED"
             },
-            startTime = s.recruitStartIso,
-            endTime = s.recruitEndIso,
-            simpleDescription = s.intro,
-            description = s.clubDescription,
-            notice = s.noticeText,
-            location = s.clubRoom,
-            presidentName = s.leaderName,
-            presidentPhone = s.contact,
+            startTime = startIso,
+            endTime = endIso,
+            simpleDescription = s.intro.ifBlank { null },
+            description = s.clubDescription.ifBlank { null },
+            notice = s.noticeText.ifBlank { null },
+            location = s.clubRoom.ifBlank { null },
+            presidentName = s.leaderName.ifBlank { null },
+            presidentPhone = s.contact.ifBlank { null },
             youtubeLink = s.youtubeLink.ifBlank { null },
             instagramLink = s.instagramLink.ifBlank { null },
             applicationFormLink = s.applyLink.ifBlank { null }
         )
 
         viewModelScope.launch {
-            _ui.value = _ui.value.copy(loading = true, error = null)
-            repo.upsertClubPromotion(clubId, body)
-                .onSuccess {
-                    _ui.value = _ui.value.copy(loading = false)
-                }
-                .onFailure { e ->
-                    _ui.value = _ui.value.copy(
-                        loading = false,
-                        error = e.message ?: "저장에 실패했습니다."
+            try {
+                // 1. 프로필 업로드
+                s.profileUri?.let { local ->
+                    repo.uploadClubImage(
+                        clubId = clubId,
+                        localUri = local,
+                        mediaType = "CLUB_PROFILE",
+                        main = false,
+                        context = app
                     )
                 }
+
+                // 2. 배너 업로드
+                s.bannerUri?.let { local ->
+                    repo.uploadClubImage(
+                        clubId = clubId,
+                        localUri = local,
+                        mediaType = "CLUB_BACKGROUND",
+                        main = false,
+                        context = app
+                    )
+                }
+
+                // 3. 활동 사진 업로드 (순서대로, 첫 번째만 main=true)
+                s.activityImages.forEachIndexed { idx, img ->
+                    img.localUri?.let { local ->
+                        repo.uploadClubImage(
+                            clubId = clubId,
+                            localUri = Uri.parse(local),
+                            mediaType = "CLUB_PROMOTION",
+                            main = (idx == 0),
+                            context = app
+                        )
+                    }
+                }
+
+                // 4. 나머지 텍스트 정보 저장
+                repo.upsertClubPromotion(clubId, body)
+
+                onSuccess?.invoke()
+            } catch (e: Exception) {
+                android.util.Log.e("AdminPromotionVM", "저장 실패", e)
+            }
         }
     }
 
     // ------ 업로드 진입점 ------
-    fun uploadBanner(local: Uri) = uploadGeneric(local, "banner_${now()}.jpg", "CLUB_BACKGROUND", main = true) {
-        _ui.value = _ui.value.copy(bannerUri = local)
+    fun uploadProfile(local: Uri) {
+        _ui.value = _ui.value.copy(profileUri = local)
     }
 
-    fun uploadProfile(local: Uri) = uploadGeneric(local, "profile_${now()}.jpg", "CLUB_PROFILE", main = true) {
-        _ui.value = _ui.value.copy(profileUri = local)
+    fun uploadBanner(local: Uri) {
+        _ui.value = _ui.value.copy(bannerUri = local)
     }
 
     /** 활동사진 업로드: index 자리에 넣거나 추가. index==0이면 main=true */
     fun uploadActivityAt(index: Int, picked: Uri) {
-        viewModelScope.launch {
-            _ui.value = _ui.value.copy(loading = true, error = null)
+        val list = _ui.value.activityImages.toMutableList()
+        val item = PromotionImage(localUri = picked.toString())
 
-            val fileName = "activity_${System.currentTimeMillis()}_$index.jpg"
-            repo.uploadClubImage(
-                clubId = clubId,
-                localUri = picked,
-                filename = fileName,
-                mediaType = "CLUB_PROMOTION",
-                main = (index == 0)
-            ).onSuccess { mediaLink ->
-                val list = _ui.value.activityImages.toMutableList()
-                val item = PromotionImage(localUri = picked.toString(), mediaLink = mediaLink)
-
-                if (index in list.indices) list[index] = item else list.add(item)
-                _ui.value = _ui.value.copy(activityImages = list, loading = false)
-
-                // 업로드가 0번에 들어갔다면 이미 main=true로 서버 반영됨
-            }.onFailure { e ->
-                _ui.value = _ui.value.copy(loading = false, error = e.message)
-            }
+        if (index in list.indices) {
+            list[index] = item
+        } else {
+            list.add(item)
         }
+
+        _ui.value = _ui.value.copy(activityImages = list)
     }
 
     /** 드래그로 순서 변경: UI 즉시 반영 + 0번이 바뀌면 main=true 서버와 동기화 */
@@ -256,35 +263,55 @@ class AdminPromotionViewModel(
         }
     }
 
-    private fun uploadGeneric(
-        local: Uri,
-        filename: String,
-        mediaType: String,
-        main: Boolean,
-        onUi: () -> Unit
-    ) {
-        viewModelScope.launch {
-            _ui.value = _ui.value.copy(loading = true, error = null)
-            repo.uploadClubImage(clubId, local, filename, mediaType, main)
-                .onSuccess { onUi(); _ui.value = _ui.value.copy(loading = false) }
-                .onFailure { e -> _ui.value = _ui.value.copy(loading = false, error = e.message) }
-        }
-    }
-
     // --- 내부: 서버 → UI 매핑 ---
     private fun mapFromResponse(dto: ClubPromotionResponseDto): AdminPromotionUi {
-        val startIso = dto.startTime
-        val endIso = dto.endTime
+        val startIso = dto.startTime.orEmpty()
+        val endIso = dto.endTime.orEmpty()
+
+        val simple = dto.simpleDescription.orEmpty()
+        val desc = dto.description.orEmpty()
+
+        // 서버가 내려주는 media 리스트 → UI용 PromotionImage 리스트로 변환
+        val images = dto.mediaList?.map {
+            PromotionImage(
+                id = UUID.randomUUID().toString(),
+                localUri = null,
+                mediaLink = it.mediaLink // 서버에서 준 S3 경로
+            )
+        } ?: emptyList()
+
+        // 배너 / 프로필 / 대표이미지 분리
+        val banner = dto.mediaList
+            ?.find { it.mediaType == "CLUB_BACKGROUND" }
+            ?.mediaLink
+            ?.let { Uri.parse(it) }
+
+        val profile = dto.mediaList
+            ?.find { it.mediaType == "CLUB_PROFILE" }
+            ?.mediaLink
+            ?.let { Uri.parse(it) }
+
+        val activities = dto.mediaList
+            ?.filter { it.mediaType == "CLUB_PROMOTION" }
+            ?.map {
+                PromotionImage(
+                    id = UUID.randomUUID().toString(),
+                    localUri = null,
+                    mediaLink = it.mediaLink
+                )
+            }.orEmpty()
+
+
         return _ui.value.copy(
             loading = false,
             // 서버의 role 은 권한 분기 용으로만 사용 (필요 시 추가 보관)
             clubName = dto.name,
-            intro = dto.description.takeIf { it.isNotBlank() } ?: "", // simpleDescription이 없다면 임시로 description에서 보정
-            clubDescription = dto.description,
-            noticeText = dto.notice,
-            clubRoom = dto.location,
-            leaderName = dto.presidentName,
-            contact = dto.presidentPhone,
+            intro = simple,
+            clubDescription = desc,
+            noticeText = dto.notice.orEmpty(),
+            clubRoom = dto.location.orEmpty(),
+            leaderName = dto.presidentName.orEmpty(),
+            contact = dto.presidentPhone.orEmpty(),
             youtubeLink = dto.youtubeLink.orEmpty(),
             instagramLink = dto.instagramLink.orEmpty(),
             applyLink = dto.applicationFormLink.orEmpty(),
@@ -293,24 +320,28 @@ class AdminPromotionViewModel(
                 "CLOSED" -> RecruitStatus.CLOSED
                 else -> RecruitStatus.SCHEDULED
             },
-            recruitStartIso = startIso,
-            recruitEndIso = endIso,
-            recruitPeriod = "$startIso ~ $endIso"
+            recruitStartIso = isoToUi(dto.startTime.orEmpty()),
+            recruitEndIso = isoToUi(dto.endTime.orEmpty()),
+            recruitPeriod = if (startIso.isNotEmpty() && endIso.isNotEmpty()) {
+                "$startIso ~ $endIso"
+            } else "", // 값이 없을 경우 공백으로
+            bannerUri = banner,
+            profileUri = profile,
+            activityImages = activities
         )
     }
+}
 
-    // -------- Factory (직접 전달 방식) --------
-    companion object {
-        fun factory(
-            repo: ClubRepository,
-            clubId: Long
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+class AdminPromotionViewModelFactory(
+    private val app: App,
+    private val clubId: Long
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AdminPromotionViewModel::class.java)) {
+            val repo = com.appcenter.uniclub.di.ServiceLocator.clubRepository(app)
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AdminPromotionViewModel(repo, clubId) as T
-            }
+            return AdminPromotionViewModel(repo, clubId) as T
         }
-
-        private fun now() = System.currentTimeMillis()
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
