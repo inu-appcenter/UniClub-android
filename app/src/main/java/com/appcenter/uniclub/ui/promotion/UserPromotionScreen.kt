@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,15 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -43,6 +41,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.em
@@ -55,6 +54,7 @@ import com.appcenter.uniclub.network.dto.DescriptionMediaDto
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import com.appcenter.uniclub.util.formatDateTime
 
 private fun recruitIconOf(status: String?): Int = when (status?.uppercase()) {
     "SCHEDULED" -> R.drawable.ic_upcoming    // 모집예정
@@ -99,6 +99,20 @@ fun UserPromotionScreen(
         return
     }
 
+    val refreshState = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.getStateFlow("refresh", false)
+        ?.collectAsState()
+
+    LaunchedEffect(refreshState?.value) {
+        if (refreshState?.value == true) {
+            vm.refresh()
+            navController.currentBackStackEntry
+                ?.savedStateHandle
+                ?.set("refresh", false)
+        }
+    }
+
     val scrollState = rememberScrollState()
     val statusIcon = remember(data.status) { recruitIconOf(data.status) }
 
@@ -139,7 +153,7 @@ fun UserPromotionScreen(
                     onBackClick = onBackClick,
                     onLikeClick = { vm.onFavoriteClick(clubId) },
                     showEdit = data.canEdit,
-                    onEditClick = { navController.navigate("admin_promotion/$clubId") },
+                    onEditClick = { navController.navigate("admin_promotion/${clubId}") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(63.dp)
@@ -163,12 +177,14 @@ fun UserPromotionScreen(
                             .zIndex(1f)
                     )
                 } else {
-                    Box(
+                    Image(
+                        painter = painterResource(R.drawable.default_image),
+                        contentDescription = "Profile Image",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(113.dp)
-                            .offset(x = 24.dp, y = 209.dp - 113.dp / 2)
+                            .size(120.dp)
+                            .offset(x = 21.dp, y = 209.dp - 113.dp / 2)
                             .clip(RoundedCornerShape(40.dp))
-                            .background(Color(0xFFCDCDCD))
                             .zIndex(1f)
                     )
                 }
@@ -241,7 +257,7 @@ fun UserPromotionScreen(
                 Image( //모집상태
                     painter = painterResource(id = statusIcon),
                     contentDescription = null,
-                    modifier = Modifier.offset(x = (-18).dp)
+                    modifier = Modifier.offset(x = (-20).dp)
                 )
             }
 
@@ -262,7 +278,7 @@ fun UserPromotionScreen(
             Spacer(modifier = Modifier.height(25.dp))
 
             //한줄 소개
-            TextShadowBanner(text = if (data.simpleDescription.isNullOrBlank()) "-" else data.description!!)
+            TextShadowBanner(text = if (data.simpleDescription.isNullOrBlank()) "-" else data.simpleDescription!!)
 
             Spacer(modifier = Modifier.height(35.dp))
 
@@ -270,11 +286,14 @@ fun UserPromotionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 30.dp),
+                    .padding(start = 30.dp, end = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                val period = if (!data.startTime.isNullOrBlank() && !data.endTime.isNullOrBlank())
-                    "${data.startTime} ~ ${data.endTime}" else "-"
+                val period = if (!data.startTime.isNullOrBlank() && !data.endTime.isNullOrBlank()) {
+                    "${formatDateTime(data.startTime)} ~ ${formatDateTime(data.endTime)}"
+                } else {
+                    "-"
+                }
                 AnnouncementItem(label = "모집기간", content = period)
                 AnnouncementItem(label = "공지", content = if (data.notice.isNullOrBlank()) "-" else data.notice!!)
             }
@@ -417,11 +436,11 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 21.dp, top = 15.dp),
+            .padding(top = 15.dp),
+        contentPadding = PaddingValues(horizontal = 21.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(limited) { index, item ->
-            val isLast = index == limited.lastIndex
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(item.mediaLink)
@@ -432,7 +451,6 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
                 modifier = Modifier
                     .figmaSize(widthPx = 139f, heightPx = 183f)
                     .clip(RoundedCornerShape(25.dp))
-                    .then(if (isLast) Modifier.padding(end = 20.dp) else Modifier)
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.data
 
+import android.content.Context
 import android.net.Uri
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.network.ClubService
@@ -8,6 +9,8 @@ import com.appcenter.uniclub.network.dto.ClubPromotionResponseDto
 import com.appcenter.uniclub.network.dto.ClubMediaUploadRequestDto
 import com.appcenter.uniclub.network.dto.PageClubResponseDto
 import com.appcenter.uniclub.network.dto.S3PresignedRequestDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -92,36 +95,87 @@ class ClubRepository(
         return bytes to mime
     }
 
-    private fun putToS3(presignedUrl: String, bytes: ByteArray, contentType: String): Boolean {
+    private suspend fun putToS3(
+        presignedUrl: String,
+        bytes: ByteArray,
+        contentType: String
+    ): Boolean = withContext(Dispatchers.IO) {
         val body = bytes.toRequestBody(contentType.toMediaType())
-        val req = Request.Builder().url(presignedUrl).put(body).build()
-        okHttp.newCall(req).execute().use { resp -> return resp.isSuccessful }
+        val req = Request.Builder()
+            .url(presignedUrl)
+            .put(body)
+            .build()
+
+        okHttp.newCall(req).execute().use { resp ->
+            android.util.Log.d("ClubRepo", "S3 업로드 응답 코드=${resp.code}")
+            resp.isSuccessful
+        }
+    }
+
+    private fun extFromMime(mime: String): String = when (mime.lowercase()) {
+        "image/jpeg" -> "jpg"
+        "image/png" -> "png"
+        "image/webp" -> "webp"
+        "image/heic", "image/heif" -> "heic"
+        else -> "dat" // 알 수 없는 경우 안전하게 dat 처리
     }
 
     suspend fun uploadClubImage(
         clubId: Long,
         localUri: Uri,
-        filename: String,
         mediaType: String,
-        main: Boolean
-    ): Result<String> = runCatching {
-        val (bytes, contentType) = readBytes(localUri) //로컬 파일 바이트 배열로
+        main: Boolean,
+        context: Context
+    ): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            try {
+                // mimeType 추출
+                val contentType = context.contentResolver.getType(localUri) ?: "application/octet-stream"
+                val ext = extFromMime(contentType)
+                val filename = "${mediaType.lowercase()}_${System.currentTimeMillis()}.$ext"
 
-        //서버에 presigned URL 요청
-        val presigned = service.createPresignedUrl(
-            clubId, listOf(S3PresignedRequestDto(filename))
-        ).first()
+                // presigned 발급
+                val presigned = service.createPresignedUrl(
+                    clubId, listOf(S3PresignedRequestDto(filename))
+                ).first()
+                android.util.Log.d("ClubRepo", "2️⃣ presigned 발급 완료 → ${presigned.filename}")
 
-        //presigned URL 사용해 S3에 PUT 업로드
-        val ok = putToS3(presigned.presignedUrl, bytes, contentType)
-        require(ok) { "S3 업로드 실패" }
+                // 로컬 파일 읽기
+                val inputStream = context.contentResolver.openInputStream(localUri)
+                    ?: error("이미지 읽기 실패: $localUri")
+                val bytes = inputStream.use { it.readBytes() }
+                android.util.Log.d("ClubRepo", "1️⃣ readBytes 완료 (${bytes.size} bytes)")
 
-        //서버에 업로드된 파일 메타데이터 등록
-        service.registerClubMedia(
-            clubId,
-            listOf(ClubMediaUploadRequestDto(mediaLink = presigned.filename, mediaType = mediaType, main = main))
-        )
+                // S3 업로드 (이제는 IO 스레드에서 실행됨)
+                val req = Request.Builder()
+                    .url(presigned.presignedUrl)
+                    .put(bytes.toRequestBody(contentType.toMediaType()))
+                    .build()
 
-        presigned.filename //서버 key 반환
+                okHttp.newCall(req).execute().use { resp ->
+                    android.util.Log.d("ClubRepo", "3️⃣ S3 업로드 응답 코드=${resp.code}")
+                    if (!resp.isSuccessful) error("S3 업로드 실패 code=${resp.code}")
+                }
+
+                // 서버에 업로드 정보 등록
+                val cleanPath = presigned.presignedUrl
+                    .substringAfter("uploads/")
+                    .substringBefore("?")
+                val finalPath = "uploads/$cleanPath"
+
+                val reqBody = ClubMediaUploadRequestDto(
+                    mediaLink = finalPath,
+                    mediaType = mediaType,
+                    main = main
+                )
+                service.registerClubMedia(clubId, listOf(reqBody))
+                android.util.Log.d("ClubRepo", "4️⃣ /upload 등록 완료 → $finalPath, mediaType=$mediaType, main=$main")
+
+                finalPath
+            } catch (e: Exception) {
+                android.util.Log.e("ClubRepo", "❌ 업로드 실패: ${e.message}", e)
+                throw e
+            }
+        }
     }
 }

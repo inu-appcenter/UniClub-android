@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,10 +59,17 @@ import com.appcenter.uniclub.util.figmaSize
 import org.burnoutcrew.reorderable.ReorderableItem
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appcenter.uniclub.App
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
-import java.util.UUID
+import android.app.TimePickerDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.ui.text.TextStyle
+import java.util.*
 
 //관리자용 홍보 페이지
 
@@ -71,7 +79,11 @@ private enum class Platform { APPLY, YOUTUBE, INSTAGRAM }
 @Composable
 fun AdminPromotionScreen(
     navController: NavHostController,
-    vm: AdminPromotionViewModel = viewModel()
+    clubId: Long,
+    app: App = LocalContext.current.applicationContext as App,
+    vm: AdminPromotionViewModel = viewModel(
+        factory = AdminPromotionViewModelFactory(app, clubId)
+    )
 ) {
     val ui by vm.ui.collectAsState()
 
@@ -228,7 +240,7 @@ fun AdminPromotionScreen(
                     ),
                     contentDescription = ui.recruitStatus.name,
                     modifier = Modifier
-                        .offset(x = (-18).dp)
+                        .offset(x = (-20).dp)
                         .clickable {
                             vm.update {
                                 it.copy(
@@ -290,16 +302,20 @@ fun AdminPromotionScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 30.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(horizontal = 30.dp)
             ) {
-                //서버 연결 후 날짜 형식 수정 필요해 보임
-                EditableAnnouncementItem(
-                    label = "모집기간",
-                    value = ui.recruitPeriod,
-                    onValueChange = { v -> vm.update { it.copy(recruitPeriod = v) } },
-                    placeholder = "YYYY-MM-DD HH:mm ~ YYYY-MM-DD HH:mm"
+                DateTimePickerRow(
+                    label = "모집시작",
+                    value = ui.recruitStartIso,
+                    onValueChange = { v -> vm.update { it.copy(recruitStartIso = v) } }
                 )
+                DateTimePickerRow(
+                    label = "모집종료",
+                    value = ui.recruitEndIso,
+                    onValueChange = { v -> vm.update { it.copy(recruitEndIso = v) } }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
                 EditableAnnouncementItem(
                     label = "공지",
                     value = ui.noticeText,
@@ -350,7 +366,7 @@ fun AdminPromotionScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            //저장 버튼 (서버 연결 후 구현 예정)
+            //저장 버튼
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -358,7 +374,18 @@ fun AdminPromotionScreen(
                 Image(
                     painter = painterResource(id = R.drawable.btn_save),
                     contentDescription = "저장하기",
-                    modifier = Modifier.clickable { vm.save() }
+                    modifier = Modifier.clickable {
+                        vm.save(
+                            app = app,
+                            onSuccess = {
+                                // 저장 성공 시 이전 화면에 refresh 신호 전달
+                                navController.previousBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set("refresh", true)
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 )
             }
 
@@ -725,7 +752,95 @@ fun EditableTextShadowBanner(
     }
 }
 
-//모집기간 + 공지
+//모집기간 날짜,시간 설정
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateTimePickerRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    val context = LocalContext.current
+    val cal = Calendar.getInstance()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 라벨
+        Text(
+            text = label,
+            fontWeight = FontWeight.Bold,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
+            color = Color.Black,
+            modifier = Modifier.width(70.dp)
+        )
+
+        // 선택된 값 표시
+        Text(
+            text = if (value.isBlank()) "미선택" else value,
+            fontSize = figmaTextSizeSp(12f),
+            fontFamily = NotoSansKR,
+            lineHeight = 12.sp * 1.5f,
+            color = if (value.isBlank()) Color(0xFFB0B0B0) else Color.Black
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        // 📅 달력 버튼
+        IconButton(onClick = { showDatePicker = true }) {
+            Icon(Icons.Default.DateRange, contentDescription = "날짜 선택")
+        }
+
+        // ⏰ 시계 버튼
+        IconButton(onClick = {
+            TimePickerDialog(
+                context,
+                { _, hour, minute ->
+                    val newTime = "%02d:%02d".format(hour, minute)
+                    val datePart = value.take(10).ifBlank { "2025-01-01" }
+                    onValueChange("$datePart $newTime")
+                },
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                true
+            ).show()
+        }) {
+            Icon(Icons.Default.AccessTime, contentDescription = "시간 선택")
+        }
+    }
+
+    // 📅 머티리얼 DatePickerDialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDatePicker = false
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        cal.timeInMillis = millis
+                        val y = cal.get(Calendar.YEAR)
+                        val m = cal.get(Calendar.MONTH) + 1
+                        val d = cal.get(Calendar.DAY_OF_MONTH)
+                        val newDate = "%04d-%02d-%02d".format(y, m, d)
+                        val timePart = value.substringAfter(" ", "00:00")
+                        onValueChange("$newDate $timePart")
+                    }
+                }) { Text("확인") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("취소") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+//공지
 @Composable
 fun EditableAnnouncementItem(
     label: String,
@@ -753,7 +868,7 @@ fun EditableAnnouncementItem(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            textStyle = androidx.compose.ui.text.TextStyle(
+            textStyle = TextStyle(
                 color = Color.Black,
                 fontSize = figmaTextSizeSp(12f),
                 fontFamily = NotoSansKR,

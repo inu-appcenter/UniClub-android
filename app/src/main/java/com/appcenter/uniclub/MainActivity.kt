@@ -260,7 +260,17 @@ fun MainScaffold(
                                 app = app
                             )
                         }
-                        composable("admin_promotion") { AdminPromotionScreen(navController = bottomNavController) }
+                        composable(
+                            "admin_promotion/{clubId}", arguments = listOf(navArgument("clubId") { type = NavType.LongType })
+                        ) { backStackEntry ->
+                            val clubId = backStackEntry.arguments?.getLong("clubId")
+                            if (clubId != null) {
+                                AdminPromotionScreen(
+                                    navController = bottomNavController,
+                                    clubId = clubId
+                                )
+                            }
+                        }
                         composable("search") { SearchScreen(navController = bottomNavController) }
                     }
                 }
