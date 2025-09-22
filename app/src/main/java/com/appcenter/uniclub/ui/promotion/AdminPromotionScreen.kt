@@ -233,9 +233,9 @@ fun AdminPromotionScreen(
                 Image( //모집상태
                     painter = painterResource(
                         id = when (ui.recruitStatus) {
-                            RecruitStatus.ACTIVE -> R.drawable.ic_recruiting
-                            RecruitStatus.SCHEDULED -> R.drawable.ic_upcoming
-                            RecruitStatus.CLOSED -> R.drawable.ic_closed
+                            RecruitStatus.ACTIVE -> R.drawable.ic_admin_recruiting
+                            RecruitStatus.SCHEDULED -> R.drawable.ic_admin_upcoming
+                            RecruitStatus.CLOSED -> R.drawable.ic_admin_closed
                         }
                     ),
                     contentDescription = ui.recruitStatus.name,
