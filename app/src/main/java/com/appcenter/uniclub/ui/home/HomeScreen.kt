@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -150,9 +151,13 @@ fun CategorySection(
                 lineHeight = 10.sp * 1.5f, //행간
                 letterSpacing = (-0.011).em, //자간
                 color = Color(0xFFB1B1B1),
-                modifier = Modifier.clickable {
-                    navController.navigate("clublist/전체")
-                }
+                modifier = Modifier
+                    .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        navController.navigate("clublist/전체")
+                    }
             )
         }
 
@@ -197,7 +202,10 @@ fun CategoryItem(
                 contentDescription = label,
                 modifier = Modifier
                     .figmaSize(widthPx = 80f, heightPx = 60.4f)
-                    .clickable { onClick() }
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onClick() }
             )
         }
         Spacer(modifier = Modifier.height(5.dp))

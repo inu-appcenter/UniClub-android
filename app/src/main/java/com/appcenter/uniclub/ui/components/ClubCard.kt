@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -42,7 +43,10 @@ fun ClubCard(
         modifier = Modifier
             .figmaSize(widthPx = 350f, heightPx = 85f)
             .clip(RoundedCornerShape(28.dp))
-            .clickable { onClick() },
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onClick() },
     ) {
         //배경 이미지
         Image(
@@ -146,7 +150,10 @@ fun ClubCard(
                 Box(
                     modifier = Modifier
                         .figmaSize(widthPx = 14f, heightPx = 12f) //고정된 박스 크기
-                        .clickable { onToggleFavorite() },
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onToggleFavorite() },
                     contentAlignment = Alignment.Center
                 ){
                     Image(

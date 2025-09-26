@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -205,9 +206,11 @@ fun UserPromotionScreen(
                     contentDescription = "YouTube",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable (
+                        .clickable(
                             enabled = !yt.isNullOrBlank(),
-                            onClick = { if (!yt.isNullOrBlank()) openUrl(context, yt) }
+                            onClick = { if (!yt.isNullOrBlank()) openUrl(context, yt)},
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
                         )
                 )
 
@@ -219,9 +222,11 @@ fun UserPromotionScreen(
                     contentDescription = "Instagram",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable (
+                        .clickable(
                             enabled = !ig.isNullOrBlank(),
-                            onClick = { if (!ig.isNullOrBlank()) openUrl(context, ig) }
+                            onClick = { if (!ig.isNullOrBlank()) openUrl(context, ig) },
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
                         )
                 )
             }
@@ -495,6 +500,10 @@ fun ImageButtonItem(
     Image(
         painter = painterResource(id = imageRes),
         contentDescription = contentDescription,
-        modifier = Modifier.clickable(enabled = enabled ,onClick = onClick)
+        modifier = Modifier.clickable(
+            enabled = enabled ,onClick = onClick,
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        )
     )
 }

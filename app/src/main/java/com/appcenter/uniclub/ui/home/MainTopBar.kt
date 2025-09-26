@@ -2,11 +2,13 @@ package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -47,7 +49,10 @@ fun MainTopBar(
                 contentDescription = "검색",
                 modifier = Modifier
                     .figmaSize(widthPx = 24f, heightPx = 23f)
-                    .clickable { navController.navigate("search") }
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { navController.navigate("search") }
             )
 
             Spacer(modifier = Modifier.figmaPadding(startPx = 22f)) //아이콘 사이 간격
@@ -64,7 +69,10 @@ fun MainTopBar(
                 contentDescription = "알림",
                 modifier = Modifier
                     .figmaSize(widthPx = 20f, heightPx = 21f)
-                    .clickable { rootNavController.navigate("notification") }
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { rootNavController.navigate("notification") }
             )
         }
     }

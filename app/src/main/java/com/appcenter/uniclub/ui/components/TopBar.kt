@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -56,7 +57,10 @@ fun TopBar(
             modifier = Modifier
                 .figmaSize(widthPx = 11f, heightPx = 20f)
                 .align(Alignment.CenterStart)
-                .clickable { onBackClick() }
+                .clickable(
+                indication = null, // ✅ ripple 효과 제거
+                interactionSource = remember { MutableInteractionSource() }
+                ) { onBackClick() }
         )
 
         //오른쪽 아이콘 (옵션)
@@ -67,7 +71,10 @@ fun TopBar(
                 modifier = Modifier
                     .figmaSize(widthPx = 24f, heightPx = 23f)
                     .align(Alignment.CenterEnd)
-                    .clickable { onRightIconClick() }
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onRightIconClick() }
             )
         }
     }

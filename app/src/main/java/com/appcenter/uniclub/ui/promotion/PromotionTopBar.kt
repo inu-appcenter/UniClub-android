@@ -12,6 +12,7 @@ import androidx.compose.ui.zIndex
 import com.appcenter.uniclub.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,7 +54,10 @@ fun PromotionTopBar(
                 .align(Alignment.CenterStart)
                 .figmaPadding(startPx = 20f, topPx = 5f)
                 .figmaSize(widthPx = 11f, heightPx = 20f)
-                .clickable { onBackClick() }
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onBackClick() }
         )
 
         Row(
@@ -67,7 +71,10 @@ fun PromotionTopBar(
                 // 수정 버튼
                 Box(
                     modifier = Modifier
-                        .clickable { onEditClick() },
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onEditClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
@@ -81,7 +88,10 @@ fun PromotionTopBar(
 
             // 즐겨찾기 버튼
             Box(
-                modifier = Modifier.clickable { onLikeClick() },
+                modifier = Modifier.clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onLikeClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(

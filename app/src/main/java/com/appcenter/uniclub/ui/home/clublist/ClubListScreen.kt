@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.home.clublist
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.*
@@ -115,7 +116,10 @@ fun ClubListScreen(
                             contentDescription = "정렬 아이콘",
                             modifier = Modifier
                                 .figmaSize(widthPx = 75f, heightPx = 30f)
-                                .clickable { dropdownExpanded = !dropdownExpanded }
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { dropdownExpanded = !dropdownExpanded }
                         )
                     }
                 }
@@ -167,7 +171,10 @@ fun ClubListScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
-                                    .clickable {
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) {
                                         selectedSort = option
                                         dropdownExpanded = false
                                     }

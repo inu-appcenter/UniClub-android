@@ -37,6 +37,7 @@ import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import kotlinx.coroutines.delay
 import android.content.pm.ApplicationInfo
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 
@@ -90,7 +91,11 @@ fun LoginScreen(
                 Box(
                     modifier = Modifier
                         .figmaSize(widthPx = 180f, heightPx = 54f)
-                        .clickable(enabled = isLoginEnabled) {
+                        .clickable(
+                            enabled = isLoginEnabled,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             vm.login(onSuccess = onLoginSuccess)
                         },
                     contentAlignment = Alignment.Center
@@ -114,28 +119,11 @@ fun LoginScreen(
                     lineHeight = 12.sp * 1.5f,
                     letterSpacing = (-0.011).em,
                     color = Color.Black,
-                    modifier = Modifier.clickable { onSignUpClick() }
+                    modifier = Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onSignUpClick() }
                 )
-
-//                // 🔽🔽🔽 여기 아래에 개발용 우회 버튼 추가 🔽🔽🔽
-//                // 디버그gable 여부 (Debug build면 true)
-//                val context = LocalContext.current
-//                val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-//
-//                if (isDebug) {
-//                    Spacer(modifier = Modifier.height(16.dp))
-//                    Button(
-//                        onClick = { vm.devBypass(onSuccess = onLoginSuccess) },
-//                        modifier = Modifier.figmaSize(widthPx = 180f, heightPx = 40f)
-//                    ) {
-//                        Text(
-//                            text = "개발용: 인증 건너뛰고 들어가기",
-//                            fontSize = figmaTextSizeSp(12f),
-//                            fontFamily = NotoSansKR,
-//                            fontWeight = FontWeight.SemiBold
-//                        )
-//                    }
-//                }
             }
         }
 

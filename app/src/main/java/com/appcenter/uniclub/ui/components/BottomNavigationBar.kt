@@ -3,6 +3,7 @@ package com.appcenter.uniclub.ui.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -66,7 +67,10 @@ fun BottomNavigationBar(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clickable {
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
                         if (currentRoute != "qna") {
                             rootNavController.navigate("qna") {
                                 launchSingleTop = true
@@ -83,7 +87,10 @@ fun BottomNavigationBar(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clickable {
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
                         if (currentRoute != "home") {
                             bottomNavController.navigate("home") {
                                 launchSingleTop = true
@@ -100,7 +107,10 @@ fun BottomNavigationBar(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clickable {
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
                         if (currentRoute != "mypage") {
                             bottomNavController.navigate("mypage") {
                                 launchSingleTop = true

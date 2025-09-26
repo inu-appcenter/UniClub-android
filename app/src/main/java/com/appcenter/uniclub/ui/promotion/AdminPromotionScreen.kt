@@ -64,6 +64,7 @@ import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
 import android.app.TimePickerDialog
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DateRange
@@ -136,7 +137,10 @@ fun AdminPromotionScreen(
                         .figmaPadding(startPx = 18f, topPx = 18f)
                         .size(20.dp)
                         .align(Alignment.TopStart)
-                        .clickable { navController.popBackStack() }
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { navController.popBackStack() }
                         .zIndex(1f), //배너 위로
                     contentAlignment = Alignment.Center
                 ) {
@@ -170,7 +174,10 @@ fun AdminPromotionScreen(
                 contentDescription = "Apply",
                 modifier = Modifier
                     .size(62.dp, 30.dp)
-                    .clickable {
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
                         editing = Platform.APPLY
                         tempLink = ui.applyLink
                         showLinkDialog = true
@@ -182,7 +189,10 @@ fun AdminPromotionScreen(
                     contentDescription = "YouTube",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable {
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             editing= Platform.YOUTUBE //어떤 SNS 편집하는지 저장
                             tempLink = ui.youtubeLink //기존 값 프리필
                             showLinkDialog = true
@@ -194,7 +204,10 @@ fun AdminPromotionScreen(
                     contentDescription = "Instagram",
                     modifier = Modifier
                         .size(30.dp)
-                        .clickable {
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             editing = Platform.INSTAGRAM
                             tempLink = ui.instagramLink
                             showLinkDialog = true
@@ -241,7 +254,10 @@ fun AdminPromotionScreen(
                     contentDescription = ui.recruitStatus.name,
                     modifier = Modifier
                         .offset(x = (-20).dp)
-                        .clickable {
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             vm.update {
                                 it.copy(
                                     recruitStatus = when (it.recruitStatus) {
@@ -374,7 +390,10 @@ fun AdminPromotionScreen(
                 Image(
                     painter = painterResource(id = R.drawable.btn_save),
                     contentDescription = "저장하기",
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
                         vm.save(
                             app = app,
                             onSuccess = {
@@ -530,7 +549,10 @@ private fun LinkInputDialog(
                     Box( //뒤로 버튼
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .clickable { onBack() },
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { onBack() },
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -558,7 +580,11 @@ private fun LinkInputDialog(
                         color = if (doneEnabled) Color.Black else Color(0xFFBEBEBE),
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .clickable(enabled = doneEnabled) { onDone() }
+                            .clickable(
+                                enabled = doneEnabled,
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { onDone() }
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -996,7 +1022,10 @@ fun RepresentativeImagesCarousel(
                             .align(Alignment.TopEnd)
                             .figmaPadding(topPx = 10f, endPx = 9f)
                             .figmaSize(widthPx = 35f, heightPx = 35f)
-                            .clickable { onRemoveAt(index) },
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { onRemoveAt(index) },
                         contentAlignment = Alignment.Center
                     ) {
                         Image(

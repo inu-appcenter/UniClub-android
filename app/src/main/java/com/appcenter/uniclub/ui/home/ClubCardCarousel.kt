@@ -3,6 +3,7 @@ package com.appcenter.uniclub.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -182,7 +183,10 @@ fun RecommendClub(
                 modifier = Modifier
                     .figmaSize(widthPx = 28f, heightPx = 28f) //고정 박스 크기
                     .figmaPadding(endPx = 14f) //오른쪽 여백
-                    .clickable { onToggleFavorite() },
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onToggleFavorite() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
