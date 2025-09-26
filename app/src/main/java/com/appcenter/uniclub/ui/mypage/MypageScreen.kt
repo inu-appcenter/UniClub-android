@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.mypage
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,9 +73,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
             fontWeight = FontWeight.Bold,
             lineHeight = 15.sp * 1.5f, // 행간
             letterSpacing = (-0.011).em, // 자간
-            color = Color.Black,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            color = Color.Black
         )
     }
 
@@ -234,7 +233,10 @@ fun MenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onClick() }
             .padding(vertical = 8.dp), //터치 영역 확보
         verticalAlignment = Alignment.CenterVertically
     ) {

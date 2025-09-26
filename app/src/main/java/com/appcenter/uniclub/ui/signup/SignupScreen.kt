@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.signup
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -148,7 +149,11 @@ fun SignUpScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .figmaPadding(bottomPx = 51f)
-                .clickable(enabled = if (!ui.verified) canVerify else canProceed) {
+                .clickable(
+                    enabled = if (!ui.verified) canVerify else canProceed,
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
                     if (!ui.verified) {
                         vm.verify()
                     } else {

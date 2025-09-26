@@ -3,6 +3,7 @@ package com.appcenter.uniclub.ui.signup
 import com.appcenter.uniclub.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -114,7 +115,11 @@ fun AgreementScreen(
                     contentDescription = "약관 동의",
                     modifier = Modifier
                         .figmaPadding(startPx = 114f, endPx = 114f)
-                        .clickable(enabled = ui.personalInfoCollectionAgreement && !ui.loading) {
+                        .clickable(
+                            enabled = ui.personalInfoCollectionAgreement && !ui.loading,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
                             vm.agreeAndRegister(onDone = onFinished)
                         }
                 )
