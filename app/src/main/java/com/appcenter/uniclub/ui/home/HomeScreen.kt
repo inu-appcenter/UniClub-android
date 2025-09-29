@@ -172,7 +172,7 @@ fun CategorySection(
                 .figmaPadding(startPx = 27f, endPx = 27f, topPx = 20f),
             userScrollEnabled = false,
             horizontalArrangement = Arrangement.spacedBy(38.dp), //가로간격
-            verticalArrangement = Arrangement.spacedBy(12.dp) //세로간격
+            verticalArrangement = Arrangement.spacedBy(15.dp) //세로간격
         ) {
             items(categories) { category ->
                 val iconRes = category.getIconRes()
@@ -201,7 +201,7 @@ fun CategoryItem(
                 painter = painterResource(id = iconResId),
                 contentDescription = label,
                 modifier = Modifier
-                    .figmaSize(widthPx = 80f, heightPx = 60.4f)
+                    .figmaSize(widthPx = 50f, heightPx = 50f)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
