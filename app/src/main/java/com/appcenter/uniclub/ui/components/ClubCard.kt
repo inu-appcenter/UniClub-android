@@ -72,8 +72,8 @@ fun ClubCard(
                     painter = painterResource(id = R.drawable.default_image),
                     contentDescription = "기본 프로필",
                     modifier = Modifier
-                        .figmaSize(widthPx = 54f, heightPx = 59f)
-                        .offset(y=3.dp)
+                        .figmaSize(widthPx = 55f, heightPx = 61f)
+                        .offset(y=4.dp)
                 )
             } else {
                 // 서버에서 불러온 이미지
@@ -81,7 +81,8 @@ fun ClubCard(
                     model = club.profileUrl,
                     contentDescription = "동아리 프로필",
                     modifier = Modifier
-                        .figmaSize(widthPx = 54f, heightPx = 53f)
+                        .figmaSize(widthPx = 53f, heightPx = 52f)
+                        .offset(x=2.dp,y=0.5.dp)
                         .clip(RoundedCornerShape(20.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -93,7 +94,7 @@ fun ClubCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .offset(y = (-3).dp),
+                    .offset(y = (-7).dp),
                 verticalArrangement = Arrangement.Top
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
