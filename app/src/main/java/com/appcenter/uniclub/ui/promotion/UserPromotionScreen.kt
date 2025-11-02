@@ -133,7 +133,7 @@ fun UserPromotionScreen(
                             .data(data.bannerUrl)
                             .crossfade(true)
                             .build(),
-                        contentDescription = null,
+                        contentDescription = "Banner Image",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -141,11 +141,13 @@ fun UserPromotionScreen(
                             .background(Color(0xFF585858))
                     )
                 } else {
-                    Box(
+                    Image(
+                        painter = painterResource(R.drawable.bg_promotion),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
-                            .background(Color(0xFF585858))
                     )
                 }
 
