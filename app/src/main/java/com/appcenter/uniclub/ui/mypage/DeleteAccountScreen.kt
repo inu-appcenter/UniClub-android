@@ -82,7 +82,7 @@ fun DeleteAccountScreen(
 
             Image(
                 painter = painterResource(
-                    id = if(password.isNotBlank()) R.drawable.btn_delete else R.drawable.btn_delete_disabled),
+                    id = if(password.isNotBlank()) R.drawable.btn_delete_account else R.drawable.btn_delete_account_disabled),
                 contentDescription = "계정 삭제 버튼",
                 modifier = Modifier
                     .figmaSize(widthPx = 157f, heightPx = 30f)
