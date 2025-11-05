@@ -87,4 +87,6 @@ dependencies {
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 
     implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }
