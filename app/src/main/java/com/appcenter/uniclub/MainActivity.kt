@@ -53,7 +53,12 @@ import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import com.appcenter.uniclub.ui.qna.ClubSelectScreen
+import com.appcenter.uniclub.ui.qna.QuestionEditScreen
+import com.appcenter.uniclub.ui.qna.QuestionScreen
 import com.appcenter.uniclub.ui.signup.NicknameScreen
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
     private val notificationVm: NotificationViewModel by viewModels {
@@ -190,6 +195,45 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("qna") { QnAScreen(navController = navController) }
+                    composable(
+                        route = "question/{questionId}",
+                        arguments = listOf(navArgument("questionId") { type = NavType.LongType })
+                    ) { backStackEntry ->
+                        val questionId = backStackEntry.arguments?.getLong("questionId")!!
+                        QuestionScreen(navController = navController, questionId = questionId)
+                    }
+                    composable("questionEdit") {
+                        QuestionEditScreen(
+                            navController = navController,
+                            questionId = 0L,            // 새 질문이니까 id 없음
+                            initialClub = "",
+                            initialContent = ""
+                        )
+                    }
+                    composable(
+                        route = "questionEdit?id={id}&clubName={clubName}&content={content}",
+                        arguments = listOf(
+                            navArgument("id") { type = NavType.LongType },
+                            navArgument("clubName") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("content") { type = NavType.StringType; defaultValue = "" }
+                        )
+                    ) { backStackEntry ->
+                        val id = backStackEntry.arguments?.getLong("id") ?: 0L
+                        val rawClub = backStackEntry.arguments?.getString("clubName") ?: ""
+                        val rawContent = backStackEntry.arguments?.getString("content") ?: ""
+
+                        // ✅ URLDecoder 로 디코딩
+                        val decodedClub = URLDecoder.decode(rawClub, StandardCharsets.UTF_8.toString())
+                        val decodedContent = URLDecoder.decode(rawContent, StandardCharsets.UTF_8.toString())
+
+                        QuestionEditScreen(
+                            navController = navController,
+                            questionId = id,
+                            initialClub = decodedClub,
+                            initialContent = decodedContent
+                        )
+                    }
+                    composable("clubSelect") { ClubSelectScreen(navController = navController) }
 
                     composable("main") {
                             MainScaffold(navController, startDestination = "home", notificationVm = notificationVm)
