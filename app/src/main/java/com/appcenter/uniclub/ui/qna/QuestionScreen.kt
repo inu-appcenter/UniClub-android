@@ -58,10 +58,6 @@ fun QuestionScreen(
     var showDeleteDialog by remember { mutableStateOf(false) } //삭제, 신고 다이얼로그
     var showReportDialog by remember { mutableStateOf(false) }
 
-    //하단바 치수
-    val barH = 40.dp
-    val listBottomPadding = barH + 24.dp + 12.dp
-
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
 
@@ -77,7 +73,7 @@ fun QuestionScreen(
                 },
             contentPadding = PaddingValues(
                 top = 27.dp,
-                bottom = listBottomPadding, // ← 하단바에 가리지 않도록
+                bottom = 120.dp
             )
         ) {
             item { //상단바
@@ -512,6 +508,8 @@ fun CommentInputBarImages(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .imePadding()
             .height(barH),
         contentAlignment = Alignment.Center
     ) {
@@ -664,6 +662,7 @@ fun BottomOneActionPopup(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = paddingEnd, start = paddingStart, bottom = paddingBottom)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .imePadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
