@@ -4,6 +4,7 @@ import com.appcenter.uniclub.App
 import com.appcenter.uniclub.data.ClubRepository
 import com.appcenter.uniclub.data.MainRepository
 import com.appcenter.uniclub.data.NotificationRepository
+import com.appcenter.uniclub.data.QnARepository
 import com.appcenter.uniclub.data.SearchRepository
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.ApiClient
@@ -11,6 +12,7 @@ import com.appcenter.uniclub.network.ClubService
 import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.MainService
 import com.appcenter.uniclub.network.NotificationService
+import com.appcenter.uniclub.network.QnAService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -108,4 +110,19 @@ object ServiceLocator {
         val api = retrofit.create(ClubService::class.java) //ClubService 활용
         return SearchRepository(api)
     }
+
+    //QnAService, QnARepository 인스턴스 생성
+    fun qnaService(app: App): QnAService {
+        val retrofit = ApiClient.createRetrofit(
+            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
+            onUnauthorized = {
+                runBlocking { app.tokenStore.clear() }
+                app.logoutEvent.tryEmit(Unit)
+            }
+        )
+        return retrofit.create(QnAService::class.java)
+    }
+
+    fun qnaRepository(app: App): QnARepository =
+        QnARepository(qnaService(app))
 }
