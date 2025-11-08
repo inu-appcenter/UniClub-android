@@ -1,12 +1,19 @@
 package com.appcenter.uniclub.ui.qna
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material3.Divider
@@ -16,56 +23,110 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.components.Dialog
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.zIndex
-import com.appcenter.uniclub.ui.components.Dialog
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.Dispatchers
 
 //등록된 질문 확인 페이지
+private val BAR_HEIGHT = 40.dp //댓글 입력바 높이
+private val LIST_EXTRA_BOTTOM = 16.dp //리스트 하단 여유 패딩
+private val FIELD_INNER_H = 14.dp //텍스트 필드 안쪽 좌우 여백
+private val SEND_TAP = 30.dp //전송 아이콘 터치 영역
+private val EXTRA_LIFT_DP = 16.dp
+private const val OPEN_DURATION_MS = 160 //열릴 때 추가 리프트 애니메이션 시간
+private const val STABLE_FRAMES_REQUIRED = 3 //닫힘 안정화 프레임 수
+
+//IME가 열릴 때만 적용되는 추가리프트
+@Composable
+private fun rememberImeExtraLiftPx(
+    extraLiftWhenImeDp: Dp = EXTRA_LIFT_DP
+): Float {
+    val density = LocalDensity.current
+    val anim = remember { Animatable(0f) }
+
+    //IME, 네비 인셋
+    val imeBottomPx = WindowInsets.ime.getBottom(density).toFloat()
+    val navBottomPx = WindowInsets.navigationBars.getBottom(density).toFloat()
+
+    //LaunchedEffect 안에서 최신 네비 값을 읽을 수 있도록 상태 래핑
+    val navPxState = rememberUpdatedState(navBottomPx)
+
+    val imeVisible = imeBottomPx > 0f
+    val targetPxWhenOpen = with(density) { extraLiftWhenImeDp.toPx() }
+
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) {
+            //IME 열림
+            anim.animateTo(
+                targetValue = targetPxWhenOpen,
+                animationSpec = tween(durationMillis = OPEN_DURATION_MS, easing = FastOutSlowInEasing)
+            )
+        } else {
+            //IME 닫힘
+            var stable = 0
+            var last = navPxState.value
+            while (stable < STABLE_FRAMES_REQUIRED) {
+                withContext(Dispatchers.Main) { awaitFrame() } // 다음 프레임 대기
+                val now = navPxState.value
+                if (now == last) {
+                    stable++
+                } else {
+                    stable = 0
+                    last = now
+                }
+            }
+            anim.snapTo(0f)
+        }
+    }
+    return anim.value
+}
+
+//화면
 @Composable
 fun QuestionScreen(
     navController: NavHostController,
     questionId: Long
 ) {
-    //답변완료 버튼 노출 여부, 상태
     var showanswered by remember { mutableStateOf(true) }
     var answered by remember { mutableStateOf(false) }
-
-    var mine by remember { mutableStateOf(true) } //내 글 여부 (삭제, 신고 분리)
-    var showAction by remember { mutableStateOf(false) } //오버레이 노출
-
-    var showDeleteDialog by remember { mutableStateOf(false) } //삭제, 신고 다이얼로그
+    var mine by remember { mutableStateOf(true) }
+    var showAction by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        //본문 리스트 (IME 무시)
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
-                //화면 빈 곳 탭하면 포커스 해제 + 키보드 내림
+            modifier = Modifier
+                .fillMaxSize()
                 .pointerInput(Unit) {
+                    //빈 공간 탭 시 키보드 닫기 + 포커스 해제
                     detectTapGestures(onTap = {
                         focusManager.clearFocus()
                         keyboard?.hide()
@@ -73,7 +134,7 @@ fun QuestionScreen(
                 },
             contentPadding = PaddingValues(
                 top = 27.dp,
-                bottom = 120.dp
+                bottom = BAR_HEIGHT + LIST_EXTRA_BOTTOM
             )
         ) {
             item { //상단바
@@ -107,8 +168,8 @@ fun QuestionScreen(
 
                     Spacer(modifier = Modifier.width(11.dp))
 
-                    Column {
-                        Text( //작성자명
+                    Column { //작성자, 시각, 동아리, 본문
+                        Text(
                             text = "홍길동",
                             fontSize = figmaTextSizeSp(12f),
                             fontFamily = NotoSansKR,
@@ -116,7 +177,7 @@ fun QuestionScreen(
                             letterSpacing = (-0.011).em,
                             fontWeight = FontWeight.Medium
                         )
-                        Text( //작성일시
+                        Text(
                             text = "07. 07   13:13",
                             fontSize = figmaTextSizeSp(8f),
                             fontFamily = NotoSansKR,
@@ -125,7 +186,7 @@ fun QuestionScreen(
                             color = Color(0xFF898989)
                         )
                         Spacer(modifier = Modifier.height(7.dp))
-                        Text( //동아리명
+                        Text(
                             text = "@Appcenter",
                             fontSize = figmaTextSizeSp(11f),
                             fontFamily = NotoSansKR,
@@ -135,7 +196,7 @@ fun QuestionScreen(
                             color = Color(0xFFFF5900)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text( //본문
+                        Text(
                             text = "동아리 질문 작성예시 입니다.",
                             fontSize = figmaTextSizeSp(11f),
                             fontFamily = NotoSansKR,
@@ -143,18 +204,19 @@ fun QuestionScreen(
                             letterSpacing = (-0.011).em
                         )
                     }
-                    Spacer(Modifier.weight(1f)) //오른쪽 끝으로 밀기
-                    Box( //답변완료 버튼 (운영진만 보임)
-                        modifier = Modifier
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ){answered = !answered}
+
+                    Spacer(Modifier.weight(1f))
+
+                    Box( //답변완료 토글 (운영진한테만 노출)
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { answered = !answered }
                     ) {
-                        if(showanswered){
+                        if (showanswered) {
                             Image(
                                 painter = painterResource(
-                                    if(answered) R.drawable.btn_answered
+                                    if (answered) R.drawable.btn_answered
                                     else R.drawable.btn_answered_disabled
                                 ),
                                 contentDescription = null,
@@ -165,14 +227,17 @@ fun QuestionScreen(
                 }
             }
 
-            item { //구분선
+            item {
                 Box(
-                    modifier = Modifier.figmaPadding(startPx = 26f, topPx = 33f, endPx = 26f, bottomPx = 10f)
+                    modifier = Modifier.figmaPadding(
+                        startPx = 26f, topPx = 33f, endPx = 26f, bottomPx = 10f
+                    )
                 ) {
                     Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
                 }
             }
 
+            //댓글, 답글 더미데이터
             items(count = 7, key = { it }) { idx ->
                 Column(
                     modifier = Modifier
@@ -181,27 +246,30 @@ fun QuestionScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     when (idx) {
-                        0 -> CommentCardBox(text = "9월에 모집합니다", onMoreClick = { showAction = true })
-                        1 -> ReplyCardBox(text = "면접이 있을까요?", onMoreClick = { showAction = true })
-                        2 -> CommentCardBox(text = "@@", onMoreClick = { showAction = true })
-                        3 -> ReplyCardBox(text = "감사합니다!!", onMoreClick = { showAction = true })
-                        else -> CommentCardBox(text = "많은 지원부탁드립니다~!", onMoreClick = { showAction = true })
+                        0 -> CommentCardBox(text = "9월에 모집합니다") { showAction = true }
+                        1 -> ReplyCardBox(text = "면접이 있을까요?") { showAction = true }
+                        2 -> CommentCardBox(text = "@@") { showAction = true }
+                        3 -> ReplyCardBox(text = "감사합니다!!") { showAction = true }
+                        else -> CommentCardBox(text = "많은 지원부탁드립니다~!") { showAction = true }
                     }
                 }
             }
+
+            item {
+                Spacer(modifier = Modifier.height(70.dp))
+            }
         }
 
-        //하단바 (댓글 작성 영역)
+        //하단 댓글 입력 바
         CommentInputBarImages(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .imePadding() //키보드 올라오면 바만 밀림
                 .zIndex(2f),
             onSend = { /* 전송 */ }
         )
 
-        //버튼 눌렀을 때 오버레이 버튼 (삭제, 신고)
+        //삭제,신고 오버레이
         BottomOneActionPopup(
             visible = showAction,
             mine = mine,
@@ -210,24 +278,19 @@ fun QuestionScreen(
             onDeleteClick = { showDeleteDialog = true }
         )
 
-        if (showDeleteDialog) { //삭제 다이얼로그
+        //삭제, 신고  다이얼로그
+        if (showDeleteDialog) {
             Dialog(
                 title = "이 질문을 삭제하시겠습니까?",
                 onDismiss = { showDeleteDialog = false },
-                onConfirm = {
-                    showDeleteDialog = false
-                    // TODO: 삭제 동작
-                }
+                onConfirm = { showDeleteDialog = false }
             )
         }
-        if (showReportDialog) { //신고 다이얼로그
+        if (showReportDialog) {
             Dialog(
                 title = "이 질문을 신고하시겠습니까?",
                 onDismiss = { showReportDialog = false },
-                onConfirm = {
-                    showReportDialog = false
-                    // TODO: 신고 동작
-                }
+                onConfirm = { showReportDialog = false }
             )
         }
     }
@@ -242,12 +305,11 @@ fun CommentCardBox(
     minHeight: Dp = 79.dp,
     cornerRadius: Dp = 20.dp,
     shadowElevation: Dp = 8.dp,
-    shadowColor: Color = Color(0x1A000000), //그림자 색상
+    shadowColor: Color = Color(0x20000000),
     onMoreClick: () -> Unit = {}
 ) {
-    val fixedPadding = PaddingValues( //카드 내부 고정 패딩
-        start = 20.dp, top = 11.dp, end = 13.dp, bottom = 7.dp
-    )
+    //카드 내부 고정 패딩
+    val fixedPadding = PaddingValues(start = 20.dp, top = 11.dp, end = 13.dp, bottom = 7.dp)
 
     Box(
         modifier = modifier
@@ -261,19 +323,18 @@ fun CommentCardBox(
             )
             .clip(RoundedCornerShape(cornerRadius))
             .background(Color.White)
-            .padding(fixedPadding) //고정 패딩 적용
+            .padding(fixedPadding)
     ) {
         val avatar = 30.dp
         val gap = 8.dp
-        val bodyIndent = avatar + gap
+        val bodyIndent = avatar + gap //본문 들여쓰기 (프로필+간격만큼)
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            //댓글 헤더
+        Column(modifier = Modifier.fillMaxWidth()) { //댓글 헤더
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Image( //프로필 이미지
+                Image(
                     painter = painterResource(R.drawable.default_image),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -284,7 +345,7 @@ fun CommentCardBox(
                 Spacer(Modifier.width(gap))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text( //작성자명 (익명)
+                    Text(
                         text = "익명",
                         fontFamily = NotoSansKR,
                         fontSize = figmaTextSizeSp(11f),
@@ -292,7 +353,7 @@ fun CommentCardBox(
                         lineHeight = 11.sp * 1.5f,
                         letterSpacing = (-0.011).em
                     )
-                    Text( //작성일시
+                    Text(
                         text = "07.07  13:13",
                         fontFamily = NotoSansKR,
                         fontSize = figmaTextSizeSp(9f),
@@ -302,7 +363,7 @@ fun CommentCardBox(
                     )
                 }
 
-                Box( //더보기 버튼 (누르면 삭제, 신고 버튼)
+                Box( //더보기 버튼
                     modifier = Modifier
                         .size(13.dp)
                         .clickable(
@@ -318,10 +379,10 @@ fun CommentCardBox(
                     )
                 }
             }
+
             Spacer(Modifier.height(10.dp))
 
-            //본문(들여쓰기 적용)
-            Column(
+            Column( //본문, 답글쓰기 버튼
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = bodyIndent)
@@ -344,13 +405,11 @@ fun CommentCardBox(
                         letterSpacing = (-0.011).em,
                         color = Color(0xFFA9A9A9),
                         modifier = Modifier
-                            .offset(y=(-5).dp)
+                            .offset(y = (-5).dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) {
-                                //TODO
-                            }
+                            ) { /* TODO */ }
                     )
                 }
             }
@@ -370,12 +429,10 @@ fun ReplyCardBox(
     shadowColor: Color = Color(0x1A000000),
     onMoreClick: () -> Unit = {}
 ) {
-    val fixedPadding = PaddingValues(
-        start = 20.dp, top = 11.dp, end = 13.dp, bottom = 7.dp
-    )
+    val fixedPadding = PaddingValues(start = 20.dp, top = 11.dp, end = 13.dp, bottom = 7.dp)
 
     Row {
-        Image(
+        Image( //답글 용 화살표
             painter = painterResource(R.drawable.ic_reply),
             contentDescription = null,
             contentScale = ContentScale.Crop,
@@ -451,7 +508,6 @@ fun ReplyCardBox(
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -464,7 +520,6 @@ fun ReplyCardBox(
                         lineHeight = 11.sp * 1.5f,
                         letterSpacing = (-0.011).em
                     )
-
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Spacer(Modifier.weight(1f))
                         Text(
@@ -474,7 +529,7 @@ fun ReplyCardBox(
                             lineHeight = 9.sp * 1.5f,
                             letterSpacing = (-0.011).em,
                             color = Color(0xFFA9A9A9),
-                            modifier = Modifier.offset(y=(-5).dp)
+                            modifier = Modifier.offset(y = (-5).dp)
                         )
                     }
                 }
@@ -492,35 +547,34 @@ fun CommentInputBarImages(
     paddingEnd: Dp = 17.dp,
     paddingBottom: Dp = 24.dp
 ) {
-    // 입력값/익명상태
     var text by remember { mutableStateOf("") }
-    var anonymous by remember { mutableStateOf(false) }
+    var anonymous by remember { mutableStateOf(false) } //익명 여부
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    // 레이아웃 상수 (Figma 기준)
-    val barH = 40.dp
     val btnW = 50.dp
     val gap = 8.dp
-    val innerHPadding = 14.dp
-    val sendTap = 30.dp
+    val innerHPadding = FIELD_INNER_H
+    val sendTap = SEND_TAP
+
+    //IME가 열릴 때만 적용되는 추가 리프트
+    val extraLiftPx = rememberImeExtraLiftPx(EXTRA_LIFT_DP)
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars) //OS 하단바 위에 고정
+            .graphicsLayer { translationY = -extraLiftPx } //키보드 열릴 때 더 올리기
             .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom)
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .imePadding()
-            .height(barH),
+            .height(BAR_HEIGHT),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(barH),
+                .height(BAR_HEIGHT),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            //익명 버튼
-            Image(
+            Image( //익명 버튼
                 painter = painterResource(
                     if (anonymous) R.drawable.btn_anonymous2
                     else R.drawable.btn_anonymous_disabled2
@@ -528,7 +582,7 @@ fun CommentInputBarImages(
                 contentDescription = "익명",
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier
-                    .size(width = btnW, height = barH)
+                    .size(width = btnW, height = BAR_HEIGHT)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -537,14 +591,12 @@ fun CommentInputBarImages(
 
             Spacer(Modifier.width(gap))
 
-            //댓글 입력 필드
-            Box(
+            Box( //댓글 필드
                 modifier = Modifier
                     .weight(1f)
-                    .height(barH),
+                    .height(BAR_HEIGHT),
                 contentAlignment = Alignment.CenterStart
             ) {
-                // 배경 PNG
                 Image(
                     painter = painterResource(R.drawable.bg_comment_input),
                     contentDescription = "입력 배경",
@@ -574,6 +626,7 @@ fun CommentInputBarImages(
                             if (t.isNotEmpty()) {
                                 onSend(t)
                                 text = ""
+                                keyboardController?.hide()
                                 focusManager.clearFocus()
                             }
                         }
@@ -600,8 +653,7 @@ fun CommentInputBarImages(
                     }
                 )
 
-                //전송 버튼(텍스트 있을 때만)
-                if (text.isNotEmpty()) {
+                if (text.isNotEmpty()) { //전송 버튼 (텍스트 있을 때만 노출)
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
@@ -615,6 +667,7 @@ fun CommentInputBarImages(
                                 if (t.isNotEmpty()) {
                                     onSend(t)
                                     text = ""
+                                    keyboardController?.hide()
                                     focusManager.clearFocus()
                                 }
                             },
@@ -636,43 +689,41 @@ fun CommentInputBarImages(
 //하단 오버레이 버튼
 @Composable
 fun BottomOneActionPopup(
-    visible: Boolean, //노출 여부
-    mine: Boolean, //내 글 여부
+    visible: Boolean,
+    mine: Boolean,
     onDismiss: () -> Unit,
-    onReportClick: () -> Unit, //신고 액션
-    onDeleteClick: () -> Unit, //삭제 액션
+    onReportClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     paddingStart: Dp = 17.dp,
     paddingEnd: Dp = 17.dp,
     paddingBottom: Dp = 9.dp
 ) {
     if (!visible) return
 
+    //입력바랑 동일한 방식
+    val extraLiftPx = rememberImeExtraLiftPx(EXTRA_LIFT_DP)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)) //어두운 배경
+            .background(Color.Black.copy(alpha = 0.5f)) //반투명 배경
             .clickable( //바깥 클릭 시 닫기
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onDismiss() }
             .zIndex(3f)
     ) {
-        //하단 입력바와 같은 위치
         Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = paddingEnd, start = paddingStart, bottom = paddingBottom)
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .imePadding(),
+                .graphicsLayer { translationY = -extraLiftPx }
+                .align(Alignment.BottomEnd)
+                .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(
-                    if (mine) { //내 글: 삭제 버튼
-                        R.drawable.btn_delete
-                    } else { //남 글: 신고 버튼
-                        R.drawable.btn_report
-                    }
+                    if (mine) R.drawable.btn_delete else R.drawable.btn_report
                 ),
                 contentDescription = if (mine) "삭제" else "신고",
                 contentScale = ContentScale.FillBounds,
