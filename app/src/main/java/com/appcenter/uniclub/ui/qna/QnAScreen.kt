@@ -304,6 +304,10 @@ fun QnAScreen(navController: NavHostController) {
                         QnaCardNoAnswer(item, onMenuClick, navController)
                     }
                 }
+
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
             }
 
             Image(
