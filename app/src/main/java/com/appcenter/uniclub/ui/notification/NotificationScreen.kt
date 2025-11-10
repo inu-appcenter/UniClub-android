@@ -1,8 +1,13 @@
 package com.appcenter.uniclub.ui.notification
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
@@ -11,6 +16,7 @@ import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,34 +25,94 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.model.NotificationItem
+import com.appcenter.uniclub.model.NotificationType
+import com.appcenter.uniclub.model.dummyNotifications
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import androidx.compose.foundation.lazy.items
 
 //알림 페이지
+//알림 화면 탭 종류
+private enum class NotificationTab { UNREAD, READ }
+
+@Suppress("UNUSED_PARAMETER")
 @Composable
-fun NotificationScreen(navController: NavHostController, vm: NotificationViewModel) {
-    //vm에서 알림 리스트 상태 가져오기
-    val notifications by vm.notifications.collectAsState(initial = emptyList())
+fun NotificationScreen(
+    navController: NavHostController,
+    vm: NotificationViewModel
+) {
+    val notifications = remember { //더미데이터
+        mutableStateListOf<NotificationItem>().apply {
+            addAll(dummyNotifications)
+        }
+    }
+    val unread by remember { derivedStateOf { notifications.filter { !it.isRead } } } //안읽은 알림 필터링
+    val read   by remember { derivedStateOf { notifications.filter {  it.isRead } } } //읽은 알림 필터링
+    var currentTab by rememberSaveable { mutableStateOf(NotificationTab.UNREAD) } //탭 상태
 
-    //안읽은 알림, 읽은 알림 분리
-    val unread = notifications.filter { !it.isRead }
-    val read = notifications.filter { it.isRead }
+    fun markAllUnreadAsRead() { //전체 읽음 처리
+        for (i in notifications.indices) {
+            val n = notifications[i]
+            if (!n.isRead) notifications[i] = n.copy(isRead = true)
+        }
+    }
+    fun deleteAllRead() { //전체 삭제 처리
+        notifications.removeAll { it.isRead }
+    }
 
-    Column(modifier = Modifier.fillMaxSize()){
-        Spacer(modifier = Modifier.height(27.dp))
-        //상단바
-        TopBar(
-            title = "알림",
-            onBackClick = { navController.navigateUp() }
-        )
+    Column(Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(27.dp))
+        TopBar(title = "알림", onBackClick = { navController.navigateUp() }) //상단바
 
-        //알림이 하나도 없을 때
-        if (unread.isEmpty() && read.isEmpty()) {
+        //탭 세그먼트 (안읽은/읽은)
+        HeaderSegments(current = currentTab, unreadCount = unread.size) { currentTab = it }
+
+        Row( //전체 읽음 or 전체 삭제
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val isUnreadTab = currentTab == NotificationTab.UNREAD
+            //현재 탭에 따라 액션 가능 여부
+            val actionEnabled = if (isUnreadTab) unread.isNotEmpty() else read.isNotEmpty()
+            //라벨은 탭에 따라 변경
+            val actionLabel = if (isUnreadTab) "전체 읽음" else "전체 삭제"
+            //활성 상태에 때에 따라 색 변경
+            val actionColor = if (actionEnabled) Color(0xFFFF5900) else Color.Transparent
+
+            Text(
+                text = actionLabel,
+                fontSize = figmaTextSizeSp(11f),
+                fontFamily = NotoSansKR,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = (-0.011).em,
+                color = actionColor,
+                modifier = if (actionEnabled) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        if (isUnreadTab) markAllUnreadAsRead() else deleteAllRead()
+                    }
+                } else {
+                    Modifier
+                }
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+
+        //현재 탭에 대응하는 리스트
+        val list = if (currentTab == NotificationTab.UNREAD) unread else read
+
+        if (list.isEmpty()) { //리스트 없을 때
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -58,122 +124,172 @@ fun NotificationScreen(navController: NavHostController, vm: NotificationViewMod
                     color = Color(0xFFD3D3D3)
                 )
             }
-        } else {
-            //알림 목록
-            LazyColumn(modifier = Modifier.padding(top = 60.dp)) {
-                //안읽은 알림 영역
-                if (unread.isNotEmpty()) {
-                    item { SectionTitle("안읽은 알림") }
-                    items(unread, key = {it.id}) { item ->
-                        SwipeToDeleteNotification(
-                            item = item,
-                            onDelete = { vm.delete(item.id) },  //삭제 동작
-                            onClick = { //클릭 시 읽음 처리 + 해당 화면으로 이동
-                                vm.markAsRead(item.id)
-                                navigateByNotification(navController, item, vm)
-                            }
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(30.dp)) }
+        } else { //리스트 있을 때
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 13.dp, end = 13.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(15.dp) //카드 간격
+            ) {
+                items(list, key = { it.id }) { item ->
+                    SwipeToDeleteNotification( //스와이프 삭제
+                        item = item,
+                        modifier = Modifier.fillMaxWidth(),
+                        onDelete = { notifications.removeAll { it.id == item.id } },
+                        onClick = { navigateByNotification(navController, item) }
+                    )
                 }
-
-                //읽은 알림 영역
-                if (read.isNotEmpty()) {
-                    item { SectionTitle("읽은 알림") }
-                    items(read, key = {it.id}) { item ->
-                        SwipeToDeleteNotification(
-                            item = item,
-                            onDelete = { vm.delete(item.id) },
-                            //읽은 알림은 클릭해도 상태 변화 없이 화면만 이동
-                            onClick = { navigateByNotification(navController, item, vm) }
-                        )
-                    }
-                }
-                item { Spacer(modifier = Modifier.height(30.dp)) }
+                item { Spacer(Modifier.height(30.dp)) }
             }
         }
     }
 }
 
-//섹션 제목 (안읽은 알림/ 읽은 알림)
+//세그먼트 탭 (안읽은/읽은)
 @Composable
-fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        fontSize = figmaTextSizeSp(11f),
-        fontFamily = NotoSansKR,
-        fontWeight = FontWeight.Medium,
-        lineHeight = 11.sp * 1.5f,
-        letterSpacing = (-0.011).em,
-        color = Color(0xFFA1A1A1),
-        modifier = Modifier.figmaPadding(startPx = 20f, bottomPx = 15f)
-    )
+private fun HeaderSegments(
+    current: NotificationTab, //현재 선택된 탭
+    unreadCount: Int, //안읽은 알림 개수
+    onChange: (NotificationTab) -> Unit //탭 변경 콜백
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        SegmentWithLabel( //왼쪽 탭
+            label = "안읽은 알림",
+            selected = current == NotificationTab.UNREAD,
+            alignRight = true,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onChange(NotificationTab.UNREAD) }
+        )
+        Spacer(Modifier.width(30.dp))
+        SegmentWithLabel( //오른쪽 탭
+            label = "읽은 알림",
+            selected = current == NotificationTab.READ,
+            alignRight = false,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onChange(NotificationTab.READ) }
+        )
+    }
 }
 
-//알림 종류에 따라 다른 화면으로 이동
-fun navigateByNotification(
-    rootNavController: NavHostController,
-    item: NotificationItem,
-    vm: NotificationViewModel
+//세그먼트
+@Composable
+private fun SegmentWithLabel(
+    label: String,
+    selected: Boolean, //선택 여부
+    alignRight: Boolean,
+    modifier: Modifier = Modifier
 ) {
-    when (item.type) {
-        NotificationType.INTERESTED_CLUB -> { //홍보
-            rootNavController.navigate("notification_promotion") { launchSingleTop = true }
-        }
-        NotificationType.ANSWER_RECEIVED -> { //Q&A
-            rootNavController.navigate("qna") { launchSingleTop = true }
-        }
-        NotificationType.NOTICE -> {
-            vm.markAsRead(item.id)
-            rootNavController.navigate("main")
+    val barHeight = 4.dp //바 높이
+    val barWidth = 150.dp //바 너비
+    val segmentHeight = 70.dp //세그먼트 전체 높이
+    //선택 시 더 위쪽으로 이동
+    val gapFromBottom by animateDpAsState(
+        targetValue = if (selected) 30.dp else 15.dp,
+        label = "segGap"
+    )
+    //선택/비선택 색상
+    val highlightColor by animateColorAsState(
+        targetValue = if (selected) Color(0xFFFF5900) else Color(0xFFD9D9D9),
+        label = "segColor"
+    )
+
+    Column(
+        modifier = modifier.height(segmentHeight),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column( //바+라벨 묶음
+                modifier = Modifier
+                    .align(if (alignRight) Alignment.BottomEnd else Alignment.BottomStart)
+                    .width(barWidth)
+                    .padding(bottom = gapFromBottom)
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(barHeight)
+                        .background(highlightColor, RoundedCornerShape(50))
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = label,
+                    fontSize = figmaTextSizeSp(11f),
+                    fontFamily = NotoSansKR,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                    letterSpacing = (-0.011).em,
+                    color = if (selected) Color(0xFFFF5900) else Color(0xFFD9D9D9)
+                )
+            }
         }
     }
 }
 
-//스와이프하여 삭제 버튼 노출
+//알림 탭했을 때 화면 이동
+private fun navigateByNotification(
+    rootNavController: NavHostController,
+    item: NotificationItem
+) {
+    when (item.type) {
+        NotificationType.CLUB ->
+            rootNavController.navigate("notification_promotion") { launchSingleTop = true }
+        NotificationType.QNA ->
+            rootNavController.navigate("qna") { launchSingleTop = true }
+        NotificationType.FEDERATION ->
+            rootNavController.navigate("main")
+        NotificationType.SYSTEM -> null
+        NotificationType.PERSONAL -> null
+    }
+}
+
+//스와이프 삭제 액션
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SwipeToDeleteNotification(
-    item: NotificationItem,
+    item: NotificationItem, //알림 아이템
+    modifier: Modifier = Modifier,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
-    //스와이프 상태 기억
+    //스와이프 상태. true 시점에 삭제 실행
     val dismissState = rememberDismissState(
         confirmStateChange = { value ->
-            if (value == DismissValue.DismissedToStart) {
-                onDelete()
-            }
+            if (value == DismissValue.DismissedToStart) onDelete()
             true
         }
     )
 
     SwipeToDismiss(
+        modifier = modifier,
         state = dismissState,
-        directions = setOf(DismissDirection.EndToStart), //오른쪽->왼쪽만 허용
-        background = {
-            val direction = dismissState.dismissDirection
-
-            if (direction == DismissDirection.EndToStart) {
-                // 스와이프 중일 때만 표시
+        directions = setOf(DismissDirection.EndToStart), //오른쪽 -> 왼쪽으로만 스와이프 허용
+        background = { //배경: 스와이프 중일 때 삭제 버튼 노출
+            if (dismissState.dismissDirection == DismissDirection.EndToStart) {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 15.dp, vertical = 6.dp),
+                        .padding(horizontal = 15.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    Box( //삭제 버튼
                         modifier = Modifier
-                            .fillMaxHeight(0.9f)
-                            .width(80.dp)
-                            .offset(y = (-3.5).dp)
-                            .background(
-                                color = Color(0xFFFF5900),
-                                shape = RoundedCornerShape(20.dp)
-                            ),
+                            .fillMaxHeight()
+                            .width(87.dp)
+                            .background(Color(0xFFFF5900), RoundedCornerShape(20.dp)),
                         contentAlignment = Alignment.Center
-                    ){
+                    ) {
                         Text(
                             text = "삭제",
                             fontSize = figmaTextSizeSp(11f),
@@ -187,8 +303,7 @@ fun SwipeToDeleteNotification(
                 }
             }
         },
-        dismissContent = {
-            NotificationCard(item = item, onClick = onClick)
-        }
+        //알림 카드 콘텐츠
+        dismissContent = { NotificationCard(item = item, onClick = onClick) }
     )
 }
