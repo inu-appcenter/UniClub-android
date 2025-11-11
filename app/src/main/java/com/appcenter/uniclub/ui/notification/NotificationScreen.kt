@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.model.NotificationItem
 import com.appcenter.uniclub.model.NotificationType
-import com.appcenter.uniclub.model.dummyNotifications
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaTextSizeSp
@@ -42,24 +41,10 @@ fun NotificationScreen(
     navController: NavHostController,
     vm: NotificationViewModel
 ) {
-    val notifications = remember { //더미데이터
-        mutableStateListOf<NotificationItem>().apply {
-            addAll(dummyNotifications)
-        }
-    }
-    val unread by remember { derivedStateOf { notifications.filter { !it.isRead } } } //안읽은 알림 필터링
-    val read   by remember { derivedStateOf { notifications.filter {  it.isRead } } } //읽은 알림 필터링
+    val ui by vm.uiState.collectAsState()
+    val unread by remember(ui.items) { derivedStateOf { ui.items.filter { !it.isRead } } } //안읽은 알림 필터링
+    val read   by remember(ui.items) { derivedStateOf { ui.items.filter {  it.isRead } } } //읽은 알림 필터링
     var currentTab by rememberSaveable { mutableStateOf(NotificationTab.UNREAD) } //탭 상태
-
-    fun markAllUnreadAsRead() { //전체 읽음 처리
-        for (i in notifications.indices) {
-            val n = notifications[i]
-            if (!n.isRead) notifications[i] = n.copy(isRead = true)
-        }
-    }
-    fun deleteAllRead() { //전체 삭제 처리
-        notifications.removeAll { it.isRead }
-    }
 
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.height(27.dp))
@@ -96,7 +81,7 @@ fun NotificationScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        if (isUnreadTab) markAllUnreadAsRead() else deleteAllRead()
+                        if (isUnreadTab) vm.markAllAsRead() else vm.deleteAllRead()
                     }
                 } else {
                     Modifier
@@ -134,11 +119,21 @@ fun NotificationScreen(
                     SwipeToDeleteNotification( //스와이프 삭제
                         item = item,
                         modifier = Modifier.fillMaxWidth(),
-                        onDelete = { notifications.removeAll { it.id == item.id } },
-                        onClick = { navigateByNotification(navController, item) }
+                        onDelete = { vm.delete(item.id) },
+                        onClick = {
+                            if (!item.isRead) vm.markAsRead(item.id)
+                            navigateByNotification(navController, item) }
                     )
                 }
                 item { Spacer(Modifier.height(30.dp)) }
+
+                if(ui.hasNext) {
+                    item {
+                        LaunchedEffect(ui.currentPage, ui.hasNext) {
+                            vm.loadPage(ui.currentPage + 1)
+                        }
+                    }
+                }
             }
         }
     }
@@ -243,13 +238,12 @@ private fun navigateByNotification(
 ) {
     when (item.type) {
         NotificationType.CLUB ->
-            rootNavController.navigate("notification_promotion") { launchSingleTop = true }
+            rootNavController.navigate("notification_promotion/${item.targetId}") { launchSingleTop = true }
         NotificationType.QNA ->
-            rootNavController.navigate("qna") { launchSingleTop = true }
+            rootNavController.navigate("qna/${item.targetId}") { launchSingleTop = true }
         NotificationType.FEDERATION ->
             rootNavController.navigate("main")
-        NotificationType.SYSTEM -> null
-        NotificationType.PERSONAL -> null
+        NotificationType.SYSTEM, NotificationType.PERSONAL -> null
     }
 }
 

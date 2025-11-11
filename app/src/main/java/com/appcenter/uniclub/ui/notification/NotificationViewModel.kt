@@ -4,73 +4,102 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.NotificationRepository
+import com.appcenter.uniclub.model.NotificationItem
+import com.appcenter.uniclub.model.NotificationType
 import com.appcenter.uniclub.util.TimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class NotificationUiState(
+    val items: List<NotificationItem> = emptyList(),
+    val loading: Boolean = false,
+    val error: String? = null,
+    val currentPage: Int = 0,
+    val totalPages: Int = 1,
+    val hasNext: Boolean = false
+)
 class NotificationViewModel(private val repo: NotificationRepository) : ViewModel() {
-    private val _notifications = MutableStateFlow<List<NotificationItem>>(emptyList())
-    val notifications: StateFlow<List<NotificationItem>> = _notifications
 
-    init {
-        loadNotifications()
+    private val _uiState = MutableStateFlow(NotificationUiState(loading = true))
+    val uiState: StateFlow<NotificationUiState> = _uiState.asStateFlow()
+
+    init { //최초 페이지 로드
+        loadPage(0)
     }
 
-    private fun mapType(serverType: String): NotificationType {
-        return when (serverType) {
-            "FEDERATION" -> NotificationType.NOTICE
-            "CLUB" -> NotificationType.INTERESTED_CLUB
-            "QNA" -> NotificationType.ANSWER_RECEIVED
-            else -> NotificationType.NOTICE // 기본값
-        }
-    }
-
-    fun loadNotifications() {
+    fun loadPage(page: Int, size: Int = 10) {
         viewModelScope.launch {
-            repo.getNotifications().onSuccess { list ->
-                _notifications.value = list.map { dto ->
-                    NotificationItem(
-                        id = dto.notificationId.toString(),
-                        title = dto.message,
-                        description = "",
-                        time = TimeUtils.formatRelativeTime(dto.createdAt),
-                        isRead = dto.isRead,   // 변경
-                        type = mapType(dto.type)
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            repo.getNotifications(page = page, size = size)
+                .onSuccess { pageData ->
+                    _uiState.value = _uiState.value.copy(
+                        items = if (page == 0) pageData.items else _uiState.value.items + pageData.items,
+                        loading = false,
+                        error = null,
+                        currentPage = pageData.currentPage,
+                        totalPages = pageData.totalPages,
+                        hasNext = pageData.hasNext
                     )
                 }
-            }.onFailure {
-                // TODO: 에러 처리 (로그 출력이나 상태 표시)
-            }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(loading = false, error = e.message)
+                }
         }
     }
 
-    // ✅ 서버에 읽음 처리 요청 + 로컬 상태 반영
+    //개별 읽음 처리
     fun markAsRead(id: String) {
         viewModelScope.launch {
             repo.markAsRead(id.toLong()).onSuccess {
-                _notifications.value = _notifications.value.map {
-                    if (it.id == id) it.copy(isRead = true) else it
-                }
+                _uiState.value = _uiState.value.copy(
+                    items = _uiState.value.items.map { if (it.id == id) it.copy(isRead = true) else it }
+                )
             }
         }
     }
 
-    // ✅ 서버에 삭제 요청 + 로컬 상태 반영
+    //전체 읽음 처리
+    fun markAllAsRead() {
+        viewModelScope.launch {
+            repo.markAllAsRead().onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    items = _uiState.value.items.map { it.copy(isRead = true) }
+                )
+            }
+        }
+    }
+
+    //개별 삭제 처리
     fun delete(id: String) {
         viewModelScope.launch {
             repo.deleteNotification(id.toLong()).onSuccess {
-                _notifications.value = _notifications.value.filter { it.id != id }
+                _uiState.value = _uiState.value.copy(
+                    items = _uiState.value.items.filter { it.id != id }
+                )
             }
         }
     }
 
-    val hasUnread: StateFlow<Boolean> = notifications
-        .map { list -> list.any { !it.isRead } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
+    //전체 삭제 처리
+    fun deleteAllRead() {
+        viewModelScope.launch {
+            val readIds = _uiState.value.items.filter { it.isRead }.map { it.id.toLong() }
+            readIds.forEach { repo.deleteNotification(it) }
+            _uiState.value = _uiState.value.copy(
+                items = _uiState.value.items.filterNot { it.isRead }
+            )
+        }
+    }
+
+    //안읽은 알림 존재 여부
+    val hasUnread: StateFlow<Boolean> = uiState
+        .map { state -> state.items.any { !it.isRead } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 }
 
 class NotificationViewModelFactory(
