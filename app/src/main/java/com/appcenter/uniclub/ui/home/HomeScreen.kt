@@ -38,6 +38,7 @@ import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.model.getIconRes
 import com.appcenter.uniclub.ui.notification.NotificationViewModel
+import com.appcenter.uniclub.ui.notification.NotificationViewModelFactory
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
@@ -60,16 +61,19 @@ fun HomeScreen(
             clubRepo = ServiceLocator.clubRepository(app)
         )
     )
+    val notificationViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(ServiceLocator.notificationRepository(app))
+    )
 
     val bannerList by homeVm.bannerList.collectAsState()          // 로컬 fallback
     val remoteBanner by homeVm.remoteBanner.collectAsState()       // 서버 배너
-    val hasUnread by notificationViewModel.hasUnread.collectAsState()
+    val hasUnread by notificationViewModel.hasUnread.collectAsState(initial = false)
 
     LazyColumn(modifier = modifier
         .fillMaxSize()
         .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread) }
+        item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread = hasUnread) }
 
         item {
             if (remoteBanner.isNotEmpty()) { //서버에서 이미지가 왔을 때
