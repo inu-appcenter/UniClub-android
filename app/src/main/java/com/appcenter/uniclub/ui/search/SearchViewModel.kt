@@ -52,4 +52,8 @@ class SearchViewModel(
             toggling.remove(clubId)
         }
     }
+
+    fun clear() {
+        _results.value = emptyList()
+    }
 }

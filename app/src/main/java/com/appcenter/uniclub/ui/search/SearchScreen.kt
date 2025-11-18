@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.search
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +32,17 @@ import androidx.compose.runtime.getValue
 import com.appcenter.uniclub.ui.components.ClubCard
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -52,7 +56,7 @@ import kotlin.collections.firstOrNull
 import androidx.lifecycle.ViewModelProvider
 import com.appcenter.uniclub.di.ServiceLocator
 
-
+//검색 페이지
 @Composable
 fun SearchScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -72,15 +76,35 @@ fun SearchScreen(navController: NavHostController) {
 
     val results by vm.results.collectAsState()
 
+    val navBackStackEntry = navController.currentBackStackEntry
+
+    LaunchedEffect(navBackStackEntry) {
+        val lifecycle = navBackStackEntry?.lifecycle
+        lifecycle?.addObserver(
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    //SearchScreen이 화면에 돌아왔을 때 실행됨
+                    query = ""
+                    vm.clear()
+                }
+            }
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        //배경 이미지
-        Image(
-            painter = painterResource(id = R.drawable.search_bg_top),
-            contentDescription = null,
+
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = 83.dp), //상단으로부터
-            contentScale = ContentScale.FillWidth
+                .offset(y = 100.dp)
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp),
+                    clip = false
+                )
+                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                .background(Color.White)
+                .fillMaxSize()
         )
 
         Column(
