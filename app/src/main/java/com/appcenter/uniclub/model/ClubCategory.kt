@@ -35,3 +35,8 @@ fun ClubCategory.getIconRes(): Int? = when (this) {
     ClubCategory.VOLUNTEER -> R.drawable.ic_category_volunteer
     ClubCategory.CULTURE -> R.drawable.ic_category_culture
 }
+
+fun String.toClubCategory(): ClubCategory? =
+    ClubCategory.fromServerValue(this)
+fun String.toCategoryDisplayName(): String =
+    this.toClubCategory()?.displayName ?: this
