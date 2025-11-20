@@ -87,7 +87,9 @@ class NotificationViewModel(private val repo: NotificationRepository) : ViewMode
     fun deleteAllRead() {
         viewModelScope.launch {
             repo.deleteAllNotifications()
-            _uiState.value = _uiState.value.copy(items = emptyList())
+            _uiState.value = _uiState.value.copy(
+                items = _uiState.value.items.filter { !it.isRead }
+            )
         }
     }
 
