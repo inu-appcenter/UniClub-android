@@ -5,10 +5,7 @@ import com.appcenter.uniclub.model.NotificationType
 import com.appcenter.uniclub.network.NotificationService
 import com.appcenter.uniclub.network.dto.NotificationPageResponseDto
 import com.appcenter.uniclub.network.dto.NotificationResponseDto
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import com.appcenter.uniclub.util.TimeUtils
 
 class NotificationRepository(private val service: NotificationService){
     //알림 설정
@@ -63,9 +60,9 @@ private fun NotificationPageResponseDto.toDomain(): NotificationPage =
 private fun NotificationResponseDto.toDomainItem(): NotificationItem {
     return NotificationItem(
         id = notificationId.toString(),
-        title = title.ifBlank { message },
-        description = message,
-        time = createdAt.toRelativeTimeString(),
+        title = title,
+        message = message,
+        time = TimeUtils.toRelativeTime(createdAt),
         isRead = read,
         type = notificationType.toNotificationType(),
         targetId = targetId
@@ -80,25 +77,3 @@ private fun String.toNotificationType(): NotificationType = when (this.uppercase
     "PERSONAL" -> NotificationType.PERSONAL
     else -> NotificationType.SYSTEM // 안전망
 }
-
-// 서버 createdAt("yyyy-MM-dd'T'HH:mm:ss") → "n분 전 / n시간 전 / n일 전" 변환
-private val serverDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-
-private fun String.toRelativeTimeString(): String = runCatching {
-    val serverTime = LocalDateTime.parse(this, serverDateFormatter)
-    val now = LocalDateTime.now(ZoneId.systemDefault())
-    val diff = Duration.between(serverTime, now)
-
-    val minutes = diff.toMinutes()
-    val hours = diff.toHours()
-    val days = diff.toDays()
-
-    when {
-        minutes < 1 -> "방금 전"
-        minutes < 60 -> "${minutes}분 전"
-        hours < 24 -> "${hours}시간 전"
-        days < 7 -> "${days}일 전"
-        else -> this.replace('T', ' ') // 오래됐으면 원문 표기
-    }
-}.getOrElse { this.replace('T', ' ') }

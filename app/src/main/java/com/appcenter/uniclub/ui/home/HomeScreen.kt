@@ -47,7 +47,7 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    navController: NavHostController,
+    bottomNavController: NavHostController,
     rootNavController: NavHostController,
     app: App = LocalContext.current.applicationContext as App,
     notificationViewModel: NotificationViewModel
@@ -61,9 +61,6 @@ fun HomeScreen(
             clubRepo = ServiceLocator.clubRepository(app)
         )
     )
-    val notificationViewModel: NotificationViewModel = viewModel(
-        factory = NotificationViewModelFactory(ServiceLocator.notificationRepository(app))
-    )
 
     val bannerList by homeVm.bannerList.collectAsState()          // 로컬 fallback
     val remoteBanner by homeVm.remoteBanner.collectAsState()       // 서버 배너
@@ -73,7 +70,7 @@ fun HomeScreen(
         .fillMaxSize()
         .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        item { MainTopBar(navController = navController, rootNavController = rootNavController, hasUnread = hasUnread) }
+        item { MainTopBar(navController = bottomNavController, rootNavController = rootNavController, hasUnread = hasUnread) }
 
         item {
             if (remoteBanner.isNotEmpty()) { //서버에서 이미지가 왔을 때
@@ -93,12 +90,12 @@ fun HomeScreen(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            ClubCardCarousel(navController = navController, vm = clubVm)
+            ClubCardCarousel(navController = bottomNavController, vm = clubVm)
         }
 
         item {
-            CategorySection(navController = navController) { category ->
-                navController.navigate("clublist/$category")
+            CategorySection(navController = bottomNavController) { category ->
+                bottomNavController.navigate("clublist/$category")
             }
         }
 
