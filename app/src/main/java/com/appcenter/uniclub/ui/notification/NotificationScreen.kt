@@ -240,7 +240,7 @@ private fun navigateByNotification(
         NotificationType.CLUB ->
             rootNavController.navigate("notification_promotion/${item.targetId}") { launchSingleTop = true }
         NotificationType.QNA ->
-            rootNavController.navigate("qna/${item.targetId}") { launchSingleTop = true }
+            rootNavController.navigate("question/${item.targetId}") { launchSingleTop = true }
         NotificationType.FEDERATION ->
             rootNavController.navigate("main")
         NotificationType.SYSTEM, NotificationType.PERSONAL -> null

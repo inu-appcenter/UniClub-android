@@ -119,11 +119,8 @@ class MainActivity : ComponentActivity() {
                     composable("nickname") {
                         // signup 에서 만든 ViewModel 재사용
                         val parentEntry = remember(navController) {
-                            try {
-                                navController.getBackStackEntry("signup")
-                            } catch (e: IllegalArgumentException) {
-                                null
-                            }
+                            try { navController.getBackStackEntry("signup") }
+                            catch (e: IllegalArgumentException) { null }
                         }
 
                         if (parentEntry != null) {
@@ -131,7 +128,6 @@ class MainActivity : ComponentActivity() {
                                 factory = SignUpViewModelFactory(repo),
                                 viewModelStoreOwner = parentEntry
                             )
-
                             NicknameScreen(
                                 onBack = { navController.popBackStack() },
                                 onNext = { navController.navigate("agreement") },
@@ -148,11 +144,8 @@ class MainActivity : ComponentActivity() {
                     composable("agreement") {
                         // signup 화면에서 만든 ViewModel 재사용
                         val parentEntry = remember(navController) {
-                            try {
-                                navController.getBackStackEntry("signup")
-                            } catch (e: IllegalArgumentException) {
-                                null
-                            }
+                            try { navController.getBackStackEntry("signup") }
+                            catch (e: IllegalArgumentException) { null }
                         }
 
                         if (parentEntry != null) {
@@ -183,14 +176,18 @@ class MainActivity : ComponentActivity() {
                             vm = notificationVm
                         )
                     }
-                    composable("notification_promotion") {
+                    composable(
+                        "notification_promotion/{clubId}",
+                        arguments = listOf(navArgument("clubId") { type = NavType.LongType })
+                    ) { entry ->
+                        val clubId = entry.arguments?.getLong("clubId")!!
+
                         MainScaffold(
                             rootNavController = navController,
-                            startDestination = "promotion",
-                            onBackToNotification = {
-                                navController.popBackStack("notification", false)
-                            },
-                            notificationVm = notificationVm
+                            startDestination = "home",
+                            startClubId = clubId,
+                            notificationVm = notificationVm,
+                            onBackToNotification = { navController.popBackStack("notification", false) }
                         )
                     }
 
@@ -205,8 +202,9 @@ class MainActivity : ComponentActivity() {
                     composable("questionEdit") {
                         QuestionEditScreen(
                             navController = navController,
-                            questionId = 0L,            // 새 질문이니까 id 없음
-                            initialClub = "",
+                            questionId = 0L,
+                            initialClubId = null,
+                            initialClubName = "",
                             initialContent = ""
                         )
                     }
@@ -221,15 +219,14 @@ class MainActivity : ComponentActivity() {
                         val id = backStackEntry.arguments?.getLong("id") ?: 0L
                         val rawClub = backStackEntry.arguments?.getString("clubName") ?: ""
                         val rawContent = backStackEntry.arguments?.getString("content") ?: ""
-
-                        // ✅ URLDecoder 로 디코딩
                         val decodedClub = URLDecoder.decode(rawClub, StandardCharsets.UTF_8.toString())
                         val decodedContent = URLDecoder.decode(rawContent, StandardCharsets.UTF_8.toString())
 
                         QuestionEditScreen(
                             navController = navController,
                             questionId = id,
-                            initialClub = decodedClub,
+                            initialClubId = null,
+                            initialClubName = decodedClub,
                             initialContent = decodedContent
                         )
                     }
@@ -248,6 +245,7 @@ class MainActivity : ComponentActivity() {
 fun MainScaffold(
     rootNavController: NavHostController,
     startDestination: String,
+    startClubId: Long? = null,
     onBackToNotification: (() -> Unit)? = null,
     notificationVm: NotificationViewModel
 ) {
@@ -260,11 +258,21 @@ fun MainScaffold(
                 Box(modifier = Modifier
                     .padding(innerPadding)
                     .windowInsetsPadding(WindowInsets.navigationBars)) {
+
+                    // 알림에서 들어온 경우 → 홈 그래프 로딩 후 첫 진입 시 이동
+                    LaunchedEffect(startClubId) {
+                        if (startClubId != null) {
+                            bottomNavController.navigate("promotion/$startClubId") {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+
                     NavHost(
                         navController = bottomNavController,
                         startDestination = startDestination
                     ) {
-                        composable("home")     { HomeScreen(navController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
+                        composable("home")     { HomeScreen(bottomNavController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
                         composable("alarmSetting") {
                             val app = rootNavController.context.applicationContext as App
@@ -321,7 +329,7 @@ fun MainScaffold(
             }
         )
 
-        // ✅ bottomBar를 content 외부에 위치시킴
+        //bottomBar를 content 외부에 위치시킴
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

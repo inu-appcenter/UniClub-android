@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.NotificationRepository
 import com.appcenter.uniclub.model.NotificationItem
-import com.appcenter.uniclub.model.NotificationType
-import com.appcenter.uniclub.util.TimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -88,11 +86,8 @@ class NotificationViewModel(private val repo: NotificationRepository) : ViewMode
     //전체 삭제 처리
     fun deleteAllRead() {
         viewModelScope.launch {
-            val readIds = _uiState.value.items.filter { it.isRead }.map { it.id.toLong() }
-            readIds.forEach { repo.deleteNotification(it) }
-            _uiState.value = _uiState.value.copy(
-                items = _uiState.value.items.filterNot { it.isRead }
-            )
+            repo.deleteAllNotifications()
+            _uiState.value = _uiState.value.copy(items = emptyList())
         }
     }
 

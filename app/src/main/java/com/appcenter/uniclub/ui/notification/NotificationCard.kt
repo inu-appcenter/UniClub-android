@@ -109,7 +109,7 @@ private fun NotificationCardContent(item: NotificationItem) {
 
         Column(modifier = Modifier.weight(1f)) {
             Text( //알림 제목
-                text = label,
+                text = item.title,
                 fontSize = figmaTextSizeSp(11f),
                 fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Medium,
@@ -120,7 +120,7 @@ private fun NotificationCardContent(item: NotificationItem) {
             Spacer(Modifier.height(3.dp))
 
             Text( //알림 내용
-                text = item.title,
+                text = item.message,
                 fontSize = figmaTextSizeSp(12f),
                 fontFamily = NotoSansKR,
                 lineHeight = 12.sp * 1.5f,
