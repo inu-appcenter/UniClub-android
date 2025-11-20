@@ -153,11 +153,11 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
 
         MenuItem(
             text = "알림 설정",
-            onClick = { navController.navigate("alarmSetting") }
+            onClick = { rootNavController.navigate("alarmSetting") }
         )
         MenuItem(
             text = "프로필 수정",
-            onClick = { navController.navigate("profileEdit") }
+            onClick = { rootNavController.navigate("profileEdit") }
         )
         MenuItem(
             text = "로그아웃",
@@ -174,11 +174,11 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
 
         MenuItem(
             text = "문의하기",
-            onClick = { navController.navigate("inquiry") }
+            onClick = { rootNavController.navigate("inquiry") }
         )
         MenuItem(
             text = "이용약관",
-            onClick = { navController.navigate("terms") }
+            onClick = { rootNavController.navigate("terms") }
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -191,7 +191,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
 
         MenuItem(
             text = "계정 삭제",
-            onClick = { navController.navigate("delete") }
+            onClick = { rootNavController.navigate("delete") }
         )
 
         Spacer(Modifier.height(70.dp))

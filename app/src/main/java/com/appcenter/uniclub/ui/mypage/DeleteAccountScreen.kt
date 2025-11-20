@@ -11,12 +11,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.App
+import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.InputLabel
 import com.appcenter.uniclub.ui.components.UnderlineInputField
@@ -28,15 +32,22 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 //계정 삭제 화면
 @Composable
 fun DeleteAccountScreen(
-    navController: NavHostController,
-    viewModel: DeleteAccountViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    navController: NavHostController
 ) {
+    val app = LocalContext.current.applicationContext as App
+    val repo = ServiceLocator.userRepository(app)
+
+    val vm: DeleteAccountViewModel = viewModel(
+        factory = DeleteAccountViewModelFactory(repo)
+    )
+
     var password by remember { mutableStateOf("") } //사용자가 입력한 비밀번호 상태
     var isFieldEnabled by remember { mutableStateOf(false) } //입력 필드 활성화 여부
 
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by vm.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(24.dp))
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "계정 삭제"
@@ -87,7 +98,7 @@ fun DeleteAccountScreen(
                 modifier = Modifier
                     .figmaSize(widthPx = 157f, heightPx = 30f)
                     .clickable(enabled = password.isNotBlank()) {
-                        viewModel.deleteAccount(password)
+                        vm.deleteAccount(password)
                     }
             )
         }

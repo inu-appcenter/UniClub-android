@@ -88,6 +88,7 @@ fun ProfileEditScreen(navController: NavHostController) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(24.dp))
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "프로필 수정",
