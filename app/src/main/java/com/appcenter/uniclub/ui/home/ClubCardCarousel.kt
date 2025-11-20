@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -155,52 +156,59 @@ fun RecommendClub(
             Box(
                 modifier = Modifier
                     .figmaSize(widthPx = 136f, heightPx = 206f)
-                    .background(Color.Gray) // 회색 배경
+                    .background(Color(0xFFD9D9D9))
             )
         }
 
-
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .figmaPadding(startPx = 14f, topPx = 10f)
-                .align(Alignment.TopStart),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .height(40.dp)
+                .background(Color(0xFF141414).copy(alpha = 0.45f))
+                .align(Alignment.TopStart)
         ) {
-            //동아리 이름
-            Text(
-                text = clubName,
-                color = Color.White,
-                fontSize = figmaTextSizeSp(13f),
-                fontFamily = NotoSansKR,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 13.sp * 1.5f, //행간
-                letterSpacing = (-0.011).em, //자간
-            )
-            //즐겨찾기 아이콘
-            Box(
+            Row(
                 modifier = Modifier
-                    .figmaSize(widthPx = 28f, heightPx = 28f) //고정 박스 크기
-                    .figmaPadding(endPx = 14f) //오른쪽 여백
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onToggleFavorite() },
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .figmaPadding(startPx = 14f, topPx = 5f)
+                    .align(Alignment.TopStart),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(
-                        id = if (isFavorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
-                    ),
-                    contentDescription = if (isFavorite) "즐겨찾기 취소" else "즐겨찾기",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(if (isFavorite) 1.6f else 1f) //빨간 하트 확대
-                        .offset( //빨간 하트 위치조정
-                            x = if (isFavorite) (-0.5).dp else 0.dp,
-                            y = if (isFavorite) (-0.5).dp else 0.dp)
+                //동아리 이름
+                Text(
+                    text = clubName,
+                    color = Color.White,
+                    fontSize = figmaTextSizeSp(13f),
+                    fontFamily = NotoSansKR,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 13.sp * 1.5f, //행간
+                    letterSpacing = (-0.011).em, //자간
                 )
+                //즐겨찾기 아이콘
+                Box(
+                    modifier = Modifier
+                        .figmaSize(widthPx = 28f, heightPx = 28f) //고정 박스 크기
+                        .figmaPadding(endPx = 14f) //오른쪽 여백
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onToggleFavorite() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(
+                            id = if (isFavorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorite
+                        ),
+                        contentDescription = if (isFavorite) "즐겨찾기 취소" else "즐겨찾기",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(if (isFavorite) 1.6f else 1f) //빨간 하트 확대
+                            .offset( //빨간 하트 위치조정
+                                x = if (isFavorite) (-0.5).dp else 0.dp,
+                                y = if (isFavorite) (-0.5).dp else 0.dp)
+                    )
+                }
             }
         }
     }
