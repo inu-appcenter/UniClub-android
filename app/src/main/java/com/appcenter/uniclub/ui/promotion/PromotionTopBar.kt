@@ -13,12 +13,8 @@ import com.appcenter.uniclub.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Brush
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 
@@ -34,17 +30,17 @@ fun PromotionTopBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(63.dp)
+            .height(50.dp)
             .zIndex(10f)
-            .background(Color.Transparent)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFF5900).copy(alpha = 0.6f), //위쪽: 불투명 주황
+                        Color(0x00FF5900)  //아래쪽: 완전 투명 주황
+                    )
+                )
+            )
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.promotion_topbar_bg), //배경 이미지
-            contentDescription = "TopBar Background",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-        )
 
         //왼쪽 뒤로가기 버튼 이미지
         Image(
@@ -52,8 +48,9 @@ fun PromotionTopBar(
             contentDescription = "Back",
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .figmaPadding(startPx = 20f, topPx = 5f)
+                .figmaPadding(startPx = 23f)
                 .figmaSize(widthPx = 11f, heightPx = 20f)
+                .offset(y=-(1).dp)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -63,7 +60,7 @@ fun PromotionTopBar(
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .figmaPadding(endPx = 20f, topPx = 5f),
+                .figmaPadding(endPx = 20f),
             horizontalArrangement = Arrangement.spacedBy(15.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

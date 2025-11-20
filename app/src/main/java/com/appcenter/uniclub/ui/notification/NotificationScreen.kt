@@ -47,7 +47,7 @@ fun NotificationScreen(
     var currentTab by rememberSaveable { mutableStateOf(NotificationTab.UNREAD) } //탭 상태
 
     Column(Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(27.dp))
+        Spacer(Modifier.height(24.dp))
         TopBar(title = "알림", onBackClick = { navController.navigateUp() }) //상단바
 
         //탭 세그먼트 (안읽은/읽은)
