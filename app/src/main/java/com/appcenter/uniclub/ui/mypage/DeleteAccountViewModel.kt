@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.mypage
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,5 +40,15 @@ class DeleteAccountViewModel(private val repository: UserRepository) : ViewModel
                 _uiState.value = DeleteAccountUiState.Error("네트워크 오류: ${e.message}")
             }
         }
+    }
+}
+
+class DeleteAccountViewModelFactory(
+    private val repository: UserRepository
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return DeleteAccountViewModel(repository) as T
     }
 }

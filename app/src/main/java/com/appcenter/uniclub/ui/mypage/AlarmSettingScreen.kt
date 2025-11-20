@@ -37,6 +37,7 @@ fun AlarmSettingScreen(
     val checked by viewModel.checked.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(24.dp))
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "알림 설정"

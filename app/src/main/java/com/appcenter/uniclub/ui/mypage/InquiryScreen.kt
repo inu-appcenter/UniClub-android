@@ -38,6 +38,7 @@ fun InquiryScreen(navController: NavHostController) {
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(Modifier.height(24.dp))
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "문의하기"

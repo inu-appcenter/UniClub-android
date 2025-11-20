@@ -29,6 +29,7 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 @Composable
 fun TermsScreen(navController: NavHostController){
     Column(modifier = Modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(24.dp))
         TopBar( //상단바
             onBackClick = { navController.popBackStack() }
         )
