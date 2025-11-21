@@ -209,28 +209,43 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable(
-                        route = "questionEdit?id={id}&clubName={clubName}&content={content}",
+                        route = "questionEditFull?id={id}&clubId={clubId}&clubName={clubName}&content={content}",
                         arguments = listOf(
                             navArgument("id") { type = NavType.LongType },
+                            navArgument("clubId") { type = NavType.LongType },
                             navArgument("clubName") { type = NavType.StringType; defaultValue = "" },
                             navArgument("content") { type = NavType.StringType; defaultValue = "" }
                         )
                     ) { backStackEntry ->
                         val id = backStackEntry.arguments?.getLong("id") ?: 0L
+                        val clubId = backStackEntry.arguments?.getLong("clubId") ?: 0L
+
                         val rawClub = backStackEntry.arguments?.getString("clubName") ?: ""
                         val rawContent = backStackEntry.arguments?.getString("content") ?: ""
+
                         val decodedClub = URLDecoder.decode(rawClub, StandardCharsets.UTF_8.toString())
                         val decodedContent = URLDecoder.decode(rawContent, StandardCharsets.UTF_8.toString())
 
                         QuestionEditScreen(
                             navController = navController,
                             questionId = id,
-                            initialClubId = null,
+                            initialClubId = clubId,
                             initialClubName = decodedClub,
                             initialContent = decodedContent
                         )
                     }
+
                     composable("clubSelect") { ClubSelectScreen(navController = navController) }
+
+                    composable("alarmSetting") {
+                        val app = navController.context.applicationContext as App
+                        val notificationRepo = ServiceLocator.notificationRepository(app)
+                        AlarmSettingScreen(navController = navController, repository = notificationRepo)
+                    }
+                    composable("profileEdit") { ProfileEditScreen(navController = navController) }
+                    composable("inquiry") { InquiryScreen(navController = navController) }
+                    composable("terms") { TermsScreen(navController = navController) }
+                    composable("delete") { DeleteAccountScreen(navController = navController) }
 
                     composable("main") {
                             MainScaffold(navController, startDestination = "home", notificationVm = notificationVm)
@@ -274,15 +289,6 @@ fun MainScaffold(
                     ) {
                         composable("home")     { HomeScreen(bottomNavController = bottomNavController, rootNavController = rootNavController, notificationViewModel = notificationVm) }
                         composable("mypage")   { MypageScreen(navController = bottomNavController, rootNavController = rootNavController) }
-                        composable("alarmSetting") {
-                            val app = rootNavController.context.applicationContext as App
-                            val notificationRepo = ServiceLocator.notificationRepository(app)
-                            AlarmSettingScreen(navController = bottomNavController, repository = notificationRepo)
-                        }
-                        composable("profileEdit") { ProfileEditScreen(navController = bottomNavController) }
-                        composable("inquiry") { InquiryScreen(navController = bottomNavController) }
-                        composable("terms") { TermsScreen(navController = bottomNavController) }
-                        composable("delete") { DeleteAccountScreen(navController = bottomNavController) }
                         composable("clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {
                                 type = NavType.StringType
@@ -299,6 +305,7 @@ fun MainScaffold(
 
                             UserPromotionScreen(
                                 navController = bottomNavController,
+                                rootNavController = rootNavController,
                                 onBackClick = {
                                     if (onBackToNotification != null) {
                                         // 알림에서 들어왔을 때

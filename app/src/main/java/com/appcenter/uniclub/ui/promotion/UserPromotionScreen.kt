@@ -56,6 +56,8 @@ import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import com.appcenter.uniclub.util.formatDateTime
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 private fun recruitIconOf(status: String?): Int = when (status?.uppercase()) {
     "SCHEDULED" -> R.drawable.ic_upcoming    // 모집예정
@@ -77,6 +79,7 @@ private fun openUrl(context: Context, url: String) {
 @Composable
 fun UserPromotionScreen(
     navController: NavHostController,
+    rootNavController: NavHostController,
     onBackClick: () -> Unit,
     clubId: Long,
     app: App,
@@ -316,7 +319,9 @@ fun UserPromotionScreen(
                     ActivityImageCarouselUrls(items = data.promoItems)
                 }
                 BottomActionButtons(
-                    navController = navController,
+                    rootNavController = rootNavController,
+                    clubId = clubId,
+                    data = data,
                     applicationFormLink = data.applicationFormLink
                 )
             }
@@ -466,7 +471,9 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
 //하단 버튼 정렬 컴포넌트
 @Composable
 fun BottomActionButtons(
-    navController: NavHostController,
+    rootNavController: NavHostController,
+    clubId: Long,
+    data: PromotionViewData,
     applicationFormLink: String?
 ) {
     val context = LocalContext.current
@@ -481,7 +488,14 @@ fun BottomActionButtons(
             imageRes = R.drawable.btn_question,
             contentDescription = "질문하기",
             enabled = true,
-            onClick = { navController.navigate("qna") }
+            onClick = {
+                val encodedName = URLEncoder.encode(data.name, StandardCharsets.UTF_8.toString())
+
+                rootNavController.navigate(
+                    "questionEditFull?id=0&clubId=$clubId&clubName=$encodedName&content="
+                )
+            }
+
         )
         ImageButtonItem(
             imageRes = R.drawable.btn_apply,
