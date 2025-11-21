@@ -1,7 +1,8 @@
 package com.appcenter.uniclub.ui.signup
 
-import android.provider.ContactsContract
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.model.Major
@@ -22,7 +23,8 @@ data class SignUpUiState(
     val marketingAdvertisement: Boolean = false,          // 선택 동의
     val verified: Boolean = false,
     val loading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showDuplicateModal: Boolean = false
 ) {
     val canVerify get() = studentId.isNotBlank() && password.isNotBlank() && !loading
     val canProceed get() = verified && name.isNotBlank() && major.isNotBlank() && !loading
@@ -55,9 +57,40 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
 
         viewModelScope.launch {
             repo.verifyStudent(s.studentId, s.password)
-                .onSuccess { _ui.value = _ui.value.copy(verified = true, loading = false, error = null) }
-                .onFailure { _ui.value = _ui.value.copy(verified = false, loading = false, error = it.message) }
+                .onSuccess {
+                    _ui.value = _ui.value.copy(
+                        verified = true,
+                        loading = false,
+                        error = null
+                    )
+                }
+                .onFailure { e ->
+                    val msg = e.message ?: ""
+                    Log.e("SignUp", "verify error message = $msg")
+
+                    if (msg.contains("409") ||
+                        msg.contains("DUPLICATE_STUDENT_ID") ||
+                        msg.contains("이미 존재하는")
+                    ) {
+                        _ui.value = _ui.value.copy(
+                            showDuplicateModal = true,
+                            loading = false,
+                            verified = false,
+                            error = null
+                        )
+                    } else {
+                        _ui.value = _ui.value.copy(
+                            error = msg,
+                            loading = false,
+                            verified = false
+                        )
+                    }
+                }
         }
+    }
+
+    fun resetDuplicateModal() {
+        _ui.value = _ui.value.copy(showDuplicateModal = false)
     }
 
     // (기존 register 대체) 약관 저장 + 회원가입을 한 번에
@@ -104,5 +137,17 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
                 }
             )
         }
+    }
+}
+
+class SignUpViewModelFactory(
+    private val repo: UserRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SignUpViewModel::class.java)) {
+            return SignUpViewModel(repo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

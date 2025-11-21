@@ -16,8 +16,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.Major
-import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.InputLabel
+import com.appcenter.uniclub.ui.components.MajorSelectBottomSheet
+import com.appcenter.uniclub.ui.components.MajorSelectButton
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.UnderlineInputField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
@@ -120,19 +121,36 @@ fun SignUpScreen(
 
             //학과 입력 필드 (인증 후에만 활성화)
             InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
-            val majorItems = Major.values().map { it.displayName }
+            var majorFocused by remember { mutableStateOf(false) }
+            var showMajorSheet by remember { mutableStateOf(false) }
             val selectedDisplayName = Major.values()
                 .find { it.name == ui.major }   // ui.major == "COMPUTER_ENGINEERING"
                 ?.displayName                   // "컴퓨터공학부"
                 ?: ""   // 선택 안했을 때는 빈값
-            DropdownField(
-                items = majorItems,
-                selectedValue = selectedDisplayName,
-                onItemSelected = { displayName ->
-                    vm.onMajor(displayName) // ← displayName을 enum.name으로 바꿔서 상태에 저장
+
+            MajorSelectButton(
+                selectedMajor = selectedDisplayName,
+                onClick = {
+                    majorFocused = true
+                    showMajorSheet = true
                 },
-                modifier = Modifier.figmaSize(widthPx = 210f, heightPx = 35f)
+                enabled = ui.verified,
+                modifier = Modifier.figmaSize(widthPx = 210f, heightPx = 35f),
+                isFocused = majorFocused
             )
+
+            if (showMajorSheet) {
+                MajorSelectBottomSheet(
+                    onDismiss = {
+                        showMajorSheet = false
+                        majorFocused = false
+                    },
+                    onSelect = { major ->
+                        vm.onMajor(major.name)
+                        showMajorSheet = false
+                    }
+                )
+            }
         }
 
         //하단 버튼
@@ -162,5 +180,18 @@ fun SignUpScreen(
                     }
                 }
         )
+        if (ui.showDuplicateModal) {
+            DuplicateStudentModal(
+                onRetry = {
+                    vm.onId("")    //다시 입력 → 입력 필드 초기화
+                    vm.onPw("")
+                    vm.resetDuplicateModal()
+                },
+                onLogin = {
+                    vm.resetDuplicateModal()
+                    onBack() // 로그인 화면으로 이동
+                }
+            )
+        }
     }
 }
