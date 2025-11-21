@@ -9,13 +9,13 @@ interface QnAService {
     suspend fun createQuestion(
         @Query("clubId") clubId: Long,
         @Body body: QuestionCreateRequestDto
-    ): PageQuestionResponseDto
+    ): QuestionCreateResponseDto
 
     //답변,대댓글 등록
     @POST("/api/v1/qna/{questionId}/answers")
     suspend fun createAnswer(
         @Path("questionId") questionId: Long,
-        @Query("parentsAnswerId") parentsAnswerId: Long,
+        @Query("parentsAnswerId") parentsAnswerId: Long?,
         @Body body: AnswerCreateRequestDto
     ): AnswerCreateResponseDto
 
@@ -26,7 +26,7 @@ interface QnAService {
     ): QuestionResponseDto
 
     //질문 삭제
-    @DELETE("/apiv1/qna/{questionId}")
+    @DELETE("/api/v1/qna/{questionId}")
     suspend fun deleteQuestion(
         @Path("questionId") questionId: Long
     ): Unit
@@ -57,11 +57,11 @@ interface QnAService {
     //QnA용 동아리 검색
     @GET("/api/v1/qna/search-clubs")
     suspend fun searchClubsForQna(
-        @Query("keyword") keyword: String
-    ): List<QnaClubResponseEto>
+        @Query("keyword") keyword: String? = null
+    ): List<QnaClubResponseDto>
 
     //답변 삭제
-    @DELETE("/api/v1/qna/answeres/{answerId}")
+    @DELETE("/api/v1/qna/answers/{answerId}")
     suspend fun deleteAnswer(
         @Path("answerId") answerId: Long
     ): Unit

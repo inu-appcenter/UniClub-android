@@ -25,14 +25,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
@@ -43,26 +47,41 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 @Composable
 fun QuestionEditScreen(
     navController: NavHostController,
-    questionId: Long,
-    initialClub: String = "", //초기 선택 동아리 (수정모드)
+    questionId: Long = 0L,
+    initialClubId: Long? = null, //초기 선택 동아리 (수정모드)
+    initialClubName: String = "",
     initialContent: String = "" //초기 질문 내용 (수정모드)
 ) {
-    var selectedClub by remember { mutableStateOf(initialClub) } //선택된 동아리명
-    var query by remember { mutableStateOf(initialContent) } //질문 본문
+    var app = LocalContext.current.applicationContext as App
+    val vm: QuestionEditViewModel = viewModel (
+        factory = QuestionEditViewModelFactory(ServiceLocator.qnaRepository(app))
+    )
+
+    var selectedClubId by remember { mutableStateOf(initialClubId) } //선택된 동아리아이디
+    var selectedClubName by remember { mutableStateOf(initialClubName) } //선택된 동아리명
+    var body by remember { mutableStateOf(initialContent) } //질문 본문
     var isAnonymous by remember { mutableStateOf(false) } //익명 여부
 
-    //ClubSelect에서 넘어온 값
-    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-    savedStateHandle?.getLiveData<String>("selectedClub")?.observeForever { result ->
-        selectedClub = result
-        savedStateHandle.remove<String>("selectedClub") // 한 번 쓰고 제거
-    }
+    //ClubSelect에서 넘어온 값 (id+name 저장)
+    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Long>("selectedClubId")
+        ?.observeForever {
+            selectedClubId = it
+            navController.currentBackStackEntry?.savedStateHandle?.remove<Long>("selectedClubId")
+        }
+    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<String>("selectedClubName")
+        ?.observeForever {
+            selectedClubName = it
+            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedClubName")
+        }
+
+    val ui by vm.ui.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.figmaPadding(topPx = 27f)) {
+        Column() {
+            Spacer(modifier = Modifier.height(24.dp))
             TopBar( //상단바
                 onBackClick = { navController.popBackStack() },
-                title = "질문하기"
+                title = if (questionId == 0L) "질문하기" else "질문 수정"
             )
 
             Box( //동아리 선택바
@@ -75,11 +94,19 @@ fun QuestionEditScreen(
                     modifier = Modifier
                         .figmaSize(widthPx = 303f, heightPx = 35f)
                         .clip(RoundedCornerShape(13.dp))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            navController.navigate("clubSelect") //동아리 선택 화면으로 이동
+                        .let {
+                            if (questionId == 0L) {
+                                //신규 작성 - 클릭 가능
+                                it.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    navController.navigate("clubSelect")
+                                }
+                            } else {
+                                //수정 모드 - 클릭 불가능
+                                it
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -96,7 +123,8 @@ fun QuestionEditScreen(
                             .fillMaxWidth()
                     ) {
                         Text(
-                            text = "질문할 동아리를 검색하세요.",
+                            text = if (questionId == 0L) "질문할 동아리를 검색하세요."
+                                    else "동아리 변경이 불가능합니다",
                             fontSize = figmaTextSizeSp(12f),
                             fontFamily = NotoSansKR,
                             lineHeight = 12.sp * 1.5f,
@@ -119,21 +147,23 @@ fun QuestionEditScreen(
 
             //선택된 동아리 태그 + 본문
             Column(modifier = Modifier.figmaPadding(startPx = 39f, endPx = 39f)) {
-                Text( //선택된 동아리 표시
-                    text = if(selectedClub.isNotEmpty()) "@"+selectedClub else "",
-                    color = Color(0xFFFF5900),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = figmaTextSizeSp(11f),
-                    fontFamily = NotoSansKR,
-                    lineHeight = 11.sp * 1.8f,
-                    letterSpacing = (-0.011).em
-                )
+                if(selectedClubName.isNotBlank()) {
+                    Text( //선택된 동아리 표시
+                        text = "@$selectedClubName",
+                        color = Color(0xFFFF5900),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = figmaTextSizeSp(11f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 11.sp * 1.8f,
+                        letterSpacing = (-0.011).em
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(25.dp))
 
                 BasicTextField( //질문 본문
-                    value = query,
-                    onValueChange = { query = it },
+                    value = body,
+                    onValueChange = { body = it },
                     singleLine = false, //여러 줄
                     textStyle = TextStyle(
                         color = Color.Black,
@@ -142,9 +172,9 @@ fun QuestionEditScreen(
                         lineHeight = 11.sp * 1.8f,
                         letterSpacing = (-0.011).em
                     ),
-                    decorationBox = { innerTextField ->
-                        if (query.isEmpty()) { //플레이스 홀더
-                            androidx.compose.material3.Text(
+                    decorationBox = { inner ->
+                        if (body.isBlank()) { //플레이스 홀더
+                            Text(
                                 text = "동아리 부원들에게 궁금한 것을 물어보세요.",
                                 fontSize = figmaTextSizeSp(11f),
                                 fontFamily = NotoSansKR,
@@ -153,9 +183,9 @@ fun QuestionEditScreen(
                                 color = Color(0xFF7D7D7D)
                             )
                         }
-                        innerTextField()
+                        inner()
                     },
-                    enabled = selectedClub.isNotEmpty() //동아리 선택 전엔 입력 비활성화
+                    enabled = selectedClubId != null || questionId != 0L
                 )
             }
         }
@@ -188,8 +218,22 @@ fun QuestionEditScreen(
                 modifier = Modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) {}
+                ) {
+                    if (questionId == 0L) {
+                        //신규 등록
+                        val cid = selectedClubId ?: return@clickable
+                        vm.create(cid, body.trim(), isAnonymous)
+                    } else {
+                        //수정
+                        vm.update(questionId, body.trim(), isAnonymous)
+                    }
+                }
             )
+        }
+
+        //성공 시 뒤로가기
+        if (ui.success) {
+            LaunchedEffect(ui.success) { navController.popBackStack() }
         }
     }
 }
