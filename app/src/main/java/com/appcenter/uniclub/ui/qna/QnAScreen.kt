@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -27,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -45,9 +45,14 @@ import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appcenter.uniclub.App
+import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.components.Dialog
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -55,11 +60,16 @@ import java.nio.charset.StandardCharsets
 //메인 Q&A 페이지
 @Composable
 fun QnAScreen(navController: NavHostController) {
+    val app = LocalContext.current.applicationContext as App
+    val vm: QnaListViewModel = viewModel (
+        factory = QnaListViewModelFactory(ServiceLocator.qnaRepository(app))
+    )
+
     var query by remember { mutableStateOf("") } //검색어
     var answered by remember { mutableStateOf(false) } //답변 완료만
     var my by remember { mutableStateOf(false) } //내 질문만
 
-    var selectedQuestionId by remember { mutableStateOf<Long?>(null) } //버튼 누른 동아리 아이디
+    var selectedQuestionId by remember { mutableStateOf<Long?>(null) } //버튼 누른 질문 아이디
 
     //하단 메뉴 상태: true = 내 질문, false = 남 질문, null = 닫힘
     var activeMenuForMine by remember { mutableStateOf<Boolean?>(null) }
@@ -68,52 +78,35 @@ fun QnAScreen(navController: NavHostController) {
     var showReportDialog by remember { mutableStateOf(false) }
 
     //선택된 동아리
-    var selectedClub by remember { mutableStateOf("") }
-    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-    savedStateHandle?.getLiveData<String>("selectedClub")?.observeForever { result ->
-        selectedClub = result
-        savedStateHandle.remove<String>("selectedClub") // 한 번만 쓰고 지우기
+    var selectedClubName by remember { mutableStateOf("") }
+    var selectedClubId by remember { mutableStateOf<Long?>(null) }
+
+    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Long>("selectedClubId")
+        ?.observeForever {
+            selectedClubId = it
+            navController.currentBackStackEntry?.savedStateHandle?.remove<Long>("selectedClubId")
+        }
+    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<String>("selectedClubName")
+        ?.observeForever {
+            selectedClubName = it
+            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedClubName")
+        }
+
+    LaunchedEffect(query, selectedClubId, answered, my) {
+        vm.keyword = query.ifBlank { null }
+        vm.clubId = selectedClubId
+        vm.answered = answered
+        vm.onlyMy = my
+        vm.refresh()
     }
 
-    val sampleItems = remember { //더미 리스트
-        listOf(
-            QnaListItem(
-                id = 1, authorName = "김가나", authorProfileUrl = null,
-                clubName = "Appcenter", createdAt = "07.07 13:13",
-                question = "동아리 질문 작성 예시입니다. 긴 질문을 작성할 경우 이렇게 보이면서 ...",
-                hasAnswer = true, answerCount = 4, isMine = false
-            ),
-            QnaListItem(
-                id = 2, authorName = "영훈", authorProfileUrl = null,
-                clubName = "동아리 1", createdAt = "07.07 13:13",
-                question = "동아리원 모집 언제하나요?",
-                hasAnswer = false, answerCount = 0, isMine = true
-            ),
-            QnaListItem(
-                id = 3, authorName = "Chan", authorProfileUrl = null,
-                clubName = "동아리 2", createdAt = "07.07 13:13",
-                question = "면접은 어떻게 진행되나요?",
-                hasAnswer = true, answerCount = 1, isMine = false
-            ),
-            QnaListItem(
-                id = 4, authorName = "Chan", authorProfileUrl = null,
-                clubName = "동아리 2", createdAt = "07.07 13:13",
-                question = "면접은 어떻게 진행되나요?",
-                hasAnswer = true, answerCount = 1, isMine = false
-            ),
-            QnaListItem(
-                id = 5, authorName = "Chan", authorProfileUrl = null,
-                clubName = "동아리 2", createdAt = "07.07 13:13",
-                question = "면접은 어떻게 진행되나요?",
-                hasAnswer = true, answerCount = 1, isMine = false
-            )
-        )
-    }
+    val ui by vm.ui.collectAsState()
 
     Scaffold( //상단바 있는 기본 스캐폴드
         containerColor = Color.Transparent,
         topBar = { //상단바
-            Column(modifier = Modifier.figmaPadding(topPx = 27f)) {
+            Column() {
+                Spacer(modifier = Modifier.height(24.dp))
                 TopBar(
                     onBackClick = { navController.popBackStack() },
                     title = "질의응답"
@@ -121,20 +114,6 @@ fun QnAScreen(navController: NavHostController) {
             }
         }
     ) { innerPadding ->
-
-        //리스트 필터링
-        val filtered = remember(sampleItems, query, selectedClub, answered, my) {
-            sampleItems.asSequence()
-                .filter { if (query.isBlank()) true else it.question.contains(query, ignoreCase = true) }
-                .filter { if (selectedClub.isBlank()) true else it.clubName.equals(selectedClub, ignoreCase = true) }
-                .filter { if (answered) it.hasAnswer else true }
-                .filter { if (my) it.isMine else true }
-                .toList()
-        }
-        val onMenuClick: (Boolean, Long) -> Unit = { isMine, id ->
-            activeMenuForMine = isMine
-            selectedQuestionId = id
-        }
 
         Box(
             modifier = Modifier
@@ -225,7 +204,7 @@ fun QnAScreen(navController: NavHostController) {
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(26.dp))
+                    Spacer(modifier = Modifier.height(33.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -234,7 +213,7 @@ fun QnAScreen(navController: NavHostController) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         //동아리 선택 버튼
-                        ClubSelectButton(navController, selectedValue = selectedClub)
+                        ClubSelectButton(navController, selectedValue = selectedClubName)
 
                         Row { //필터 토글
                             Box( //답변 완료만
@@ -246,21 +225,12 @@ fun QnAScreen(navController: NavHostController) {
                                         indication = null
                                     ) { answered = !answered }
                             ) {
-                                if (answered) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.btn_only_answered),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.btn_only_answered_disabled),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
+                                Image(
+                                    painter = painterResource(if (answered) R.drawable.btn_only_answered else R.drawable.btn_only_answered_disabled),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                             Spacer(modifier = Modifier.width(3.dp))
                             Box( //내 질문만
@@ -272,36 +242,50 @@ fun QnAScreen(navController: NavHostController) {
                                         indication = null
                                     ) { my = !my }
                             ) {
-                                if (my) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.btn_my),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.btn_my_disabled),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
+                                Image(
+                                    painter = painterResource(if (my) R.drawable.btn_my else R.drawable.btn_my_disabled),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
                     }
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(13.dp))
                 }
 
                 //질문 리스트
-                items(filtered, key = { it.id }) { item ->
-                    if (item.hasAnswer && item.answerCount > 0) {
-                        QnaCardAnswered(item, onMenuClick, navController)
-                    } else {
-                        QnaCardNoAnswer(item, onMenuClick, navController)
+                items(ui.items, key = { it.questionId }) { q ->
+                    val item = QnaListItem(
+                        id = q.questionId,
+                        authorName = q.nickname,
+                        authorProfileUrl = q.profile,
+                        clubName = q.clubName,
+                        createdAt = q.updatedAt,
+                        question = q.content,
+                        hasAnswer = q.countAnswer > 0,
+                        answerCount = q.countAnswer.toInt(),
+                        isMine = q.owner
+                    )
+                    val onMenuClick: (Boolean, Long) -> Unit = { isMine, id ->
+                        activeMenuForMine = isMine
+                        selectedQuestionId = id
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                            .figmaPadding(startPx = 26f, endPx = 26f, bottomPx = 13f)
+                    ){
+                        if (item.hasAnswer && item.answerCount > 0) {
+                            QnaCardAnswered(item, onMenuClick, navController)
+                        } else {
+                            QnaCardNoAnswer(item, onMenuClick, navController)
+                        }
                     }
                 }
 
@@ -373,12 +357,14 @@ fun QnAScreen(navController: NavHostController) {
                                         ) {
                                             // TODO: 수정 동작
                                             activeMenuForMine = null
-                                            val selectedItem = sampleItems.find { it.id == selectedQuestionId }
-                                            selectedItem?.let { item ->
-                                                val encodedClub = URLEncoder.encode(item.clubName, StandardCharsets.UTF_8.toString())
-                                                val encodedContent = URLEncoder.encode(item.question, StandardCharsets.UTF_8.toString())
+                                            val selected = ui.items.firstOrNull { it.questionId == selectedQuestionId }
+                                            selected?.let { q ->
+                                                val encodedClub = URLEncoder.encode(q.clubName, StandardCharsets.UTF_8.toString())
+                                                val encodedContent = URLEncoder.encode(q.content, StandardCharsets.UTF_8.toString())
 
-                                                navController.navigate("questionEdit?id=${item.id}&clubName=$encodedClub&content=$encodedContent")
+                                                navController.navigate(
+                                                    "questionEditFull?id=${q.questionId}&clubId=${q.clubId}&clubName=$encodedClub&content=$encodedContent"
+                                                )
                                             }
                                         }
                                 )
@@ -424,7 +410,11 @@ fun QnAScreen(navController: NavHostController) {
                 onDismiss = { showDeleteDialog = false },
                 onConfirm = {
                     showDeleteDialog = false
-                    // TODO: 삭제 동작
+                    selectedQuestionId?.let { id ->
+                        vm.deleteQuestion(id) {
+                            activeMenuForMine = null
+                        }
+                    }
                 }
             )
         }
