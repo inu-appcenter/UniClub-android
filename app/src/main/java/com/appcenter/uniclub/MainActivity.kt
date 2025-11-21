@@ -53,6 +53,7 @@ import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import com.appcenter.uniclub.ui.SplashScreen
 import com.appcenter.uniclub.ui.qna.ClubSelectScreen
 import com.appcenter.uniclub.ui.qna.QuestionEditScreen
 import com.appcenter.uniclub.ui.qna.QuestionScreen
@@ -89,8 +90,10 @@ class MainActivity : ComponentActivity() {
             UniClubTheme {
                 NavHost(
                     navController,
-                    startDestination = "login",
+                    startDestination = "splash",
                 ) {
+                    composable("splash") { SplashScreen(navController) }
+
                     composable("login") {
                         val vm = remember { LoginViewModel(repo) }
                         LoginScreen(

@@ -39,9 +39,9 @@ class AuthInterceptor(
 
         val response = chain.proceed(req)
 
-        //401 감지 → 토큰 삭제 + 로그인 화면 이동
-        if (response.code == 401) {
-            runBlocking { onUnauthorized() } // UI로 알림만 보냄
+        //401 감지 → "토큰이 있을 때"만 로그아웃 처리
+        if (response.code == 401 && !token.isNullOrBlank()) {
+            runBlocking { onUnauthorized() }
         }
 
         return response
