@@ -35,9 +35,9 @@ interface UserService {
     ): Response<LoginResponseDto>
 
     // 내 정보 수정
-    @PATCH("api/v1/users/me")
+    @PATCH("/api/v1/users/me")
     suspend fun updateMe(
-        @Body body: UpdateMeRequestDto
+        @Body body: Map<String, @JvmSuppressWildcards Any?>
     ): Response<Unit>
 
     @POST("/api/v1/user/profile/s3-presigned")
