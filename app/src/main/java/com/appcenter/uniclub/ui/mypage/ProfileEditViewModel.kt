@@ -19,7 +19,13 @@ data class ProfileEditUiState(
     val profileUrl: String? = null,
     val loading: Boolean = false,
     val error: String? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+
+    //처음 로딩 당시 원본 값
+    val originalName: String = "",
+    val originalMajor: String = "",
+    val originalNickname: String = "",
+    val originalProfileUrl: String? = null
 )
 
 class ProfileEditViewModel(
@@ -28,6 +34,15 @@ class ProfileEditViewModel(
 
     private val _uiState = MutableStateFlow(ProfileEditUiState())
     val uiState: StateFlow<ProfileEditUiState> = _uiState
+
+    val isModified: Boolean
+        get() {
+            val s = _uiState.value
+            return s.name != s.originalName ||
+                    s.major != s.originalMajor ||
+                    s.nickname != s.originalNickname ||
+                    s.profileUrl != s.originalProfileUrl
+        }
 
     // GET /users/me
     fun loadProfile() {
@@ -41,7 +56,13 @@ class ProfileEditViewModel(
                         major = dto.major,   // ex: "COMPUTER_ENGINEERING"
                         nickname = dto.nickname ?: "",
                         profileUrl = dto.profileImageLink,
-                        loading = false
+                        loading = false,
+
+                        //원본값 저장
+                        originalName = dto.name,
+                        originalMajor = dto.major,
+                        originalNickname = dto.nickname ?: "",
+                        originalProfileUrl = dto.profileImageLink
                     )
                 },
                 onFailure = { e ->
@@ -55,12 +76,14 @@ class ProfileEditViewModel(
         viewModelScope.launch {
             try {
                 val url = repo.uploadProfileImage(app, uri)
-                Log.d("ProfileEditViewModel", "updateProfileImage url = $url")
                 _uiState.value = _uiState.value.copy(profileUrl = url)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "이미지 업로드 실패: ${e.message}")
             }
         }
+    }
+    fun updateProfileImageDeleted() {
+        _uiState.value = _uiState.value.copy(profileUrl = "__deleted__")
     }
 
     fun updateMajor(major: String) {
@@ -76,23 +99,44 @@ class ProfileEditViewModel(
     }
 
     fun updateProfile() {
-        val state = _uiState.value
-        Log.d("ProfileEditViewModel", "updateProfile state.profileUrl = ${state.profileUrl}")
+        val s = _uiState.value
+
+        // 변경된 필드만 Map에 담기
+        val body = mutableMapOf<String, Any?>()
+
+        if (s.name != s.originalName) {
+            body["name"] = s.name
+        }
+        if (s.major != s.originalMajor) {
+            body["major"] = s.major
+        }
+        if (s.nickname != s.originalNickname) {
+            body["nickname"] = s.nickname
+        }
+
+        // 프로필 이미지 처리
+        if (s.profileUrl != s.originalProfileUrl) {
+            // 삭제한 경우: "" 보내기
+            if (s.profileUrl == null) {
+                body["profileImageLink"] = ""
+            } else {
+                body["profileImageLink"] = s.profileUrl!!
+            }
+        }
+
+        if (s.profileUrl == "__deleted__") {
+            body["profileImageLink"] = ""
+        }
+
+        // 아무것도 변경되지 않았으면 종료
+        if (body.isEmpty()) return
+
         viewModelScope.launch {
-            _uiState.value = state.copy(loading = true, error = null)
-            val result = repo.updateMe(
-                name = state.name,       // 이름은 서버에 저장된 걸 그대로 두려면 공백 아닌 값 넣어야 함
-                major = state.major,
-                nickname = state.nickname,
-                profileImageLink = state.profileUrl?.takeIf { it.isNotBlank() }
-            )
+            _uiState.value = s.copy(loading = true, error = null)
+            val result = repo.updateMe(body)
             result.fold(
-                onSuccess = {
-                    _uiState.value = state.copy(loading = false, success = true)
-                },
-                onFailure = { e ->
-                    _uiState.value = state.copy(loading = false, error = e.message)
-                }
+                onSuccess = { _uiState.value = s.copy(loading = false, success = true) },
+                onFailure = { e -> _uiState.value = s.copy(loading = false, error = e.message) }
             )
         }
     }

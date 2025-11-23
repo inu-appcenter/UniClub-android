@@ -1,7 +1,6 @@
 package com.appcenter.uniclub.ui.mypage
 
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,11 +13,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.LocalTextStyle
@@ -42,7 +45,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.Major
-import com.appcenter.uniclub.ui.components.DropdownField
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
@@ -50,6 +52,8 @@ import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import com.appcenter.uniclub.ui.components.MajorSelectBottomSheet
+import com.appcenter.uniclub.ui.components.MajorSelectButton
 
 //프로필 수정 화면
 @Composable
@@ -64,6 +68,8 @@ fun ProfileEditScreen(navController: NavHostController) {
 
     //선택된 프로필 이미지 URI
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    var showAction by remember { mutableStateOf(false) }
 
     //화면 진입 시 기존 프로필 불러오기
     LaunchedEffect(Unit) {
@@ -92,11 +98,9 @@ fun ProfileEditScreen(navController: NavHostController) {
         TopBar( //상단바
             onBackClick = { navController.popBackStack() },
             title = "프로필 수정",
-            rightIconResId = R.drawable.ic_save,
+            rightIconResId = if (viewModel.isModified) R.drawable.ic_save else null,
             onRightIconClick = {
-                if (state.profileUrl.isNullOrBlank()) {
-                    Log.d("ProfileEditScreen", "아직 업로드 중이라 저장 불가")
-                } else {
+                if (viewModel.isModified && !state.profileUrl.isNullOrBlank()) {
                     viewModel.updateProfile()
                 }
             }
@@ -108,10 +112,10 @@ fun ProfileEditScreen(navController: NavHostController) {
                 .align(Alignment.CenterHorizontally)
                 .figmaSize(widthPx = 70f, heightPx = 75f)
         ){
-            //프로필 이미지 (선택된 Uri가 있으면 표시, 없으면 기본 이미지)
+            //상태별로 프로필 이미지 출력
             when {
                 profileImageUri != null -> {
-                    // 새로 선택한 이미지
+                    //새로 선택한 이미지
                     Image(
                         painter = rememberAsyncImagePainter(profileImageUri),
                         contentDescription = "프로필 이미지",
@@ -121,8 +125,18 @@ fun ProfileEditScreen(navController: NavHostController) {
                         contentScale = ContentScale.Crop
                     )
                 }
+                state.profileUrl == "__deleted__" -> {
+                    //삭제했을 때 -> 기본 이미지
+                    Image(
+                        painter = painterResource(id = R.drawable.default_image),
+                        contentDescription = "기본 프로필 이미지",
+                        modifier = Modifier
+                            .figmaSize(widthPx = 70f, heightPx = 75f)
+                            .clip(RoundedCornerShape(23.dp))
+                    )
+                }
                 !state.profileUrl.isNullOrBlank() -> {
-                    // 서버에서 가져온 기존 프로필 이미지
+                    //서버에서 가져온 기존 프로필 이미지
                     Image(
                         painter = rememberAsyncImagePainter(state.profileUrl),
                         contentDescription = "프로필 이미지",
@@ -133,7 +147,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                     )
                 }
                 else -> {
-                    // 기본 이미지
+                    //둘다 없을 때 기본 이미지
                     Image(
                         painter = painterResource(id = R.drawable.default_image),
                         contentDescription = "기본 프로필 이미지",
@@ -152,10 +166,8 @@ fun ProfileEditScreen(navController: NavHostController) {
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
-                    ) { //갤러리 실행
-                        launcher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
+                    ) { //클릭하면 오버레이 버튼
+                        showAction = true
                     }
             )
         }
@@ -176,19 +188,36 @@ fun ProfileEditScreen(navController: NavHostController) {
                 color = Color.Black,
                 modifier = Modifier.width(85.dp)
             )
-            val majorItems = Major.values().map { it.displayName }
-            val selectedDisplayName = Major.values()
-                .find { it.name == state.major }   // ui.major == "COMPUTER_ENGINEERING"
-                ?.displayName                   // "컴퓨터공학부"
-                ?: ""   // 선택 안했을 때는 빈값
-            DropdownField(
-                items = majorItems,
-                selectedValue = selectedDisplayName,
-                onItemSelected = { displayName ->
-                    viewModel.updateMajor(displayName)
+
+            var majorFocused by remember { mutableStateOf(false) }
+            var showMajorSheet by remember { mutableStateOf(false) } //바텀시트 오픈 상태
+            val selectedDisplayName = Major.values() //현재 선택된 학과 displayName
+                .find { it.name == state.major }
+                ?.displayName
+                ?: ""
+
+            MajorSelectButton( //학과 선택 버튼
+                selectedMajor = selectedDisplayName,
+                onClick = { //클릭하면 바텀시트 열림
+                    majorFocused = true
+                    showMajorSheet = true
                 },
-                modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f)
+                modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f),
+                isFocused = majorFocused
             )
+
+            if (showMajorSheet) { //바텀시트
+                MajorSelectBottomSheet(
+                    onDismiss = {
+                        showMajorSheet = false
+                        majorFocused = false
+                    },
+                    onSelect = { major ->
+                        viewModel.updateMajor(major.name)
+                        showMajorSheet = false
+                    }
+                )
+            }
         }
 
         //이름 입력 영역
@@ -293,5 +322,69 @@ fun ProfileEditScreen(navController: NavHostController) {
             color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
             modifier = Modifier.figmaPadding(startPx = 125f)
         )
+    }
+
+    //프로필 수정, 삭제 오버레이
+    if(showAction) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .imePadding()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { showAction = false },
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .figmaSize(widthPx = 344f, heightPx = 116f)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.btn_profile_edit_delete),
+                        contentDescription = "프로필 수정&삭제",
+                        modifier = Modifier.matchParentSize(),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    //터치 영역을 위/아래 절반으로 나눔
+                    Column(modifier = Modifier.matchParentSize()) {
+                        Box( //수정 영역
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { //수정 동작
+                                    showAction = false
+                                    //갤러리 실행
+                                    launcher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                }
+                        )
+                        Box( //삭제 영역
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { //삭제 동작
+                                    showAction = false
+                                    viewModel.updateProfileImageDeleted()
+                                }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
