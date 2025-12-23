@@ -54,6 +54,10 @@ class MyPageViewModel(
             )
         }
     }
+
+    suspend fun logout() {
+        repo.logout() //tokenStore.clear() 실행됨
+    }
 }
 
 class MyPageViewModelFactory(private val app: App) : ViewModelProvider.Factory {
