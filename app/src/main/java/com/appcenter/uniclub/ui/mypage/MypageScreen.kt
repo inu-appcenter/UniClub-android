@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -43,6 +42,8 @@ import com.appcenter.uniclub.App
 import com.appcenter.uniclub.ui.components.Dialog
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 //마이페이지 화면
 @Composable
@@ -52,6 +53,7 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
         factory = MyPageViewModelFactory(context)
     )
     val state by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.loadMyPage()
@@ -204,8 +206,16 @@ fun MypageScreen(navController: NavHostController, rootNavController: NavHostCon
             onDismiss = { showLogoutDialog = false },
             onConfirm = {
                 showLogoutDialog = false
-                rootNavController.navigate("login") {
-                    popUpTo("login") { inclusive = true }
+
+                scope.launch {
+                    //진짜 로그아웃(토큰 삭제)
+                    viewModel.logout()
+
+                    //루트 백스택 싹 비우고 로그인으로
+                    rootNavController.navigate("login") {
+                        popUpTo(rootNavController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
         )
