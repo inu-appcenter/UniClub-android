@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -34,12 +35,15 @@ fun NicknameScreen(
     onBack: () -> Unit,
     onNext: () -> Unit,
     vm: SignUpViewModel
-){
+) {
     val ui by vm.ui.collectAsState()
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .figmaPadding(topPx = 18f)
+    val canProceed = ui.nickname.trim().isNotEmpty()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .figmaPadding(topPx = 18f)
     ) {
         TopBar( //상단바
             onBackClick = onBack
@@ -56,17 +60,6 @@ fun NicknameScreen(
                 color = Color.Black
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "기본적으로 활동명은 실명으로 표시되며,\n닉네임을 설정하면 활동명이 닉네임으로 변경됩니다.",
-                fontSize = figmaTextSizeSp(10f),
-                fontFamily = NotoSansKR,
-                lineHeight = 10.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color(0xFFFF5900)
-            )
-
             Spacer(modifier = Modifier.height(25.dp))
 
             InputLabel("닉네임을 입력해주세요.", isEnabled = true)
@@ -79,15 +72,20 @@ fun NicknameScreen(
         }
 
         Image(
-            painter = painterResource(R.drawable.btn_next_enabled ),
+            painter = painterResource(
+                id = if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
+            ),
             contentDescription = "하단 버튼",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .figmaPadding(bottomPx = 51f)
                 .clickable(
+                    enabled = canProceed,
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { onNext() }
+                ) {
+                    onNext()
+                }
         )
     }
 }

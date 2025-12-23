@@ -53,7 +53,7 @@ class ProfileEditViewModel(
                 onSuccess = { dto ->
                     _uiState.value = ProfileEditUiState(
                         name = dto.name,
-                        major = dto.major,   // ex: "COMPUTER_ENGINEERING"
+                        major = dto.major, //ex: "COMPUTER_ENGINEERING"
                         nickname = dto.nickname ?: "",
                         profileUrl = dto.profileImageLink,
                         loading = false,
@@ -104,13 +104,27 @@ class ProfileEditViewModel(
         // 변경된 필드만 Map에 담기
         val body = mutableMapOf<String, Any?>()
 
+        //공백 방지
+        val trimmedName = s.name.trim()
+        val trimmedNickname = s.nickname.trim()
+
         if (s.name != s.originalName) {
+            //이름이 변경되었는데 빈칸이면 서버 전송 X
+            if (trimmedName.isBlank()) {
+                _uiState.value = s.copy(error = "이름은 빈칸일 수 없습니다.")
+                return
+            }
             body["name"] = s.name
         }
         if (s.major != s.originalMajor) {
             body["major"] = s.major
         }
         if (s.nickname != s.originalNickname) {
+            //닉네임이 변경되었는데 빈칸이면 서버 전송 X
+            if (trimmedNickname.isBlank()) {
+                _uiState.value = s.copy(error = "닉네임은 빈칸일 수 없습니다.")
+                return
+            }
             body["nickname"] = s.nickname
         }
 

@@ -311,17 +311,6 @@ fun ProfileEditScreen(navController: NavHostController) {
                 )
             }
         }
-
-        Text(
-            text = "기본적으로 활동명은 실명으로 표시되며, \n" +
-                    "닉네임을 설정하면 활동명이 닉네임으로 변경됩니다.",
-            fontSize = figmaTextSizeSp(9f),
-            fontFamily = NotoSansKR,
-            lineHeight = 9.sp * 1.5f,
-            letterSpacing = (-0.011).em,
-            color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
-            modifier = Modifier.figmaPadding(startPx = 125f)
-        )
     }
 
     //프로필 수정, 삭제 오버레이
