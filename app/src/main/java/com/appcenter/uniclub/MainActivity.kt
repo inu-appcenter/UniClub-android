@@ -1,6 +1,7 @@
 package com.appcenter.uniclub
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -58,6 +59,10 @@ import com.appcenter.uniclub.ui.qna.ClubSelectScreen
 import com.appcenter.uniclub.ui.qna.QuestionEditScreen
 import com.appcenter.uniclub.ui.qna.QuestionScreen
 import com.appcenter.uniclub.ui.signup.NicknameScreen
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -70,13 +75,28 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("FCM", "MainActivity onCreate reached")
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         setContent {
             val app = application as App
             val repo = ServiceLocator.userRepository(app)
+            val fcmRepo = ServiceLocator.fcmRepository(app)
             val navController = rememberNavController()
+
+            FirebaseMessaging.getInstance().token
+                .addOnSuccessListener { token ->
+                    Log.d("FCM", "Current token=$token")
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        fcmRepo.registerIfLoggedIn(token)
+                            .onFailure { e -> Log.w("FCM", "registerIfLoggedIn failed", e) }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("FCM", "Token fetch failed", e)
+                }
 
             //logoutEvent 구독 → 로그인 화면으로 이동
             LaunchedEffect(Unit) {
@@ -95,7 +115,7 @@ class MainActivity : ComponentActivity() {
                     composable("splash") { SplashScreen(navController) }
 
                     composable("login") {
-                        val vm = remember { LoginViewModel(repo) }
+                        val vm = remember { LoginViewModel(repo, fcmRepo) }
                         LoginScreen(
                             onLoginSuccess = {
                                 navController.navigate("main") {

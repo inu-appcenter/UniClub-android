@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -14,8 +16,8 @@ android {
         applicationId = "com.appcenter.uniclub"
         minSdk = 25
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -88,8 +90,12 @@ dependencies {
     implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 
     implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
-    implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.appcompat:appcompat:1.7.0")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+
+    //fcm
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 }
