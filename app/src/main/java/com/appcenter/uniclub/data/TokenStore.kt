@@ -30,4 +30,6 @@ class TokenStore(private val context: Context) {
     suspend fun getAuthHeader(): String? { //인증 헤더 단발성 조회
         return context.dataStore.data.map { it[KEY_AUTH_HEADER] }.firstOrNull()
     }
+
+    suspend fun isLoggedIn(): Boolean = !getAuthHeader().isNullOrBlank() //편의 함수: 로그인 여부 확인
 }

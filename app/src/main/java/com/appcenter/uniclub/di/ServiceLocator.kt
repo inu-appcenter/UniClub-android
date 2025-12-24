@@ -2,6 +2,8 @@ package com.appcenter.uniclub.di
 
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.data.ClubRepository
+import com.appcenter.uniclub.data.FcmRepository
+import com.appcenter.uniclub.data.FcmTokenStore
 import com.appcenter.uniclub.data.MainRepository
 import com.appcenter.uniclub.data.NotificationRepository
 import com.appcenter.uniclub.data.QnARepository
@@ -9,6 +11,7 @@ import com.appcenter.uniclub.data.SearchRepository
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.network.ApiClient
 import com.appcenter.uniclub.network.ClubService
+import com.appcenter.uniclub.network.FcmService
 import com.appcenter.uniclub.network.UserService
 import com.appcenter.uniclub.network.MainService
 import com.appcenter.uniclub.network.NotificationService
@@ -36,14 +39,17 @@ object ServiceLocator {
 
     //UserRepository 인스턴스 생성
     //UserService, ProfileRepository, TokenStore 종합 관리
-    fun userRepository(app: App): UserRepository {
-        val retrofit = ApiClient.createRetrofit(
+    private fun authorizedRetrofit(app: App) =
+        ApiClient.createRetrofit(
             getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
             onUnauthorized = {
                 runBlocking { app.tokenStore.clear() }
                 app.logoutEvent.tryEmit(Unit)
             }
         )
+
+    fun userRepository(app: App): UserRepository {
+        val retrofit = authorizedRetrofit(app)
         val userService = retrofit.create(UserService::class.java)
 
         return UserRepository(
@@ -54,13 +60,7 @@ object ServiceLocator {
 
     //MainService, MainRepository 인스턴스 생성
     fun mainService(app: App): MainService {
-        val retrofit = ApiClient.createRetrofit(
-            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
-            onUnauthorized = {
-                runBlocking { app.tokenStore.clear() }
-                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
-            }
-        )
+        val retrofit = authorizedRetrofit(app)
         return retrofit.create(MainService::class.java)
     }
     fun mainRepository(app: App): MainRepository {
@@ -69,13 +69,7 @@ object ServiceLocator {
 
     //ClubService, ClubRepository 인스턴스 생성
     fun clubService(app: App): ClubService {
-        val retrofit = ApiClient.createRetrofit(
-            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
-            onUnauthorized = {
-                runBlocking { app.tokenStore.clear() }
-                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
-            }
-        )
+        val retrofit = authorizedRetrofit(app)
         return retrofit.create(ClubService::class.java)
     }
     fun clubRepository(app: App): ClubRepository =
@@ -87,42 +81,36 @@ object ServiceLocator {
 
     //NotificationRepository 인스턴스 생성
     fun notificationRepository(app: App): NotificationRepository {
-        val retrofit = ApiClient.createRetrofit(
-            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
-            onUnauthorized = {
-                runBlocking { app.tokenStore.clear() }
-                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
-            }
-        )
+        val retrofit = authorizedRetrofit(app)
         val api = retrofit.create(NotificationService::class.java)
         return NotificationRepository(api)
     }
 
     //SearchRepository 인스턴스 생성
     fun searchRepository(app: App): SearchRepository {
-        val retrofit = ApiClient.createRetrofit(
-            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
-            onUnauthorized = {
-                runBlocking { app.tokenStore.clear() }
-                app.logoutEvent.tryEmit(Unit) // 로그아웃 이벤트 발생
-            }
-        )
-        val api = retrofit.create(ClubService::class.java) //ClubService 활용
+        val retrofit = authorizedRetrofit(app)
+        val api = retrofit.create(ClubService::class.java)
         return SearchRepository(api)
     }
 
     //QnAService, QnARepository 인스턴스 생성
     fun qnaService(app: App): QnAService {
-        val retrofit = ApiClient.createRetrofit(
-            getAuthHeader = { runBlocking { app.tokenStore.authHeaderFlow.first() } },
-            onUnauthorized = {
-                runBlocking { app.tokenStore.clear() }
-                app.logoutEvent.tryEmit(Unit)
-            }
-        )
+        val retrofit = authorizedRetrofit(app)
         return retrofit.create(QnAService::class.java)
     }
-
     fun qnaRepository(app: App): QnARepository =
         QnARepository(qnaService(app))
+
+    //FcmService, FcmRepository 인스턴스 생성
+    fun fcmService(app: App): FcmService {
+        val retrofit = authorizedRetrofit(app)
+        return retrofit.create(FcmService::class.java)
+    }
+    fun fcmRepository(app: App): FcmRepository {
+        return FcmRepository(
+            fcmService = fcmService(app),
+            tokenStore = app.tokenStore,
+            fcmTokenStore = FcmTokenStore(app.applicationContext)
+        )
+    }
 }

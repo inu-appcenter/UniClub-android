@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "52918574070",
+    "project_id": "uniclub-f8193",
+    "storage_bucket": "uniclub-f8193.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52918574070:android:ea282f88a03d96883d85d7",
+        "android_client_info": {
+          "package_name": "com.appcenter.uniclub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxMr4CJpqOJnRlaqklFPScvCewKCLroR4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
