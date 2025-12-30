@@ -4,31 +4,14 @@ import androidx.compose.foundation.Image
 import com.appcenter.uniclub.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +29,7 @@ import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.model.toCategoryDisplayName
 import com.appcenter.uniclub.network.dto.QnaClubResponseDto
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
@@ -57,6 +41,10 @@ fun ClubSelectScreen(navController: NavHostController) {
     val app = LocalContext.current.applicationContext as App
     val repo = remember { ServiceLocator.qnaRepository(app) }
     val coroutine = rememberCoroutineScope()
+
+    //연타 방지 가드
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 300L) }
 
     var name by remember { mutableStateOf("") } //동아리 이름 검색
     var selectedClub by remember { mutableStateOf<QnaClubResponseDto?>(null) } //현재 선택된 동아리
@@ -71,9 +59,7 @@ fun ClubSelectScreen(navController: NavHostController) {
 
     LaunchedEffect(Unit) { search("") }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,9 +67,7 @@ fun ClubSelectScreen(navController: NavHostController) {
         ) {
             Spacer(modifier = Modifier.height(40.dp))
             //상단바
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "동아리 선택",
                     fontSize = figmaTextSizeSp(15f),
@@ -108,7 +92,12 @@ fun ClubSelectScreen(navController: NavHostController) {
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { navController.popBackStack() } //직전 화면으로 복귀
+                        ) {
+                            //취소도 연타 방지
+                            scope.launch {
+                                navGuard.run { navController.popBackStack() }
+                            }
+                        }
                 )
             }
 

@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.promotion
 
+import android.app.TimePickerDialog
 import android.net.Uri
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -9,20 +10,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
@@ -31,8 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,34 +31,33 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
-import com.appcenter.uniclub.ui.theme.NotoSansKR
-import com.appcenter.uniclub.util.figmaTextSizeSp
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
+import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.ReorderableItem
-import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.appcenter.uniclub.App
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
-import android.app.TimePickerDialog
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import java.util.Calendar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.*
-import androidx.compose.ui.text.TextStyle
-import java.util.*
 
 //관리자용 홍보 페이지
 
@@ -87,6 +74,10 @@ fun AdminPromotionScreen(
     )
 ) {
     val ui by vm.ui.collectAsState()
+
+    //연타/잔상 클릭 방지 (ProfileEdit에서 쓰던 패턴)
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
 
     // 링크 다이얼로그 상태 (화면 지역 상태로 OK)
     var showLinkDialog by remember { mutableStateOf(false) }
@@ -140,7 +131,20 @@ fun AdminPromotionScreen(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { navController.popBackStack() }
+                        ) {
+                            scope.launch {
+                                navGuard.run adminBack@{
+                                    val route = navController.currentBackStackEntry
+                                        ?.destination
+                                        ?.route
+                                        .orEmpty()
+
+                                    if (!route.startsWith("admin_promotion")) return@adminBack
+
+                                    navController.popBackStack()
+                                }
+                            }
+                        }
                         .zIndex(1f), //배너 위로
                     contentAlignment = Alignment.Center
                 ) {
@@ -169,20 +173,21 @@ fun AdminPromotionScreen(
                     .padding(top = 17.dp, end = 15.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
-            ) {Image(
-                painter = painterResource(id = R.drawable.ic_apply),
-                contentDescription = "Apply",
-                modifier = Modifier
-                    .size(62.dp, 30.dp)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        editing = Platform.APPLY
-                        tempLink = ui.applyLink
-                        showLinkDialog = true
-                    }
-            )
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_apply),
+                    contentDescription = "Apply",
+                    modifier = Modifier
+                        .size(62.dp, 30.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            editing = Platform.APPLY
+                            tempLink = ui.applyLink
+                            showLinkDialog = true
+                        }
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Image(
                     painter = painterResource(id = R.drawable.ic_youtube),
@@ -348,7 +353,7 @@ fun AdminPromotionScreen(
             EditableClubDescription(
                 text = ui.clubDescription,
                 onTextChange = { v -> vm.update { it.copy(clubDescription = v) } },
-                placeholder =  "동아리 소개글을 작성해보세요"
+                placeholder = "동아리 소개글을 작성해보세요"
             )
 
             Spacer(modifier = Modifier.height(5.dp))
@@ -361,7 +366,7 @@ fun AdminPromotionScreen(
                 fontSize = figmaTextSizeSp(13f),
                 fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Bold,
-                lineHeight = 14.sp * 1.5f, //행간
+                lineHeight = 14.sp * 1.5f
             )
 
             Spacer(modifier = Modifier.height(7.dp))
@@ -386,7 +391,7 @@ fun AdminPromotionScreen(
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
-            ){
+            ) {
                 Image(
                     painter = painterResource(id = R.drawable.btn_save),
                     contentDescription = "저장하기",
@@ -394,16 +399,29 @@ fun AdminPromotionScreen(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
-                        vm.save(
-                            app = app,
-                            onSuccess = {
-                                // 저장 성공 시 이전 화면에 refresh 신호 전달
-                                navController.previousBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.set("refresh", true)
-                                navController.popBackStack()
+                        scope.launch {
+                            navGuard.run {
+                                vm.save(
+                                    app = app,
+                                    onSuccess = onSaveSuccess@{
+                                        //저장 성공 시 이전 화면에 refresh 신호 전달
+                                        navController.previousBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("refresh", true)
+
+                                        //onSuccess에서도 "지금 화면일 때만" pop
+                                        val route = navController.currentBackStackEntry
+                                            ?.destination
+                                            ?.route
+                                            .orEmpty()
+
+                                        if (!route.startsWith("admin_promotion")) return@onSaveSuccess
+
+                                        navController.popBackStack()
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 )
             }
@@ -463,7 +481,7 @@ private fun EditableBanner(
                     .fillMaxSize()
                     .background(Color(0xFF585858)),
                 contentAlignment = Alignment.Center
-            ){
+            ) {
                 Text(
                     text = "탭하여 업로드",
                     color = Color.White,
@@ -503,7 +521,7 @@ private fun EditableProfile(
                     .fillMaxSize()
                     .background(Color(0xFFCDCDCD)),
                 contentAlignment = Alignment.Center
-            ){
+            ) {
                 Text(
                     text = "탭하여 업로드",
                     color = Color.Black,
@@ -530,8 +548,7 @@ private fun LinkInputDialog(
     Dialog(onDismissRequest = onBack) {
         //카드형 컨테이너
         Box(
-            modifier = Modifier
-                .figmaSize(widthPx = 280f, heightPx = 120f)
+            modifier = Modifier.figmaSize(widthPx = 280f, heightPx = 120f)
         ) {
             Column(
                 modifier = Modifier
@@ -558,8 +575,7 @@ private fun LinkInputDialog(
                         Image(
                             painter = painterResource(id = R.drawable.ic_back_arrow),
                             contentDescription = "뒤로",
-                            modifier = Modifier
-                                .figmaSize(widthPx = 7f, heightPx = 13f)
+                            modifier = Modifier.figmaSize(widthPx = 7f, heightPx = 13f)
                         )
                     }
 
@@ -632,7 +648,7 @@ private fun LinkInputDialog(
                             value = value,
                             onValueChange = onValueChange,
                             singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(
+                            textStyle = TextStyle(
                                 color = Color.Black,
                                 fontSize = figmaTextSizeSp(12f),
                                 fontFamily = NotoSansKR
@@ -695,7 +711,7 @@ fun EditableInfoItem(
                     onValueChange(v)
                 },
                 singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(
+                textStyle = TextStyle(
                     color = Color.Black,
                     fontSize = figmaTextSizeSp(11f),
                     fontFamily = NotoSansKR,
@@ -739,10 +755,7 @@ fun EditableTextShadowBanner(
             }
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF9F9F9),
-                        Color(0xFFFFFFFF)
-                    )
+                    colors = listOf(Color(0xFFF9F9F9), Color(0xFFFFFFFF))
                 ),
                 shape = RoundedCornerShape(0.dp)
             ),
@@ -752,7 +765,7 @@ fun EditableTextShadowBanner(
             value = text,
             onValueChange = onTextChange,
             singleLine = true,
-            textStyle = androidx.compose.ui.text.TextStyle(
+            textStyle = TextStyle(
                 color = Color(0xFFFF5900),
                 fontSize = figmaTextSizeSp(12f),
                 fontFamily = NotoSansKR,
@@ -791,9 +804,7 @@ fun DateTimePickerRow(
     val context = LocalContext.current
     val cal = Calendar.getInstance()
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         // 라벨
         Text(
             text = label,
@@ -816,12 +827,12 @@ fun DateTimePickerRow(
 
         Spacer(Modifier.weight(1f))
 
-        // 📅 달력 버튼
+        //📅 달력 버튼
         IconButton(onClick = { showDatePicker = true }) {
             Icon(Icons.Default.DateRange, contentDescription = "날짜 선택")
         }
 
-        // ⏰ 시계 버튼
+        //⏰ 시계 버튼
         IconButton(onClick = {
             TimePickerDialog(
                 context,
@@ -839,7 +850,7 @@ fun DateTimePickerRow(
         }
     }
 
-    // 📅 머티리얼 DatePickerDialog
+    //머티리얼 DatePickerDialog
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -932,7 +943,7 @@ fun EditableClubDescription(
             value = text,
             onValueChange = onTextChange,
             singleLine = false, //여러 줄 입력
-            textStyle = androidx.compose.ui.text.TextStyle(
+            textStyle = TextStyle(
                 color = Color.Black,
                 fontSize = figmaTextSizeSp(13f),
                 fontFamily = NotoSansKR,

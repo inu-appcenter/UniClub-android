@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.Major
 import com.appcenter.uniclub.ui.components.InputLabel
@@ -22,29 +23,48 @@ import com.appcenter.uniclub.ui.components.MajorSelectButton
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.UnderlineInputField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 //회원가입 화면
 @Composable
 fun SignUpScreen(
-    onBack: () -> Unit,
+    navController: NavHostController,
     onNext: () -> Unit, //회원가입 완료 후 호출
     vm: SignUpViewModel
 ) {
     val ui by vm.ui.collectAsState()
 
+    //연타/잔상 클릭 방지 (ProfileEdit/TopBar에서 쓰던 패턴)
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     //버튼 활성화 조건 정의
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
     val canProceed = ui.canProceed //이름/학과 등 추가 정보가 '다음 단계 가능'한지
 
-    Box(modifier = Modifier
+    Box(
+        modifier = Modifier
             .fillMaxSize()
             .figmaPadding(topPx = 18f)
     ) {
         TopBar( //상단바
-            onBackClick = onBack
+            onBackClick = {
+                scope.launch {
+                    navGuard.run signupBack@{
+                        val route = navController.currentBackStackEntry
+                            ?.destination
+                            ?.route
+                            .orEmpty()
+                        if (!route.startsWith("signup")) return@signupBack
+
+                        navController.popBackStack()
+                    }
+                }
+            }
         )
 
         Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 79f, bottomPx = 113f)) {
@@ -63,8 +83,7 @@ fun SignUpScreen(
             Image( //포털 계정 안내 이미지
                 painter = painterResource(id = R.drawable.banner_school_account),
                 contentDescription = "학교 포털 계정 안내",
-                modifier = Modifier
-                    .figmaSize(widthPx = 184f, heightPx = 26f)
+                modifier = Modifier.figmaSize(widthPx = 184f, heightPx = 26f)
             )
 
             Spacer(modifier = Modifier.height(35.dp))
@@ -180,6 +199,7 @@ fun SignUpScreen(
                     }
                 }
         )
+
         if (ui.showDuplicateModal) {
             DuplicateStudentModal(
                 onRetry = {
@@ -189,7 +209,11 @@ fun SignUpScreen(
                 },
                 onLogin = {
                     vm.resetDuplicateModal()
-                    onBack() // 로그인 화면으로 이동
+                    scope.launch {
+                        navGuard.run {
+                            navController.popBackStack()
+                        }
+                    }
                 }
             )
         }

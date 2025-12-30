@@ -21,41 +21,46 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
-import com.appcenter.uniclub.R
-import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.material3.Divider
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.appcenter.uniclub.App
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.network.dto.DescriptionMediaDto
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import com.appcenter.uniclub.util.formatDateTime
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -89,12 +94,17 @@ fun UserPromotionScreen(
 ) {
     val state by vm.uiState.collectAsState()
 
+    //연타/잔상 클릭 방지 (화면 단위)
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     if (state.loading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            androidx.compose.material3.CircularProgressIndicator()
+            CircularProgressIndicator()
         }
         return
     }
+
     val data = state.data
     if (state.error != null || data == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -119,6 +129,7 @@ fun UserPromotionScreen(
 
     val scrollState = rememberScrollState()
     val statusIcon = remember(data.status) { recruitIconOf(data.status) }
+    val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -156,10 +167,50 @@ fun UserPromotionScreen(
 
                 PromotionTopBar( // 상단바
                     isLiked = data.favorite,
-                    onBackClick = onBackClick,
-                    onLikeClick = { vm.onFavoriteClick(clubId) },
+
+                    //뒤로가기 연타 방지 + (가능하면) 현재 화면일 때만 처리
+                    onBackClick = {
+                        scope.launch {
+                            navGuard.run back@{
+                                val route = navController.currentBackStackEntry
+                                    ?.destination
+                                    ?.route
+                                    .orEmpty()
+
+                                if (!route.contains("promotion")) return@back
+                                onBackClick()
+                            }
+                        }
+                    },
+
+                    //좋아요 연타 방지 (서버 중복 호출 방지)
+                    onLikeClick = {
+                        scope.launch {
+                            navGuard.run {
+                                vm.onFavoriteClick(clubId)
+                            }
+                        }
+                    },
+
                     showEdit = data.canEdit,
-                    onEditClick = { navController.navigate("admin_promotion/${clubId}") },
+
+                    //수정 화면 진입 연타 방지 + launchSingleTop
+                    onEditClick = {
+                        scope.launch {
+                            navGuard.run edit@{
+                                val route = navController.currentBackStackEntry
+                                    ?.destination
+                                    ?.route
+                                    .orEmpty()
+                                if (!route.contains("promotion")) return@edit
+
+                                navController.navigate("admin_promotion/$clubId") {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    },
+
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(63.dp)
@@ -197,7 +248,6 @@ fun UserPromotionScreen(
             }
 
             //SNS 버튼 (유튜브, 인스타)
-            val context = LocalContext.current
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -213,10 +263,16 @@ fun UserPromotionScreen(
                         .size(30.dp)
                         .clickable(
                             enabled = !yt.isNullOrBlank(),
-                            onClick = { if (!yt.isNullOrBlank()) openUrl(context, yt)},
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        )
+                        ) {
+                            //외부 링크도 연타 방지
+                            scope.launch {
+                                navGuard.run {
+                                    if (!yt.isNullOrBlank()) openUrl(context, yt)
+                                }
+                            }
+                        }
                 )
 
                 Spacer(Modifier.width(6.dp))
@@ -229,10 +285,16 @@ fun UserPromotionScreen(
                         .size(30.dp)
                         .clickable(
                             enabled = !ig.isNullOrBlank(),
-                            onClick = { if (!ig.isNullOrBlank()) openUrl(context, ig) },
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        )
+                        ) {
+                            //외부 링크도 연타 방지
+                            scope.launch {
+                                navGuard.run {
+                                    if (!ig.isNullOrBlank()) openUrl(context, ig)
+                                }
+                            }
+                        }
                 )
             }
 
@@ -257,8 +319,8 @@ fun UserPromotionScreen(
                         fontSize = figmaTextSizeSp(14f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
-                        lineHeight = 14.sp * 1.5f, //행간
-                        letterSpacing = (-0.011).em //자간
+                        lineHeight = 14.sp * 1.5f,
+                        letterSpacing = (-0.011).em
                     )
                 }
 
@@ -334,9 +396,7 @@ fun UserPromotionScreen(
 //동아리 정보 컴포넌트
 @Composable
 fun InfoItem(title: String, value: String) {
-    Column(
-        horizontalAlignment = Alignment.Start
-    ) {
+    Column(horizontalAlignment = Alignment.Start) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
@@ -371,10 +431,7 @@ fun TextShadowBanner(text: String) {
             }
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF9F9F9),
-                        Color(0xFFFFFFFF)
-                    )
+                    colors = listOf(Color(0xFFF9F9F9), Color(0xFFFFFFFF))
                 ),
                 shape = RoundedCornerShape(0.dp)
             ),
@@ -452,7 +509,7 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
         contentPadding = PaddingValues(horizontal = 21.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        itemsIndexed(limited) { index, item ->
+        itemsIndexed(limited) { _, item ->
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(item.mediaLink)
@@ -478,6 +535,10 @@ fun BottomActionButtons(
 ) {
     val context = LocalContext.current
 
+    //하단 버튼도 자체적으로 연타 방지
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -489,19 +550,34 @@ fun BottomActionButtons(
             contentDescription = "질문하기",
             enabled = true,
             onClick = {
-                val encodedName = URLEncoder.encode(data.name, StandardCharsets.UTF_8.toString())
+                scope.launch {
+                    navGuard.run {
+                        val encodedName = URLEncoder.encode(
+                            data.name,
+                            StandardCharsets.UTF_8.toString()
+                        )
 
-                rootNavController.navigate(
-                    "questionEditFull?id=0&clubId=$clubId&clubName=$encodedName&content="
-                )
+                        rootNavController.navigate(
+                            "questionEditFull?id=0&clubId=$clubId&clubName=$encodedName&content="
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                }
             }
-
         )
+
         ImageButtonItem(
             imageRes = R.drawable.btn_apply,
             contentDescription = "지원하기",
             enabled = !applicationFormLink.isNullOrBlank(),
-            onClick = { applicationFormLink?.let { openUrl(context, it) } }
+            onClick = {
+                scope.launch {
+                    navGuard.run {
+                        applicationFormLink?.let { openUrl(context, it) }
+                    }
+                }
+            }
         )
     }
 }
@@ -517,7 +593,8 @@ fun ImageButtonItem(
         painter = painterResource(id = imageRes),
         contentDescription = contentDescription,
         modifier = Modifier.clickable(
-            enabled = enabled ,onClick = onClick,
+            enabled = enabled,
+            onClick = onClick,
             indication = null,
             interactionSource = remember { MutableInteractionSource() }
         )

@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -21,17 +23,32 @@ import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.signup.descriptSection
 import com.appcenter.uniclub.ui.signup.titleSection
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 //이용약관 화면
 @Composable
-fun TermsScreen(navController: NavHostController){
+fun TermsScreen(navController: NavHostController) {
+    //뒤로가기 연타/잔상 클릭 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(Modifier.height(24.dp))
         TopBar( //상단바
-            onBackClick = { navController.popBackStack() }
+            onBackClick = {
+                scope.launch {
+                    navGuard.run navGuardRun@{
+                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                        if (route != "terms") return@navGuardRun
+
+                        navController.popBackStack()
+                    }
+                }
+            }
         )
         Spacer(modifier = Modifier.height(36.dp))
 
@@ -42,6 +59,7 @@ fun TermsScreen(navController: NavHostController){
                 .figmaPadding(startPx = 31f)
                 .figmaSize(widthPx = 101f, heightPx = 24f)
         )
+
         Text(
             text = "이용약관",
             fontSize = figmaTextSizeSp(32f),

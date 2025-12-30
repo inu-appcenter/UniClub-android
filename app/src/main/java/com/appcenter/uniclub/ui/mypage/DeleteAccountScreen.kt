@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.mypage
 
-import com.appcenter.uniclub.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -20,14 +19,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.appcenter.uniclub.App
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
-import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.InputLabel
+import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.components.UnderlineInputField
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 //계정 삭제 화면
 @Composable
@@ -46,12 +48,27 @@ fun DeleteAccountScreen(
 
     val uiState by vm.uiState.collectAsState()
 
+    //뒤로가기 연타/잔상 클릭 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Spacer(Modifier.height(24.dp))
+
         TopBar( //상단바
-            onBackClick = { navController.popBackStack() },
+            onBackClick = {
+                scope.launch {
+                    navGuard.run navGuardRun@{
+                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                        if (route != "delete") return@navGuardRun
+
+                        navController.popBackStack()
+                    }
+                }
+            },
             title = "계정 삭제"
         )
+
         Spacer(Modifier.height(43.dp))
 
         Column(modifier = Modifier.figmaPadding(startPx = 36f)) {
@@ -93,7 +110,9 @@ fun DeleteAccountScreen(
 
             Image(
                 painter = painterResource(
-                    id = if(password.isNotBlank()) R.drawable.btn_delete_account else R.drawable.btn_delete_account_disabled),
+                    id = if (password.isNotBlank()) R.drawable.btn_delete_account
+                    else R.drawable.btn_delete_account_disabled
+                ),
                 contentDescription = "계정 삭제 버튼",
                 modifier = Modifier
                     .figmaSize(widthPx = 157f, heightPx = 30f)

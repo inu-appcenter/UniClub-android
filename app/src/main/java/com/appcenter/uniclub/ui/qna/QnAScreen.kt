@@ -22,38 +22,40 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
+import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.ui.components.Dialog
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Scaffold
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.appcenter.uniclub.App
-import com.appcenter.uniclub.di.ServiceLocator
-import com.appcenter.uniclub.ui.components.Dialog
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -61,9 +63,13 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun QnAScreen(navController: NavHostController) {
     val app = LocalContext.current.applicationContext as App
-    val vm: QnaListViewModel = viewModel (
+    val vm: QnaListViewModel = viewModel(
         factory = QnaListViewModelFactory(ServiceLocator.qnaRepository(app))
     )
+
+    //연타/중복 네비게이션 방지
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 300L) }
 
     var query by remember { mutableStateOf("") } //검색어
     var answered by remember { mutableStateOf(false) } //답변 완료만
@@ -105,10 +111,15 @@ fun QnAScreen(navController: NavHostController) {
     Scaffold( //상단바 있는 기본 스캐폴드
         containerColor = Color.Transparent,
         topBar = { //상단바
-            Column() {
+            Column {
                 Spacer(modifier = Modifier.height(24.dp))
                 TopBar(
-                    onBackClick = { navController.popBackStack() },
+                    //뒤로가기 연타 방지
+                    onBackClick = {
+                        scope.launch {
+                            navGuard.run { navController.popBackStack() }
+                        }
+                    },
                     title = "질의응답"
                 )
             }
@@ -213,7 +224,10 @@ fun QnAScreen(navController: NavHostController) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         //동아리 선택 버튼
-                        ClubSelectButton(navController, selectedValue = selectedClubName)
+                        ClubSelectButton(
+                            navController = navController,
+                            selectedValue = selectedClubName
+                        )
 
                         Row { //필터 토글
                             Box( //답변 완료만
@@ -253,9 +267,7 @@ fun QnAScreen(navController: NavHostController) {
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(13.dp))
-                }
+                item { Spacer(modifier = Modifier.height(13.dp)) }
 
                 //질문 리스트
                 items(ui.items, key = { it.questionId }) { q ->
@@ -280,7 +292,7 @@ fun QnAScreen(navController: NavHostController) {
                             .fillMaxWidth()
                             .wrapContentWidth(Alignment.CenterHorizontally)
                             .figmaPadding(startPx = 26f, endPx = 26f, bottomPx = 13f)
-                    ){
+                    ) {
                         if (item.hasAnswer && item.answerCount > 0) {
                             QnaCardAnswered(item, onMenuClick, navController)
                         } else {
@@ -289,11 +301,10 @@ fun QnAScreen(navController: NavHostController) {
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
-                }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
 
+            //질문하기 버튼도 연타 방지
             Image(
                 painter = painterResource(id = R.drawable.btn_qna),
                 contentDescription = "질문하기",
@@ -306,8 +317,9 @@ fun QnAScreen(navController: NavHostController) {
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        // TODO: 질문하기 액션
-                        navController.navigate("questionEdit")
+                        scope.launch {
+                            navGuard.run { navController.navigate("questionEdit") }
+                        }
                     }
                     .zIndex(1f),
                 contentScale = ContentScale.Crop
@@ -335,8 +347,7 @@ fun QnAScreen(navController: NavHostController) {
                         modifier = Modifier.padding(bottom = 10.dp)
                     ) {
                         Box(
-                            modifier = Modifier
-                                .figmaSize(widthPx = 344f, heightPx = 116f)
+                            modifier = Modifier.figmaSize(widthPx = 344f, heightPx = 116f)
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.btn_edit_delete),
@@ -355,16 +366,26 @@ fun QnAScreen(navController: NavHostController) {
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null
                                         ) {
-                                            // TODO: 수정 동작
-                                            activeMenuForMine = null
-                                            val selected = ui.items.firstOrNull { it.questionId == selectedQuestionId }
-                                            selected?.let { q ->
-                                                val encodedClub = URLEncoder.encode(q.clubName, StandardCharsets.UTF_8.toString())
-                                                val encodedContent = URLEncoder.encode(q.content, StandardCharsets.UTF_8.toString())
+                                            //수정 이동도 연타 방지
+                                            scope.launch {
+                                                navGuard.run editOnce@{
+                                                    activeMenuForMine = null
+                                                    val selected = ui.items.firstOrNull { it.questionId == selectedQuestionId }
+                                                        ?: return@editOnce
 
-                                                navController.navigate(
-                                                    "questionEditFull?id=${q.questionId}&clubId=${q.clubId}&clubName=$encodedClub&content=$encodedContent"
-                                                )
+                                                    val encodedClub = URLEncoder.encode(
+                                                        selected.clubName,
+                                                        StandardCharsets.UTF_8.toString()
+                                                    )
+                                                    val encodedContent = URLEncoder.encode(
+                                                        selected.content,
+                                                        StandardCharsets.UTF_8.toString()
+                                                    )
+
+                                                    navController.navigate(
+                                                        "questionEditFull?id=${selected.questionId}&clubId=${selected.clubId}&clubName=$encodedClub&content=$encodedContent"
+                                                    )
+                                                }
                                             }
                                         }
                                 )

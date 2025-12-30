@@ -29,47 +29,54 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.compose.runtime.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.R
 import com.appcenter.uniclub.model.Major
+import com.appcenter.uniclub.ui.components.MajorSelectBottomSheet
+import com.appcenter.uniclub.ui.components.MajorSelectButton
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import com.appcenter.uniclub.ui.components.MajorSelectBottomSheet
-import com.appcenter.uniclub.ui.components.MajorSelectButton
+import kotlinx.coroutines.launch
 
 //프로필 수정 화면
 @Composable
 fun ProfileEditScreen(navController: NavHostController) {
     val context = LocalContext.current.applicationContext as App
+
     val viewModel: ProfileEditViewModel = viewModel(
         factory = ProfileEditViewModelFactory(context)
     )
     val state by viewModel.uiState.collectAsState()
+
     var NameFocused by remember { mutableStateOf(false) }
     var NicknameFocused by remember { mutableStateOf(false) }
 
     //선택된 프로필 이미지 URI
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-
     var showAction by remember { mutableStateOf(false) }
+
+    //뒤로가기 연타/잔상 클릭 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
 
     //화면 진입 시 기존 프로필 불러오기
     LaunchedEffect(Unit) {
@@ -96,7 +103,16 @@ fun ProfileEditScreen(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxSize()) {
         Spacer(Modifier.height(24.dp))
         TopBar( //상단바
-            onBackClick = { navController.popBackStack() },
+            onBackClick = {
+                scope.launch {
+                    navGuard.run navGuardRun@{
+                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                        if (route != "profileEdit") return@navGuardRun
+
+                        navController.popBackStack()
+                    }
+                }
+            },
             title = "프로필 수정",
             rightIconResId = if (viewModel.isModified) R.drawable.ic_save else null,
             onRightIconClick = {
@@ -105,17 +121,17 @@ fun ProfileEditScreen(navController: NavHostController) {
                 }
             }
         )
+
         Spacer(Modifier.height(33.dp))
 
         Box(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .figmaSize(widthPx = 70f, heightPx = 75f)
-        ){
+        ) {
             //상태별로 프로필 이미지 출력
             when {
                 profileImageUri != null -> {
-                    //새로 선택한 이미지
                     Image(
                         painter = rememberAsyncImagePainter(profileImageUri),
                         contentDescription = "프로필 이미지",
@@ -125,6 +141,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                         contentScale = ContentScale.Crop
                     )
                 }
+
                 state.profileUrl == "__deleted__" -> {
                     //삭제했을 때 -> 기본 이미지
                     Image(
@@ -135,6 +152,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                             .clip(RoundedCornerShape(23.dp))
                     )
                 }
+
                 !state.profileUrl.isNullOrBlank() -> {
                     //서버에서 가져온 기존 프로필 이미지
                     Image(
@@ -146,6 +164,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                         contentScale = ContentScale.Crop
                     )
                 }
+
                 else -> {
                     //둘다 없을 때 기본 이미지
                     Image(
@@ -157,6 +176,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                     )
                 }
             }
+
             Image( //수정 버튼
                 painter = painterResource(id = R.drawable.ic_profile_edit),
                 contentDescription = "수정 버튼",
@@ -178,7 +198,7 @@ fun ProfileEditScreen(navController: NavHostController) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
-        ){
+        ) {
             Text(
                 text = "학과",
                 fontSize = figmaTextSizeSp(12f),
@@ -190,8 +210,9 @@ fun ProfileEditScreen(navController: NavHostController) {
             )
 
             var majorFocused by remember { mutableStateOf(false) }
-            var showMajorSheet by remember { mutableStateOf(false) } //바텀시트 오픈 상태
-            val selectedDisplayName = Major.values() //현재 선택된 학과 displayName
+            var showMajorSheet by remember { mutableStateOf(false) }
+
+            val selectedDisplayName = Major.values()
                 .find { it.name == state.major }
                 ?.displayName
                 ?: ""
@@ -224,7 +245,7 @@ fun ProfileEditScreen(navController: NavHostController) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
-        ){
+        ) {
             Text(
                 text = "이름",
                 fontSize = figmaTextSizeSp(12f),
@@ -234,6 +255,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                 color = Color.Black,
                 modifier = Modifier.width(85.dp)
             )
+
             Box( //입력 박스
                 modifier = Modifier
                     .figmaSize(widthPx = 200f, heightPx = 35f)
@@ -270,7 +292,7 @@ fun ProfileEditScreen(navController: NavHostController) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 6f)
-        ){
+        ) {
             Text(
                 text = "닉네임",
                 fontSize = figmaTextSizeSp(12f),
@@ -280,6 +302,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                 color = Color.Black,
                 modifier = Modifier.width(85.dp)
             )
+
             Box( //입력 박스
                 modifier = Modifier
                     .figmaSize(widthPx = 200f, heightPx = 35f)
@@ -332,8 +355,7 @@ fun ProfileEditScreen(navController: NavHostController) {
                 modifier = Modifier.padding(bottom = 10.dp)
             ) {
                 Box(
-                    modifier = Modifier
-                        .figmaSize(widthPx = 344f, heightPx = 116f)
+                    modifier = Modifier.figmaSize(widthPx = 344f, heightPx = 116f)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.btn_profile_edit_delete),

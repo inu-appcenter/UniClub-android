@@ -51,13 +51,15 @@ import com.appcenter.uniclub.network.dto.AnswerResponseDto
 import com.appcenter.uniclub.ui.components.Dialog
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.TimeUtils
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 //등록된 질문 확인 페이지
 //내부 상수
@@ -115,9 +117,14 @@ fun QuestionScreen(
     questionId: Long
 ) {
     val app = LocalContext.current.applicationContext as App
-    val vm: QuestionDetailViewModel = viewModel (
+    val vm: QuestionDetailViewModel = viewModel(
         factory = QuestionDetailViewModelFactory(ServiceLocator.qnaRepository(app))
     )
+
+    //연타 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }      //뒤로가기/네비게이션
+    val actionGuard = remember { NavGuard(lockMs = 600L) }   //서버 액션(전송/삭제/완료 등)
 
     //로딩
     LaunchedEffect(questionId) { vm.load(questionId) }
@@ -151,7 +158,12 @@ fun QuestionScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             TopBar(
-                onBackClick = { navController.popBackStack() },
+                //뒤로가기 연타 방지
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run { navController.popBackStack() }
+                    }
+                },
                 title = "질의응답"
             )
         }
@@ -243,7 +255,10 @@ fun QuestionScreen(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    showAnsweredDialog = true
+                                    //다이얼로그 여는 것도 연타로 여러 번 뜨는 것 방지
+                                    scope.launch {
+                                        actionGuard.run { showAnsweredDialog = true }
+                                    }
                                 }
                             ) {
                                 Image(
@@ -320,6 +335,7 @@ fun QuestionScreen(
                 item { Spacer(modifier = Modifier.height(70.dp)) }
             }
         }
+
         //하단 댓글 입력 바
         CommentInputBar(
             modifier = Modifier
@@ -330,14 +346,19 @@ fun QuestionScreen(
             replyParentId = replyParentId,
             replyTargetName = replyTargetName,
             onSend = { text, anonymous, parentId ->
-                vm.sendAnswer(
-                    questionId = questionId,
-                    parentId = parentId,
-                    content = text,
-                    anonymous = anonymous
-                )
-                replyParentId = null
-                replyTargetName = null
+                //전송 연타 방지 (중복 댓글/대댓글 방지)
+                scope.launch {
+                    actionGuard.run {
+                        vm.sendAnswer(
+                            questionId = questionId,
+                            parentId = parentId,
+                            content = text,
+                            anonymous = anonymous
+                        )
+                        replyParentId = null
+                        replyTargetName = null
+                    }
+                }
             }
         )
 
@@ -348,8 +369,13 @@ fun QuestionScreen(
             onDismiss = { showAction = false },
             onReportClick = { showReportDialog = true },
             onDeleteClick = {
-                showDeleteDialog = true
-                showAction = false
+                //다이얼로그 여러 번 열리는 것 방지
+                scope.launch {
+                    actionGuard.run {
+                        showDeleteDialog = true
+                        showAction = false
+                    }
+                }
             }
         )
 
@@ -360,8 +386,13 @@ fun QuestionScreen(
                 message = "답변 완료 시 수정 및 삭제가 불가능합니다.",
                 onDismiss = { showAnsweredDialog = false },
                 onConfirm = {
-                    vm.markAnswered(questionId)
-                    showAnsweredDialog = false
+                    //완료 처리 연타 방지
+                    scope.launch {
+                        actionGuard.run {
+                            vm.markAnswered(questionId)
+                            showAnsweredDialog = false
+                        }
+                    }
                 }
             )
         }
@@ -373,9 +404,14 @@ fun QuestionScreen(
                 onDismiss = { showDeleteDialog = false },
                 onConfirm = {
                     val id = selectedAnswerId ?: return@Dialog
-                    vm.deleteAnswer(id, questionId)
-                    deletedIds = deletedIds + id
-                    showDeleteDialog = false
+                    //삭제 연타 방지
+                    scope.launch {
+                        actionGuard.run {
+                            vm.deleteAnswer(id, questionId)
+                            deletedIds = deletedIds + id
+                            showDeleteDialog = false
+                        }
+                    }
                 }
             )
         }
@@ -524,7 +560,7 @@ fun CommentCardBox(
                     )
                 }
 
-                if(!isDeleted && !(answered && mine)) {
+                if (!isDeleted && !(answered && mine)) {
                     Box( //더보기 버튼
                         modifier = Modifier
                             .size(13.dp)
