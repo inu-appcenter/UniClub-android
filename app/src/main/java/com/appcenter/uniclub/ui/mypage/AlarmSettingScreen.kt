@@ -11,19 +11,24 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.appcenter.uniclub.data.NotificationRepository
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaTextSizeSp
-import androidx.compose.runtime.*
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.appcenter.uniclub.data.NotificationRepository
+import kotlinx.coroutines.launch
 
 //알림 설정 화면
 @Composable
@@ -36,12 +41,27 @@ fun AlarmSettingScreen(
     )
     val checked by viewModel.checked.collectAsState()
 
+    //뒤로가기 연타/잔상 클릭 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Spacer(Modifier.height(24.dp))
-        TopBar( //상단바
-            onBackClick = { navController.popBackStack() },
-            title = "알림 설정"
+
+        TopBar(
+            title = "알림 설정",
+            onBackClick = {
+                scope.launch {
+                    navGuard.run navGuardRun@{
+                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                        if (route != "alarmSetting") return@navGuardRun
+
+                        navController.popBackStack()
+                    }
+                }
+            }
         )
+
         Spacer(Modifier.height(43.dp))
 
         //설명 텍스트
@@ -68,8 +88,8 @@ fun AlarmSettingScreen(
                 text = "앱 푸시 알림",
                 fontSize = figmaTextSizeSp(14f),
                 fontFamily = NotoSansKR,
-                lineHeight = 11.sp * 1.5f, // 행간
-                letterSpacing = (-0.011).em, // 자간
+                lineHeight = 11.sp * 1.5f, //행간
+                letterSpacing = (-0.011).em, //자간
                 modifier = Modifier.weight(1f)
             )
             Switch(

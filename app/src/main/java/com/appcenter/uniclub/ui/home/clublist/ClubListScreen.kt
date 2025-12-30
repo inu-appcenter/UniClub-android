@@ -1,50 +1,56 @@
 package com.appcenter.uniclub.ui.home.clublist
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import com.appcenter.uniclub.ui.components.TopBar
-import com.appcenter.uniclub.R
-import com.appcenter.uniclub.model.ClubCategory
-import com.appcenter.uniclub.ui.components.ClubCard
-import com.appcenter.uniclub.util.figmaSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.App
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.network.dto.toClub
+import com.appcenter.uniclub.ui.components.ClubCard
+import com.appcenter.uniclub.ui.components.TopBar
+import com.appcenter.uniclub.util.NavGuard
+import com.appcenter.uniclub.util.figmaSize
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 enum class SortOption(val label: String, val serverValue: String) {
     NAME("기본", "name"),
     LIKE("즐겨찾기", "like"),
-    STATUS("모집중", "status") // 필요 시 "모집상태순" 등으로 라벨 변경
+    STATUS("모집중", "status")
 }
 
-//동아리 리스트 페이지
+// 동아리 리스트 페이지
 @Composable
 fun ClubListScreen(
     navController: NavHostController,
     categoryName: String = "전체"
 ) {
     val app = LocalContext.current.applicationContext as App
+
     val vm: ClubListViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
                 return ClubListViewModel(ServiceLocator.clubRepository(app)) as T
             }
         }
@@ -54,10 +60,14 @@ fun ClubListScreen(
     val category = ClubCategory.fromDisplayName(categoryName)
         ?: ClubCategory.fromServerValue(categoryName)
 
-    var selectedSort by remember { mutableStateOf(SortOption.NAME) } //선택된 정렬 옵션 저장
-    var dropdownExpanded by remember { mutableStateOf(false) } //드롭다운 메뉴 확장 여부 상태
+    var selectedSort by remember { mutableStateOf(SortOption.NAME) }
+    var dropdownExpanded by remember { mutableStateOf(false) }
 
-    // ✅ 화면 진입 시 서버에서 데이터 불러오기
+    //네비게이션 연타/레이스 방지용
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
+    //화면 진입 시 서버에서 데이터 불러오기
     LaunchedEffect(categoryName, selectedSort) {
         val serverCategory = category?.primaryServerValue
         vm.reset()
@@ -66,12 +76,17 @@ fun ClubListScreen(
 
     val listState = rememberLazyListState()
 
-    // ✅ 끝까지 스크롤 시 다음 페이지 로드
+    //끝까지 스크롤 시 다음 페이지 로드
     LaunchedEffect(listState, state.clubs, state.hasNext) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collectLatest { lastVisible ->
                 val lastIndex = state.clubs.lastIndex
-                if (lastVisible != null && lastIndex >= 0 && lastVisible >= lastIndex - 1 && state.hasNext && !state.loading) {
+                if (lastVisible != null &&
+                    lastIndex >= 0 &&
+                    lastVisible >= lastIndex - 1 &&
+                    state.hasNext &&
+                    !state.loading
+                ) {
                     vm.loadNextPage()
                 }
             }
@@ -80,17 +95,31 @@ fun ClubListScreen(
     //Box로 감싸서 드롭다운 메뉴가 LazyColumn 위에 겹쳐 보이게 처리
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item { //상단바
                 TopBar(
-                    onBackClick = { navController.navigateUp() },
+                    onBackClick = {
+                        scope.launch {
+                            navGuard.run navGuardRun@{
+                                //현재 목적지가 진짜 clublist일 때만 pop (전환 직후 늦게 들어온 클릭 무시)
+                                val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                                val isClubListRoute =
+                                    route == "clublist/{categoryName}" ||
+                                            route.startsWith("clublist/") ||
+                                            route.startsWith("clublist")
+
+                                if (!isClubListRoute) return@navGuardRun
+
+                                navController.popBackStack()
+                            }
+                        }
+                    },
                     title = when {
                         categoryName == "전체" -> "전체"
                         category != null -> category.displayName
-                        else -> categoryName // fallback
+                        else -> categoryName
                     },
                     rightIconResId = R.drawable.ic_search,
                     onRightIconClick = { navController.navigate("search") }
@@ -127,7 +156,6 @@ fun ClubListScreen(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
-            // ✅ 서버에서 불러온 club 리스트
             items(state.clubs) { clubDto ->
                 ClubCard(
                     club = clubDto.toClub(),
@@ -149,8 +177,7 @@ fun ClubListScreen(
                 contentAlignment = Alignment.TopEnd
             ) {
                 Box(
-                    modifier = Modifier
-                        .figmaSize(widthPx = 82f, heightPx = 95f)
+                    modifier = Modifier.figmaSize(widthPx = 82f, heightPx = 95f)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.sort_dropdown),

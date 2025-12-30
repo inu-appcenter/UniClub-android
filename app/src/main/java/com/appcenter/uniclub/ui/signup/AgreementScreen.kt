@@ -18,25 +18,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 @Composable
 fun AgreementScreen(
-    onBack: () -> Unit,
+    navController: NavHostController,
     onFinished: () -> Unit,
     vm: SignUpViewModel
-){
+) {
     val ui by vm.ui.collectAsState()
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .figmaPadding(topPx = 18f)
+    //연타 방지
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .figmaPadding(topPx = 18f)
     ) {
-        TopBar(onBackClick = onBack)
+        TopBar(
+            onBackClick = {
+                scope.launch {
+                    navGuard.run {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        )
         Spacer(modifier = Modifier.height(36.dp))
 
         Image(
@@ -88,29 +104,58 @@ fun AgreementScreen(
                     modifier = Modifier.figmaPadding(startPx = 34f)
                 )
                 Spacer(modifier = Modifier.height(29.dp))
+
+                //필수 동의 토글 연타 방지 + 리플 제거
                 Image(
                     painter = painterResource(
-                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_essential else R.drawable.btn_essential_disabled
+                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_essential
+                        else R.drawable.btn_essential_disabled
                     ),
                     contentDescription = "필수 동의",
                     modifier = Modifier
                         .figmaPadding(startPx = 23f, endPx = 23f)
-                        .clickable { vm.onEssentialAgree(!ui.personalInfoCollectionAgreement) }
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            scope.launch {
+                                navGuard.run {
+                                    vm.onEssentialAgree(!ui.personalInfoCollectionAgreement)
+                                }
+                            }
+                        }
                 )
+
                 Spacer(modifier = Modifier.height(5.dp))
+
+                //선택 동의 토글도 연타 방지 + 리플 제거
                 Image(
                     painter = painterResource(
-                        id = if (ui.marketingAdvertisement) R.drawable.btn_choice else R.drawable.btn_choice_disabled
+                        id = if (ui.marketingAdvertisement) R.drawable.btn_choice
+                        else R.drawable.btn_choice_disabled
                     ),
                     contentDescription = "선택 동의",
                     modifier = Modifier
                         .figmaPadding(startPx = 23f, endPx = 23f)
-                        .clickable { vm.onChoiceAgree(!ui.marketingAdvertisement) }
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            scope.launch {
+                                navGuard.run {
+                                    vm.onChoiceAgree(!ui.marketingAdvertisement)
+                                }
+                            }
+                        }
                 )
+
                 Spacer(modifier = Modifier.height(35.dp))
+
+                //최종 동의(등록) 버튼
                 Image(
                     painter = painterResource(
-                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_agree else R.drawable.btn_next_disabled
+                        id = if (ui.personalInfoCollectionAgreement) R.drawable.btn_agree
+                        else R.drawable.btn_next_disabled
                     ),
                     contentDescription = "약관 동의",
                     modifier = Modifier
@@ -120,9 +165,14 @@ fun AgreementScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            vm.agreeAndRegister(onDone = onFinished)
+                            scope.launch {
+                                navGuard.run {
+                                    vm.agreeAndRegister(onDone = onFinished)
+                                }
+                            }
                         }
                 )
+
                 Spacer(modifier = Modifier.height(64.dp))
             }
         }

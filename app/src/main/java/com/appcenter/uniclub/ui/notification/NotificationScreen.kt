@@ -29,7 +29,9 @@ import com.appcenter.uniclub.model.NotificationItem
 import com.appcenter.uniclub.model.NotificationType
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 //알림 페이지
 //알림 화면 탭 종류
@@ -46,9 +48,26 @@ fun NotificationScreen(
     val read   by remember(ui.items) { derivedStateOf { ui.items.filter {  it.isRead } } } //읽은 알림 필터링
     var currentTab by rememberSaveable { mutableStateOf(NotificationTab.UNREAD) } //탭 상태
 
+    //뒤로가기 연타/잔상 클릭 방지용 (ProfileEditScreen과 동일 패턴)
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
+
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.height(24.dp))
-        TopBar(title = "알림", onBackClick = { navController.navigateUp() }) //상단바
+
+        TopBar( //상단바
+            title = "알림",
+            onBackClick = {
+                scope.launch {
+                    navGuard.run navGuardRun@{
+                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                        if (route != "notification") return@navGuardRun
+
+                        navController.navigateUp()
+                    }
+                }
+            }
+        ) //상단바
 
         //탭 세그먼트 (안읽은/읽은)
         HeaderSegments(current = currentTab, unreadCount = unread.size) { currentTab = it }
@@ -127,7 +146,7 @@ fun NotificationScreen(
                 }
                 item { Spacer(Modifier.height(30.dp)) }
 
-                if(ui.hasNext) {
+                if (ui.hasNext) {
                     item {
                         LaunchedEffect(ui.currentPage, ui.hasNext) {
                             vm.loadPage(ui.currentPage + 1)
@@ -243,7 +262,9 @@ private fun navigateByNotification(
             rootNavController.navigate("question/${item.targetId}") { launchSingleTop = true }
         NotificationType.FEDERATION ->
             rootNavController.navigate("main")
-        NotificationType.SYSTEM, NotificationType.PERSONAL -> null
+        NotificationType.SYSTEM, NotificationType.PERSONAL -> {
+            // 이동 없음
+        }
     }
 }
 

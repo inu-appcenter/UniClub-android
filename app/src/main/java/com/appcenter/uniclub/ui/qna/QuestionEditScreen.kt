@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Text
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +39,11 @@ import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
+import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import kotlinx.coroutines.launch
 
 //질문 작성, 수정 페이지
 @Composable
@@ -52,10 +54,14 @@ fun QuestionEditScreen(
     initialClubName: String = "",
     initialContent: String = "" //초기 질문 내용 (수정모드)
 ) {
-    var app = LocalContext.current.applicationContext as App
-    val vm: QuestionEditViewModel = viewModel (
+    val app = LocalContext.current.applicationContext as App
+    val vm: QuestionEditViewModel = viewModel(
         factory = QuestionEditViewModelFactory(ServiceLocator.qnaRepository(app))
     )
+
+    //연타 방지 (네비게이션/제출용)
+    val scope = rememberCoroutineScope()
+    val navGuard = remember { NavGuard(lockMs = 800L) }
 
     var selectedClubId by remember { mutableStateOf(initialClubId) } //선택된 동아리아이디
     var selectedClubName by remember { mutableStateOf(initialClubName) } //선택된 동아리명
@@ -77,10 +83,16 @@ fun QuestionEditScreen(
     val ui by vm.ui.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column() {
+        Column {
             Spacer(modifier = Modifier.height(24.dp))
+
             TopBar( //상단바
-                onBackClick = { navController.popBackStack() },
+                //뒤로가기 연타 방지
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run { navController.popBackStack() }
+                    }
+                },
                 title = if (questionId == 0L) "질문하기" else "질문 수정"
             )
 
@@ -94,18 +106,21 @@ fun QuestionEditScreen(
                     modifier = Modifier
                         .figmaSize(widthPx = 303f, heightPx = 35f)
                         .clip(RoundedCornerShape(13.dp))
-                        .let {
+                        .let { base ->
                             if (questionId == 0L) {
                                 //신규 작성 - 클릭 가능
-                                it.clickable(
+                                base.clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    navController.navigate("clubSelect")
+                                    //clubSelect 이동 연타 방지
+                                    scope.launch {
+                                        navGuard.run { navController.navigate("clubSelect") }
+                                    }
                                 }
                             } else {
                                 //수정 모드 - 클릭 불가능
-                                it
+                                base
                             }
                         },
                     contentAlignment = Alignment.Center
@@ -124,7 +139,7 @@ fun QuestionEditScreen(
                     ) {
                         Text(
                             text = if (questionId == 0L) "질문할 동아리를 검색하세요."
-                                    else "동아리 변경이 불가능합니다",
+                            else "동아리 변경이 불가능합니다",
                             fontSize = figmaTextSizeSp(12f),
                             fontFamily = NotoSansKR,
                             lineHeight = 12.sp * 1.5f,
@@ -141,13 +156,15 @@ fun QuestionEditScreen(
                 }
             }
 
-            Box(modifier = Modifier.figmaPadding(startPx = 26f, topPx = 19f, endPx = 26f, bottomPx = 19f)){
+            Box(
+                modifier = Modifier.figmaPadding(startPx = 26f, topPx = 19f, endPx = 26f, bottomPx = 19f)
+            ) {
                 Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
             }
 
             //선택된 동아리 태그 + 본문
             Column(modifier = Modifier.figmaPadding(startPx = 39f, endPx = 39f)) {
-                if(selectedClubName.isNotBlank()) {
+                if (selectedClubName.isNotBlank()) {
                     Text( //선택된 동아리 표시
                         text = "@$selectedClubName",
                         color = Color(0xFFFF5900),
@@ -198,9 +215,9 @@ fun QuestionEditScreen(
                 .figmaPadding(bottomPx = 20f)
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .imePadding(),
+            //가운데 정렬 + 두 버튼 사이 11
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(11.dp, Alignment.CenterHorizontally)
-            //가운데 정렬 + 두 버튼 사이 11
         ) {
             Image(
                 painter = painterResource(
@@ -212,6 +229,7 @@ fun QuestionEditScreen(
                     indication = null
                 ) { isAnonymous = !isAnonymous } // 반복 클릭 시 토글
             )
+
             Image(
                 painter = painterResource(R.drawable.btn_qna_submit),
                 contentDescription = "질문 등록 버튼",
@@ -219,13 +237,20 @@ fun QuestionEditScreen(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    if (questionId == 0L) {
-                        //신규 등록
-                        val cid = selectedClubId ?: return@clickable
-                        vm.create(cid, body.trim(), isAnonymous)
-                    } else {
-                        //수정
-                        vm.update(questionId, body.trim(), isAnonymous)
+                    //등록/수정 연타 방지
+                    scope.launch {
+                        navGuard.run submitOnce@{
+                            val trimmed = body.trim()
+
+                            if (questionId == 0L) {
+                                //신규 등록
+                                val cid = selectedClubId ?: return@submitOnce
+                                vm.create(cid, trimmed, isAnonymous)
+                            } else {
+                                //수정
+                                vm.update(questionId, trimmed, isAnonymous)
+                            }
+                        }
                     }
                 }
             )
@@ -233,7 +258,9 @@ fun QuestionEditScreen(
 
         //성공 시 뒤로가기
         if (ui.success) {
-            LaunchedEffect(ui.success) { navController.popBackStack() }
+            LaunchedEffect(ui.success) {
+                navController.popBackStack()
+            }
         }
     }
 }
