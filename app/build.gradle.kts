@@ -16,8 +16,8 @@ android {
         applicationId = "com.appcenter.uniclub"
         minSdk = 25
         targetSdk = 35
-        versionCode = 3
-        versionName = "3.0"
+        versionCode = 6
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

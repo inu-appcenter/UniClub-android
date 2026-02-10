@@ -32,8 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -501,6 +505,18 @@ fun ClubDescription(description: String) {
 @Composable
 fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
     val limited = remember(items) { items.take(10) } // 최대 10장
+    val context = LocalContext.current
+
+    //선택된 이미지 URL (null이면 다이얼로그 닫힘)
+    var selectedUrl by remember { mutableStateOf<String?>(null) }
+
+    //크게 보기 다이얼로그
+    if (selectedUrl != null) {
+        ImageViewerDialog(
+            imageUrl = selectedUrl!!,
+            onDismiss = { selectedUrl = null }
+        )
+    }
 
     LazyRow(
         modifier = Modifier
@@ -510,9 +526,11 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(limited) { _, item ->
+            val url = item.mediaLink.orEmpty()
+
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(item.mediaLink)
+                model = ImageRequest.Builder(context)
+                    .data(url)
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
@@ -520,6 +538,69 @@ fun ActivityImageCarouselUrls(items: List<DescriptionMediaDto>) {
                 modifier = Modifier
                     .figmaSize(widthPx = 139f, heightPx = 183f)
                     .clip(RoundedCornerShape(25.dp))
+                    .clickable(
+                        enabled = url.isNotBlank(),
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        //클릭 시 선택 -> 다이얼로그 열기
+                        selectedUrl = url
+                    }
+            )
+        }
+    }
+}
+
+//전체 화면 이미지 뷰어 (바깥 클릭/뒤로가기 닫힘)
+@Composable
+fun ImageViewerDialog(
+    imageUrl: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            // 이미지 영역(바깥 영역 클릭은 닫기, 이미지 클릭은 막기)
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Full Image",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { /* 이미지 자체 클릭은 아무것도 안 함(닫히지 않게) */ }
+            )
+
+            //닫기 버튼
+            Image(
+                painter = painterResource(id = R.drawable.ic_delete),
+                contentDescription = "닫기",
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .size(35.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onDismiss() }
             )
         }
     }

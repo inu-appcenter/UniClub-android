@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -44,62 +45,69 @@ fun InquiryScreen(navController: NavHostController) {
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(24.dp))
-        TopBar( //상단바
-            onBackClick = {
-                scope.launch {
-                    navGuard.run navGuardRun@{
-                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
-                        if (route != "inquiry") return@navGuardRun
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TopBar( //상단바
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run navGuardRun@{
+                            val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                            if (route != "inquiry") return@navGuardRun
 
-                        navController.popBackStack()
+                            navController.popBackStack()
+                        }
                     }
+                },
+                title = "문의하기"
+            )
+            Spacer(Modifier.height(43.dp))
+
+            //설명 텍스트
+            Text(
+                text = "UniClub 이용 중에 생긴 불편한 점이나 문의사항을 \n보내주세요 :-)",
+                fontSize = figmaTextSizeSp(11f),
+                fontFamily = NotoSansKR,
+                lineHeight = 11.sp * 1.5f,
+                letterSpacing = (-0.011).em,
+                color = Color(0xFF7D7D7D),
+                modifier = Modifier.padding(horizontal = 36.dp)
+            )
+            Spacer(Modifier.height(27.dp))
+
+            //카카오톡 채널
+            InquirySection(
+                title = "Kakao Talk 채널",
+                link = "pf.kakao.com/_xgxaSLd",
+                buttonResId = R.drawable.btn_link,
+                onButtonClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://pf.kakao.com/_xgxaSLd"))
+                    context.startActivity(intent)
                 }
-            },
-            title = "문의하기"
-        )
-        Spacer(Modifier.height(43.dp))
+            )
 
-        //설명 텍스트
-        Text(
-            text = "UniClub 이용 중에 생긴 불편한 점이나 문의사항을 \n보내주세요 :-)",
-            fontSize = figmaTextSizeSp(11f),
-            fontFamily = NotoSansKR,
-            lineHeight = 11.sp * 1.5f,
-            letterSpacing = (-0.011).em,
-            color = Color(0xFF7D7D7D),
-            modifier = Modifier.padding(horizontal = 36.dp)
-        )
-        Spacer(Modifier.height(27.dp))
+            //인스타그램
+            InquirySection(
+                title = "Instagram",
+                link = "@inuappcenter",
+                buttonResId = R.drawable.btn_link,
+                onButtonClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/inuappcenter/"))
+                    context.startActivity(intent)
+                }
+            )
 
-        //카카오톡 채널
-        InquirySection(
-            title = "Kakao Talk 채널",
-            link = "pf.kakao.com/_xgxaSLd",
-            buttonResId = R.drawable.btn_link,
-            onButtonClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://pf.kakao.com/_xgxaSLd"))
-                context.startActivity(intent)
-            }
-        )
-
-        //인스타그램
-        InquirySection(
-            title = "Instagram",
-            link = "@inuappcenter",
-            buttonResId = R.drawable.btn_link,
-            onButtonClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/inuappcenter/"))
-                context.startActivity(intent)
-            }
-        )
-
-        //이메일
-        InquirySection(
-            title = "Email",
-            link = "inuappcenter@gmail.com"
-        )
+            //이메일
+            InquirySection(
+                title = "Email",
+                link = "inuappcenter@gmail.com"
+            )
+        }
     }
 }
 

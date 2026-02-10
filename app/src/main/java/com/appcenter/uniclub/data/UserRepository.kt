@@ -54,7 +54,7 @@ class UserRepository(
             if (!res.isSuccessful) throw HttpException(res)
 
             val body = res.body() ?: throw Exception("로그인 응답이 비어 있습니다.")
-            val header = "${body.tokenType} ${body.accessToken}"
+            val header = "Bearer ${body.accessToken}"
             tokenStore.saveAuthHeader(header)
             body.userId
         }

@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.qna
 
+import retrofit2.HttpException
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -18,7 +19,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -123,12 +126,22 @@ fun QuestionScreen(
 
     //연타 방지용
     val scope = rememberCoroutineScope()
-    val navGuard = remember { NavGuard(lockMs = 800L) }      //뒤로가기/네비게이션
-    val actionGuard = remember { NavGuard(lockMs = 600L) }   //서버 액션(전송/삭제/완료 등)
+    val navGuard = remember { NavGuard(lockMs = 800L) } //뒤로가기/네비게이션
+    val actionGuard = remember { NavGuard(lockMs = 600L) } //서버 액션(전송/삭제/완료 등)
 
     //로딩
     LaunchedEffect(questionId) { vm.load(questionId) }
     val ui by vm.ui.collectAsState()
+
+    var showQuestionDeletedDialog by rememberSaveable { mutableStateOf(false) }
+
+    //error가 바뀔 때마다 404인지 체크해서 다이얼로그 띄움
+    LaunchedEffect(ui.error) {
+        val http = ui.error as? HttpException
+        if (http?.code() == 404) {
+            showQuestionDeletedDialog = true
+        }
+    }
 
     //오버레이 상태
     var showAction by remember { mutableStateOf(false) }
@@ -148,176 +161,180 @@ fun QuestionScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val inputFocusRequester = remember { FocusRequester() }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .zIndex(2f),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            TopBar(
-                //뒤로가기 연타 방지
-                onBackClick = {
-                    scope.launch {
-                        navGuard.run { navController.popBackStack() }
-                    }
+        if (showQuestionDeletedDialog) {
+            Dialog(
+                title = "삭제된 질문입니다.",
+                message = "해당 질문을 찾을 수 없습니다.",
+                onDismiss = {
+                    showQuestionDeletedDialog = false
+                    navController.popBackStack()
                 },
-                title = "질의응답"
+                onConfirm = {
+                    showQuestionDeletedDialog = false
+                    navController.popBackStack()
+                }
             )
         }
 
-        //본문 리스트 (IME 무시)
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    //빈 공간 탭 시 키보드 닫기 + 포커스 해제
-                    detectTapGestures(onTap = {
-                        focusManager.clearFocus()
-                        keyboard?.hide()
-
-                        replyParentId = null
-                        replyTargetName = null
-                    })
-                }
-                .figmaPadding(topPx = 60f, bottomPx = 56f),
+                .padding(innerPadding)
         ) {
 
-            val q = ui.data
-            if (q != null) {
-                item { //질문 헤더
-                    Spacer(modifier = Modifier.height(33.dp))
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .figmaPadding(startPx = 35f, endPx = 25f)
-                    ) {
-                        Image( //프로필 이미지
-                            painter =
-                                if (!q.profile.isNullOrBlank())
-                                    rememberAsyncImagePainter(q.profile)
-                                else painterResource(R.drawable.default_image),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .figmaSize(widthPx = 35f, heightPx = 37f)
-                                .clip(RoundedCornerShape(29.dp))
-                        )
-
-                        Spacer(modifier = Modifier.width(11.dp))
-
-                        Column { //작성자, 시각, 동아리, 본문
-                            Text(
-                                text = q.nickname,
-                                fontSize = figmaTextSizeSp(12f),
-                                fontFamily = NotoSansKR,
-                                lineHeight = 12.sp * 1.5f,
-                                letterSpacing = (-0.011).em,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = TimeUtils.toFormattedTime(q.updatedAt),
-                                fontSize = figmaTextSizeSp(8f),
-                                fontFamily = NotoSansKR,
-                                lineHeight = 8.sp * 1.5f,
-                                letterSpacing = (-0.011).em,
-                                color = Color(0xFF898989)
-                            )
-                            Spacer(modifier = Modifier.height(7.dp))
-                            Text(
-                                text = "@${q.clubName}",
-                                fontSize = figmaTextSizeSp(11f),
-                                fontFamily = NotoSansKR,
-                                lineHeight = 11.sp * 1.5f,
-                                letterSpacing = (-0.011).em,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFFFF5900)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = q.content,
-                                fontSize = figmaTextSizeSp(11f),
-                                fontFamily = NotoSansKR,
-                                lineHeight = 11.sp * 1.5f,
-                                letterSpacing = (-0.011).em
-                            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex(2f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TopBar(
+                    //뒤로가기 연타 방지
+                    onBackClick = {
+                        scope.launch {
+                            navGuard.run { navController.popBackStack() }
                         }
+                    },
+                    title = "질의응답"
+                )
+            }
 
-                        Spacer(Modifier.weight(1f))
+            //본문 리스트 (IME 무시)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        //빈 공간 탭 시 키보드 닫기 + 포커스 해제
+                        detectTapGestures(onTap = {
+                            focusManager.clearFocus()
+                            keyboard?.hide()
 
-                        if (q.president) {
-                            var answered by remember(q.answered) { mutableStateOf(q.answered) }
-                            Box( //답변완료 토글 (운영진한테만 노출)
-                                modifier = Modifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    //다이얼로그 여는 것도 연타로 여러 번 뜨는 것 방지
-                                    scope.launch {
-                                        actionGuard.run { showAnsweredDialog = true }
-                                    }
-                                }
-                            ) {
-                                Image(
-                                    painter = painterResource(
-                                        if (answered) R.drawable.btn_answered
-                                        else R.drawable.btn_answered_disabled
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 23f)
+                            replyParentId = null
+                            replyTargetName = null
+                        })
+                    }
+                    .figmaPadding(topPx = 40f),
+            ) {
+
+                val q = ui.data
+                if (q != null) {
+                    item { //질문 헤더
+                        Spacer(modifier = Modifier.height(26.dp))
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .figmaPadding(startPx = 35f, endPx = 25f)
+                        ) {
+                            Image( //프로필 이미지
+                                painter =
+                                    if (!q.profile.isNullOrBlank())
+                                        rememberAsyncImagePainter(q.profile)
+                                    else painterResource(R.drawable.default_image),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .figmaSize(widthPx = 35f, heightPx = 37f)
+                                    .clip(RoundedCornerShape(29.dp))
+                            )
+
+                            Spacer(modifier = Modifier.width(11.dp))
+
+                            Column { //작성자, 시각, 동아리, 본문
+                                Text(
+                                    text = q.nickname,
+                                    fontSize = figmaTextSizeSp(12f),
+                                    fontFamily = NotoSansKR,
+                                    lineHeight = 12.sp * 1.5f,
+                                    letterSpacing = (-0.011).em,
+                                    fontWeight = FontWeight.Medium
                                 )
+                                Text(
+                                    text = TimeUtils.toFormattedTime(q.updatedAt),
+                                    fontSize = figmaTextSizeSp(8f),
+                                    fontFamily = NotoSansKR,
+                                    lineHeight = 8.sp * 1.5f,
+                                    letterSpacing = (-0.011).em,
+                                    color = Color(0xFF898989)
+                                )
+                                Spacer(modifier = Modifier.height(7.dp))
+                                Text(
+                                    text = "@${q.clubName}",
+                                    fontSize = figmaTextSizeSp(11f),
+                                    fontFamily = NotoSansKR,
+                                    lineHeight = 11.sp * 1.5f,
+                                    letterSpacing = (-0.011).em,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFFFF5900)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = q.content,
+                                    fontSize = figmaTextSizeSp(11f),
+                                    fontFamily = NotoSansKR,
+                                    lineHeight = 11.sp * 1.5f,
+                                    letterSpacing = (-0.011).em
+                                )
+                            }
+
+                            Spacer(Modifier.weight(1f))
+
+                            if (q.president) {
+                                var answered by remember(q.answered) { mutableStateOf(q.answered) }
+                                Box( //답변완료 토글 (운영진한테만 노출)
+                                    modifier = Modifier.clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        //다이얼로그 여는 것도 연타로 여러 번 뜨는 것 방지
+                                        scope.launch {
+                                            actionGuard.run { showAnsweredDialog = true }
+                                        }
+                                    }
+                                ) {
+                                    Image(
+                                        painter = painterResource(
+                                            if (answered) R.drawable.btn_answered
+                                            else R.drawable.btn_answered_disabled
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.figmaSize(widthPx = 70f, heightPx = 23f)
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    Box(modifier = Modifier.figmaPadding(startPx = 26f, topPx = 33f, endPx = 26f, bottomPx = 10f)
-                    ) { Divider(color = Color(0xFFEBEBEB), thickness = 1.dp) }
-                }
+                    item {
+                        Box(modifier = Modifier.figmaPadding(startPx = 26f, topPx = 33f, endPx = 26f, bottomPx = 10f)
+                        ) { Divider(color = Color(0xFFEBEBEB), thickness = 1.dp) }
+                    }
 
-                //댓글(부모), 대댓글(자식) 렌더
-                val parents = q.answers.filter { it.parentAnswerId == null }
-                val childrenMap = q.answers.filter { it.parentAnswerId != null }.groupBy { it.parentAnswerId!! }
+                    //댓글(부모), 대댓글(자식) 렌더
+                    val parents = q.answers.filter { it.parentAnswerId == null }
+                    val childrenMap = q.answers.filter { it.parentAnswerId != null }.groupBy { it.parentAnswerId!! }
 
-                items(parents, key = { it.answerId }) { parent ->
-                    val parentIsDeleted = parent.deleted || deletedIds.contains(parent.answerId)
+                    items(parents, key = { it.answerId }) { parent ->
+                        val parentIsDeleted = parent.deleted || deletedIds.contains(parent.answerId)
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 25.dp, vertical = 6.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AnswerParentItem(
-                            ans = parent,
-                            isDeleted = parentIsDeleted,
-                            answered = q.answered,
-                            isHighlighted = (replyParentId == parent.answerId),
-                            onMore = { mine ->
-                                selectedAnswerId = parent.answerId
-                                selectedAnswerMine = mine
-                                showAction = true
-                            },
-                            onReplyClick = {
-                                replyParentId = parent.answerId
-                                replyTargetName = parent.nickname
-                                inputFocusRequester.requestFocus()
-                                keyboard?.show()
-                            }
-                        )
-
-                        val replies = childrenMap[parent.answerId].orEmpty()
-                        replies.forEach { child ->
-                            AnswerChildItem(
-                                ans = child,
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 25.dp, vertical = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            AnswerParentItem(
+                                ans = parent,
+                                isDeleted = parentIsDeleted,
                                 answered = q.answered,
+                                isHighlighted = (replyParentId == parent.answerId),
                                 onMore = { mine ->
-                                    selectedAnswerId = child.answerId
+                                    selectedAnswerId = parent.answerId
                                     selectedAnswerMine = mine
                                     showAction = true
                                 },
@@ -328,99 +345,118 @@ fun QuestionScreen(
                                     keyboard?.show()
                                 }
                             )
+
+                            val replies = childrenMap[parent.answerId].orEmpty()
+                            replies.forEach { child ->
+                                AnswerChildItem(
+                                    ans = child,
+                                    answered = q.answered,
+                                    onMore = { mine ->
+                                        selectedAnswerId = child.answerId
+                                        selectedAnswerMine = mine
+                                        showAction = true
+                                    },
+                                    onReplyClick = {
+                                        replyParentId = parent.answerId
+                                        replyTargetName = parent.nickname
+                                        inputFocusRequester.requestFocus()
+                                        keyboard?.show()
+                                    }
+                                )
+                            }
                         }
                     }
-                }
 
-                item { Spacer(modifier = Modifier.height(70.dp)) }
-            }
-        }
-
-        //하단 댓글 입력 바
-        CommentInputBar(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .zIndex(2f),
-            focusRequester = inputFocusRequester,
-            replyParentId = replyParentId,
-            replyTargetName = replyTargetName,
-            onSend = { text, anonymous, parentId ->
-                //전송 연타 방지 (중복 댓글/대댓글 방지)
-                scope.launch {
-                    actionGuard.run {
-                        vm.sendAnswer(
-                            questionId = questionId,
-                            parentId = parentId,
-                            content = text,
-                            anonymous = anonymous
-                        )
-                        replyParentId = null
-                        replyTargetName = null
-                    }
+                    item { Spacer(modifier = Modifier.height(70.dp)) }
                 }
             }
-        )
 
-        //삭제,신고 오버레이
-        BottomOneActionPopup(
-            visible = showAction,
-            mine = selectedAnswerMine,
-            onDismiss = { showAction = false },
-            onReportClick = { showReportDialog = true },
-            onDeleteClick = {
-                //다이얼로그 여러 번 열리는 것 방지
-                scope.launch {
-                    actionGuard.run {
-                        showDeleteDialog = true
-                        showAction = false
-                    }
-                }
-            }
-        )
-
-        //답변 완료 다이얼로그
-        if (showAnsweredDialog) {
-            Dialog(
-                title = "답변 완료로 변경하시겠습니까?",
-                message = "답변 완료 시 수정 및 삭제가 불가능합니다.",
-                onDismiss = { showAnsweredDialog = false },
-                onConfirm = {
-                    //완료 처리 연타 방지
+            //하단 댓글 입력 바
+            CommentInputBar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .zIndex(2f),
+                focusRequester = inputFocusRequester,
+                replyParentId = replyParentId,
+                replyTargetName = replyTargetName,
+                onSend = { text, anonymous, parentId ->
+                    //전송 연타 방지 (중복 댓글/대댓글 방지)
                     scope.launch {
                         actionGuard.run {
-                            vm.markAnswered(questionId)
-                            showAnsweredDialog = false
+                            vm.sendAnswer(
+                                questionId = questionId,
+                                parentId = parentId,
+                                content = text,
+                                anonymous = anonymous
+                            )
+                            replyParentId = null
+                            replyTargetName = null
                         }
                     }
                 }
             )
-        }
 
-        //삭제,신고 다이얼로그
-        if (showDeleteDialog) {
-            Dialog(
-                title = "이 댓글을 삭제하시겠습니까?",
-                onDismiss = { showDeleteDialog = false },
-                onConfirm = {
-                    val id = selectedAnswerId ?: return@Dialog
-                    //삭제 연타 방지
+            //삭제,신고 오버레이
+            BottomOneActionPopup(
+                visible = showAction,
+                mine = selectedAnswerMine,
+                onDismiss = { showAction = false },
+                onReportClick = { showReportDialog = true },
+                onDeleteClick = {
+                    //다이얼로그 여러 번 열리는 것 방지
                     scope.launch {
                         actionGuard.run {
-                            vm.deleteAnswer(id, questionId)
-                            deletedIds = deletedIds + id
-                            showDeleteDialog = false
+                            showDeleteDialog = true
+                            showAction = false
                         }
                     }
                 }
             )
-        }
-        if (showReportDialog) {
-            Dialog(
-                title = "이 댓글을 신고하시겠습니까?",
-                onDismiss = { showReportDialog = false },
-                onConfirm = { showReportDialog = false }
-            )
+
+            //답변 완료 다이얼로그
+            if (showAnsweredDialog) {
+                Dialog(
+                    title = "답변 완료로 변경하시겠습니까?",
+                    message = "답변 완료 시 수정 및 삭제가 불가능합니다.",
+                    onDismiss = { showAnsweredDialog = false },
+                    onConfirm = {
+                        //완료 처리 연타 방지
+                        scope.launch {
+                            actionGuard.run {
+                                vm.markAnswered(questionId)
+                                showAnsweredDialog = false
+                            }
+                        }
+                    }
+                )
+            }
+
+            //삭제,신고 다이얼로그
+            if (showDeleteDialog) {
+                Dialog(
+                    title = "이 댓글을 삭제하시겠습니까?",
+                    onDismiss = { showDeleteDialog = false },
+                    onConfirm = {
+                        val id = selectedAnswerId ?: return@Dialog
+                        //삭제 연타 방지
+                        scope.launch {
+                            actionGuard.run {
+                                vm.deleteAnswer(id, questionId)
+                                deletedIds = deletedIds + id
+                                showDeleteDialog = false
+                            }
+                        }
+                    }
+                )
+            }
+            if (showReportDialog) {
+                Dialog(
+                    title = "이 댓글을 신고하시겠습니까?",
+                    onDismiss = { showReportDialog = false },
+                    onConfirm = { showReportDialog = false }
+                )
+            }
         }
     }
 }
@@ -795,7 +831,6 @@ fun CommentInputBar(
 
     Box(
         modifier = modifier
-            .windowInsetsPadding(WindowInsets.navigationBars) //OS 하단바 위에 고정
             .graphicsLayer { translationY = -extraLiftPx } //키보드 열릴 때 더 올리기
             .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom)
             .height(BAR_HEIGHT),
@@ -958,7 +993,6 @@ fun BottomOneActionPopup(
 
         Row(
             modifier = Modifier
-                .windowInsetsPadding(WindowInsets.navigationBars)
                 .graphicsLayer { translationY = -extraLiftPx }
                 .align(Alignment.BottomEnd)
                 .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom),

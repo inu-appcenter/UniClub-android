@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,7 +39,7 @@ fun SignUpScreen(
 ) {
     val ui by vm.ui.collectAsState()
 
-    //연타/잔상 클릭 방지 (ProfileEdit/TopBar에서 쓰던 패턴)
+    //연타/잔상 클릭 방지
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
@@ -46,176 +47,180 @@ fun SignUpScreen(
     val canVerify = ui.canVerify //학번/비번 입력이 '인증 가능' 조건을 만족하는지
     val canProceed = ui.canProceed //이름/학과 등 추가 정보가 '다음 단계 가능'한지
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .figmaPadding(topPx = 18f)
-    ) {
-        TopBar( //상단바
-            onBackClick = {
-                scope.launch {
-                    navGuard.run signupBack@{
-                        val route = navController.currentBackStackEntry
-                            ?.destination
-                            ?.route
-                            .orEmpty()
-                        if (!route.startsWith("signup")) return@signupBack
-
-                        navController.popBackStack()
-                    }
-                }
-            }
-        )
-
-        Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 79f, bottomPx = 113f)) {
-            Text( //상단 타이틀
-                text = "회원가입",
-                fontSize = figmaTextSizeSp(32f),
-                fontFamily = NotoSansKR,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Image( //포털 계정 안내 이미지
-                painter = painterResource(id = R.drawable.banner_school_account),
-                contentDescription = "학교 포털 계정 안내",
-                modifier = Modifier.figmaSize(widthPx = 184f, heightPx = 26f)
-            )
-
-            Spacer(modifier = Modifier.height(35.dp))
-
-            //학번 입력 필드
-            InputLabel("학번을 입력해주세요.", isEnabled = true)
-            UnderlineInputField(
-                modifier = Modifier.figmaPadding(endPx = 145f),
-                value = ui.studentId, //vm 상태와 양방향 바인딩
-                onValueChange = vm::onId, //vm 콜백 호출
-                enabled = !ui.verified //인증 완료 후에는 수정 비활성화
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            //비밀번호 입력 필드
-            InputLabel("비밀번호를 입력해주세요.", isEnabled = true)
-            UnderlineInputField(
-                modifier = Modifier.figmaPadding(endPx = 145f),
-                value = ui.password,
-                onValueChange = vm::onPw,
-                enabled = !ui.verified,
-                isPassword = true //비밀번호 마스킹
-            )
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            Box( //인증 실패 시 오류 메시지 출력
-                modifier = Modifier.height(26.dp) //항상 고정된 공간 확보
-            ) {
-                if (ui.error != null) {
-                    Image(
-                        painter = painterResource(id = R.drawable.error_invalid_credentials),
-                        contentDescription = "오류 메시지",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 197f, heightPx = 30f)
-                            .wrapContentWidth(Alignment.Start)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            //이름 입력 필드 (인증 후에만 활성화)
-            InputLabel("이름을 입력해주세요.", isEnabled = ui.verified)
-            UnderlineInputField(
-                modifier = Modifier.figmaPadding(endPx = 145f),
-                value = ui.name,
-                onValueChange = vm::onName,
-                enabled = ui.verified
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            //학과 입력 필드 (인증 후에만 활성화)
-            InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
-            var majorFocused by remember { mutableStateOf(false) }
-            var showMajorSheet by remember { mutableStateOf(false) }
-            val selectedDisplayName = Major.values()
-                .find { it.name == ui.major }   // ui.major == "COMPUTER_ENGINEERING"
-                ?.displayName                   // "컴퓨터공학부"
-                ?: ""   // 선택 안했을 때는 빈값
-
-            MajorSelectButton(
-                selectedMajor = selectedDisplayName,
-                onClick = {
-                    majorFocused = true
-                    showMajorSheet = true
-                },
-                enabled = ui.verified,
-                modifier = Modifier.figmaSize(widthPx = 210f, heightPx = 35f),
-                isFocused = majorFocused
-            )
-
-            if (showMajorSheet) {
-                MajorSelectBottomSheet(
-                    onDismiss = {
-                        showMajorSheet = false
-                        majorFocused = false
-                    },
-                    onSelect = { major ->
-                        vm.onMajor(major.name)
-                        showMajorSheet = false
-                    }
-                )
-            }
-        }
-
-        //하단 버튼
-        //인증 전: '재학생 확인' (canVerify 충족 시 enabled 이미지)
-        //인증 후: '다음' (canProceed 충족 시 enabled 이미지)
-        Image(
-            painter = painterResource(
-                id = if (!ui.verified)
-                    if (canVerify) R.drawable.btn_verify_enabled else R.drawable.btn_verify_disabled
-                else
-                    if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
-            ),
-            contentDescription = "하단 버튼",
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .figmaPadding(bottomPx = 51f)
-                .clickable(
-                    enabled = if (!ui.verified) canVerify else canProceed,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    if (!ui.verified) {
-                        vm.verify()
-                    } else {
-                        //다음 화면으로 이동
-                        onNext()
-                    }
-                }
-        )
-
-        if (ui.showDuplicateModal) {
-            DuplicateStudentModal(
-                onRetry = {
-                    vm.onId("")    //다시 입력 → 입력 필드 초기화
-                    vm.onPw("")
-                    vm.resetDuplicateModal()
-                },
-                onLogin = {
-                    vm.resetDuplicateModal()
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TopBar( //상단바
+                onBackClick = {
                     scope.launch {
-                        navGuard.run {
+                        navGuard.run signupBack@{
+                            val route = navController.currentBackStackEntry
+                                ?.destination
+                                ?.route
+                                .orEmpty()
+                            if (!route.startsWith("signup")) return@signupBack
+
                             navController.popBackStack()
                         }
                     }
                 }
             )
+
+            Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 65f, bottomPx = 113f)) {
+                Text( //상단 타이틀
+                    text = "회원가입",
+                    fontSize = figmaTextSizeSp(32f),
+                    fontFamily = NotoSansKR,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 32.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Image( //포털 계정 안내 이미지
+                    painter = painterResource(id = R.drawable.banner_school_account),
+                    contentDescription = "학교 포털 계정 안내",
+                    modifier = Modifier.figmaSize(widthPx = 184f, heightPx = 26f)
+                )
+
+                Spacer(modifier = Modifier.height(35.dp))
+
+                //학번 입력 필드
+                InputLabel("학번을 입력해주세요.", isEnabled = true)
+                UnderlineInputField(
+                    modifier = Modifier.figmaPadding(endPx = 145f),
+                    value = ui.studentId, //vm 상태와 양방향 바인딩
+                    onValueChange = vm::onId, //vm 콜백 호출
+                    enabled = !ui.verified //인증 완료 후에는 수정 비활성화
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                //비밀번호 입력 필드
+                InputLabel("비밀번호를 입력해주세요.", isEnabled = true)
+                UnderlineInputField(
+                    modifier = Modifier.figmaPadding(endPx = 145f),
+                    value = ui.password,
+                    onValueChange = vm::onPw,
+                    enabled = !ui.verified,
+                    isPassword = true //비밀번호 마스킹
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                Box( //인증 실패 시 오류 메시지 출력
+                    modifier = Modifier.height(26.dp) //항상 고정된 공간 확보
+                ) {
+                    if (ui.error != null) {
+                        Image(
+                            painter = painterResource(id = R.drawable.error_invalid_credentials),
+                            contentDescription = "오류 메시지",
+                            modifier = Modifier
+                                .figmaSize(widthPx = 197f, heightPx = 30f)
+                                .wrapContentWidth(Alignment.Start)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                //이름 입력 필드 (인증 후에만 활성화)
+                InputLabel("이름을 입력해주세요.", isEnabled = ui.verified)
+                UnderlineInputField(
+                    modifier = Modifier.figmaPadding(endPx = 145f),
+                    value = ui.name,
+                    onValueChange = vm::onName,
+                    enabled = ui.verified
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                //학과 입력 필드 (인증 후에만 활성화)
+                InputLabel("학과를 선택해주세요.", isEnabled = ui.verified)
+                var majorFocused by remember { mutableStateOf(false) }
+                var showMajorSheet by remember { mutableStateOf(false) }
+                val selectedDisplayName = Major.values()
+                    .find { it.name == ui.major }   //ui.major == "COMPUTER_ENGINEERING"
+                    ?.displayName                   //"컴퓨터공학부"
+                    ?: ""   //선택 안했을 때는 빈값
+
+                MajorSelectButton(
+                    selectedMajor = selectedDisplayName,
+                    onClick = {
+                        majorFocused = true
+                        showMajorSheet = true
+                    },
+                    enabled = ui.verified,
+                    modifier = Modifier.figmaSize(widthPx = 210f, heightPx = 35f),
+                    isFocused = majorFocused
+                )
+
+                if (showMajorSheet) {
+                    MajorSelectBottomSheet(
+                        onDismiss = {
+                            showMajorSheet = false
+                            majorFocused = false
+                        },
+                        onSelect = { major ->
+                            vm.onMajor(major.name)
+                            showMajorSheet = false
+                        }
+                    )
+                }
+            }
+
+            //하단 버튼
+            //인증 전: '재학생 확인' (canVerify 충족 시 enabled 이미지)
+            //인증 후: '다음' (canProceed 충족 시 enabled 이미지)
+            Image(
+                painter = painterResource(
+                    id = if (!ui.verified)
+                        if (canVerify) R.drawable.btn_verify_enabled else R.drawable.btn_verify_disabled
+                    else
+                        if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
+                ),
+                contentDescription = "하단 버튼",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .figmaPadding(bottomPx = 51f)
+                    .clickable(
+                        enabled = if (!ui.verified) canVerify else canProceed,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        if (!ui.verified) {
+                            vm.verify()
+                        } else {
+                            //다음 화면으로 이동
+                            onNext()
+                        }
+                    }
+            )
+
+            if (ui.showDuplicateModal) {
+                DuplicateStudentModal(
+                    onRetry = {
+                        vm.onId("")    //다시 입력 → 입력 필드 초기화
+                        vm.onPw("")
+                        vm.resetDuplicateModal()
+                    },
+                    onLogin = {
+                        vm.resetDuplicateModal()
+                        scope.launch {
+                            navGuard.run {
+                                navController.popBackStack()
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -100,244 +101,251 @@ fun ProfileEditScreen(navController: NavHostController) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(24.dp))
-        TopBar( //상단바
-            onBackClick = {
-                scope.launch {
-                    navGuard.run navGuardRun@{
-                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
-                        if (route != "profileEdit") return@navGuardRun
-
-                        navController.popBackStack()
-                    }
-                }
-            },
-            title = "프로필 수정",
-            rightIconResId = if (viewModel.isModified) R.drawable.ic_save else null,
-            onRightIconClick = {
-                if (viewModel.isModified && !state.profileUrl.isNullOrBlank()) {
-                    viewModel.updateProfile()
-                }
-            }
-        )
-
-        Spacer(Modifier.height(33.dp))
-
-        Box(
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .figmaSize(widthPx = 70f, heightPx = 75f)
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            //상태별로 프로필 이미지 출력
-            when {
-                profileImageUri != null -> {
-                    Image(
-                        painter = rememberAsyncImagePainter(profileImageUri),
-                        contentDescription = "프로필 이미지",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 70f, heightPx = 69f)
-                            .clip(RoundedCornerShape(23.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+            TopBar( //상단바
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run navGuardRun@{
+                            val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                            if (route != "profileEdit") return@navGuardRun
 
-                state.profileUrl == "__deleted__" -> {
-                    //삭제했을 때 -> 기본 이미지
-                    Image(
-                        painter = painterResource(id = R.drawable.default_image),
-                        contentDescription = "기본 프로필 이미지",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 70f, heightPx = 75f)
-                            .clip(RoundedCornerShape(23.dp))
-                    )
-                }
-
-                !state.profileUrl.isNullOrBlank() -> {
-                    //서버에서 가져온 기존 프로필 이미지
-                    Image(
-                        painter = rememberAsyncImagePainter(state.profileUrl),
-                        contentDescription = "프로필 이미지",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 70f, heightPx = 69f)
-                            .clip(RoundedCornerShape(23.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                else -> {
-                    //둘다 없을 때 기본 이미지
-                    Image(
-                        painter = painterResource(id = R.drawable.default_image),
-                        contentDescription = "기본 프로필 이미지",
-                        modifier = Modifier
-                            .figmaSize(widthPx = 70f, heightPx = 75f)
-                            .clip(RoundedCornerShape(23.dp))
-                    )
-                }
-            }
-
-            Image( //수정 버튼
-                painter = painterResource(id = R.drawable.ic_profile_edit),
-                contentDescription = "수정 버튼",
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .figmaSize(widthPx = 20f, heightPx = 20f)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { //클릭하면 오버레이 버튼
-                        showAction = true
+                            navController.popBackStack()
+                        }
                     }
-            )
-        }
-
-        Spacer(Modifier.height(55.dp))
-
-        //학과 선택 영역
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
-        ) {
-            Text(
-                text = "학과",
-                fontSize = figmaTextSizeSp(12f),
-                fontFamily = NotoSansKR,
-                lineHeight = 12.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black,
-                modifier = Modifier.width(85.dp)
-            )
-
-            var majorFocused by remember { mutableStateOf(false) }
-            var showMajorSheet by remember { mutableStateOf(false) }
-
-            val selectedDisplayName = Major.values()
-                .find { it.name == state.major }
-                ?.displayName
-                ?: ""
-
-            MajorSelectButton( //학과 선택 버튼
-                selectedMajor = selectedDisplayName,
-                onClick = { //클릭하면 바텀시트 열림
-                    majorFocused = true
-                    showMajorSheet = true
                 },
-                modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f),
-                isFocused = majorFocused
-            )
-
-            if (showMajorSheet) { //바텀시트
-                MajorSelectBottomSheet(
-                    onDismiss = {
-                        showMajorSheet = false
-                        majorFocused = false
-                    },
-                    onSelect = { major ->
-                        viewModel.updateMajor(major.name)
-                        showMajorSheet = false
+                title = "프로필 수정",
+                rightIconResId = if (viewModel.isModified) R.drawable.ic_save else null,
+                onRightIconClick = {
+                    if (viewModel.isModified && !state.profileUrl.isNullOrBlank()) {
+                        viewModel.updateProfile()
                     }
-                )
-            }
-        }
-
-        //이름 입력 영역
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
-        ) {
-            Text(
-                text = "이름",
-                fontSize = figmaTextSizeSp(12f),
-                fontFamily = NotoSansKR,
-                lineHeight = 12.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black,
-                modifier = Modifier.width(85.dp)
+                }
             )
 
-            Box( //입력 박스
+            Spacer(Modifier.height(33.dp))
+
+            Box(
                 modifier = Modifier
-                    .figmaSize(widthPx = 200f, heightPx = 35f)
-                    .border(
-                        width = 1.dp,
-                        color = if (NameFocused) Color(0xFFFF5900) else Color.Transparent,
-                        shape = RoundedCornerShape(13.dp)
-                    )
-                    .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.CenterStart
+                    .align(Alignment.CenterHorizontally)
+                    .figmaSize(widthPx = 70f, heightPx = 75f)
             ) {
-                BasicTextField(
-                    value = state.name,
-                    onValueChange = { viewModel.updateName(it) },
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = figmaTextSizeSp(12f),
-                        fontFamily = NotoSansKR,
-                        lineHeight = 12.sp * 1.5f,
-                        letterSpacing = (-0.011).em,
-                        color = Color.Black
-                    ),
+                //상태별로 프로필 이미지 출력
+                when {
+                    profileImageUri != null -> {
+                        Image(
+                            painter = rememberAsyncImagePainter(profileImageUri),
+                            contentDescription = "프로필 이미지",
+                            modifier = Modifier
+                                .figmaSize(widthPx = 70f, heightPx = 69f)
+                                .clip(RoundedCornerShape(23.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    state.profileUrl == "__deleted__" -> {
+                        //삭제했을 때 -> 기본 이미지
+                        Image(
+                            painter = painterResource(id = R.drawable.default_image),
+                            contentDescription = "기본 프로필 이미지",
+                            modifier = Modifier
+                                .figmaSize(widthPx = 70f, heightPx = 75f)
+                                .clip(RoundedCornerShape(23.dp))
+                        )
+                    }
+
+                    !state.profileUrl.isNullOrBlank() -> {
+                        //서버에서 가져온 기존 프로필 이미지
+                        Image(
+                            painter = rememberAsyncImagePainter(state.profileUrl),
+                            contentDescription = "프로필 이미지",
+                            modifier = Modifier
+                                .figmaSize(widthPx = 70f, heightPx = 69f)
+                                .clip(RoundedCornerShape(23.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    else -> {
+                        //둘다 없을 때 기본 이미지
+                        Image(
+                            painter = painterResource(id = R.drawable.default_image),
+                            contentDescription = "기본 프로필 이미지",
+                            modifier = Modifier
+                                .figmaSize(widthPx = 70f, heightPx = 75f)
+                                .clip(RoundedCornerShape(23.dp))
+                        )
+                    }
+                }
+
+                Image( //수정 버튼
+                    painter = painterResource(id = R.drawable.ic_profile_edit),
+                    contentDescription = "수정 버튼",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focusState ->
-                            NameFocused = focusState.isFocused
+                        .align(Alignment.BottomEnd)
+                        .figmaSize(widthPx = 20f, heightPx = 20f)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { //클릭하면 오버레이 버튼
+                            showAction = true
                         }
                 )
             }
-        }
 
-        //닉네임 입력 영역
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 6f)
-        ) {
-            Text(
-                text = "닉네임",
-                fontSize = figmaTextSizeSp(12f),
-                fontFamily = NotoSansKR,
-                lineHeight = 12.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black,
-                modifier = Modifier.width(85.dp)
-            )
+            Spacer(Modifier.height(55.dp))
 
-            Box( //입력 박스
-                modifier = Modifier
-                    .figmaSize(widthPx = 200f, heightPx = 35f)
-                    .border(
-                        width = 1.dp,
-                        color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
-                        shape = RoundedCornerShape(13.dp)
-                    )
-                    .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.CenterStart
+            //학과 선택 영역
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
             ) {
-                BasicTextField(
-                    value = state.nickname,
-                    onValueChange = { viewModel.updateNickname(it) },
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = figmaTextSizeSp(12f),
-                        fontFamily = NotoSansKR,
-                        lineHeight = 12.sp * 1.5f,
-                        letterSpacing = (-0.011).em,
-                        color = Color.Black
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focusState ->
-                            NicknameFocused = focusState.isFocused
-                        }
+                Text(
+                    text = "학과",
+                    fontSize = figmaTextSizeSp(12f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 12.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black,
+                    modifier = Modifier.width(85.dp)
                 )
+
+                var majorFocused by remember { mutableStateOf(false) }
+                var showMajorSheet by remember { mutableStateOf(false) }
+
+                val selectedDisplayName = Major.values()
+                    .find { it.name == state.major }
+                    ?.displayName
+                    ?: ""
+
+                MajorSelectButton( //학과 선택 버튼
+                    selectedMajor = selectedDisplayName,
+                    onClick = { //클릭하면 바텀시트 열림
+                        majorFocused = true
+                        showMajorSheet = true
+                    },
+                    modifier = Modifier.figmaSize(widthPx = 200f, heightPx = 35f),
+                    isFocused = majorFocused
+                )
+
+                if (showMajorSheet) { //바텀시트
+                    MajorSelectBottomSheet(
+                        onDismiss = {
+                            showMajorSheet = false
+                            majorFocused = false
+                        },
+                        onSelect = { major ->
+                            viewModel.updateMajor(major.name)
+                            showMajorSheet = false
+                        }
+                    )
+                }
+            }
+
+            //이름 입력 영역
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 15f)
+            ) {
+                Text(
+                    text = "이름",
+                    fontSize = figmaTextSizeSp(12f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 12.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black,
+                    modifier = Modifier.width(85.dp)
+                )
+
+                Box( //입력 박스
+                    modifier = Modifier
+                        .figmaSize(widthPx = 200f, heightPx = 35f)
+                        .border(
+                            width = 1.dp,
+                            color = if (NameFocused) Color(0xFFFF5900) else Color.Transparent,
+                            shape = RoundedCornerShape(13.dp)
+                        )
+                        .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = state.name,
+                        onValueChange = { viewModel.updateName(it) },
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(
+                            fontSize = figmaTextSizeSp(12f),
+                            fontFamily = NotoSansKR,
+                            lineHeight = 12.sp * 1.5f,
+                            letterSpacing = (-0.011).em,
+                            color = Color.Black
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                NameFocused = focusState.isFocused
+                            }
+                    )
+                }
+            }
+
+            //닉네임 입력 영역
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.figmaPadding(startPx = 39f, bottomPx = 6f)
+            ) {
+                Text(
+                    text = "닉네임",
+                    fontSize = figmaTextSizeSp(12f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 12.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black,
+                    modifier = Modifier.width(85.dp)
+                )
+
+                Box( //입력 박스
+                    modifier = Modifier
+                        .figmaSize(widthPx = 200f, heightPx = 35f)
+                        .border(
+                            width = 1.dp,
+                            color = if (NicknameFocused) Color(0xFFFF5900) else Color.Transparent,
+                            shape = RoundedCornerShape(13.dp)
+                        )
+                        .background(Color(0xFFF3F3F3), RoundedCornerShape(13.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = state.nickname,
+                        onValueChange = { viewModel.updateNickname(it) },
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(
+                            fontSize = figmaTextSizeSp(12f),
+                            fontFamily = NotoSansKR,
+                            lineHeight = 12.sp * 1.5f,
+                            letterSpacing = (-0.011).em,
+                            color = Color.Black
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                NicknameFocused = focusState.isFocused
+                            }
+                    )
+                }
             }
         }
     }
 
     //프로필 수정, 삭제 오버레이
-    if(showAction) {
+    if (showAction) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

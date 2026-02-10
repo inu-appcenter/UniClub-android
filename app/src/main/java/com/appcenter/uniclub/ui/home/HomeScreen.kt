@@ -37,20 +37,23 @@ import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.model.ClubCategory
 import com.appcenter.uniclub.model.getIconRes
-import com.appcenter.uniclub.ui.notification.NotificationViewModel
-import com.appcenter.uniclub.ui.notification.NotificationViewModelFactory
+import com.appcenter.uniclub.ui.notification.NotificationBadgeViewModel
+import com.appcenter.uniclub.ui.notification.NotificationBadgeViewModelFactory
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     bottomNavController: NavHostController,
     rootNavController: NavHostController,
-    app: App = LocalContext.current.applicationContext as App,
-    notificationViewModel: NotificationViewModel
+    app: App = LocalContext.current.applicationContext as App
 ) {
     val homeVm: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(ServiceLocator.mainRepository(app))
@@ -61,10 +64,25 @@ fun HomeScreen(
             clubRepo = ServiceLocator.clubRepository(app)
         )
     )
+    val badgeVm: NotificationBadgeViewModel = viewModel(
+        factory = NotificationBadgeViewModelFactory(ServiceLocator.notificationRepository(app))
+    )
 
-    val bannerList by homeVm.bannerList.collectAsState()          // 로컬 fallback
-    val remoteBanner by homeVm.remoteBanner.collectAsState()       // 서버 배너
-    val hasUnread by notificationViewModel.hasUnread.collectAsState(initial = false)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                badgeVm.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+
+    val bannerList by homeVm.bannerList.collectAsState() //로컬 fallback
+    val remoteBanner by homeVm.remoteBanner.collectAsState() //서버 배너
+    val hasUnread by badgeVm.hasUnread.collectAsState(initial = false)
 
     LazyColumn(modifier = modifier
         .fillMaxSize()
