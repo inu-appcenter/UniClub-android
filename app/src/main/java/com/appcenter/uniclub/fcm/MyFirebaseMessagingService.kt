@@ -3,6 +3,7 @@ package com.appcenter.uniclub.fcm
 import android.util.Log
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.di.ServiceLocator
+import com.appcenter.uniclub.ui.notification.NotificationEventBus
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -27,5 +28,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         Log.d("FCM", "onMessageReceived data=${message.data}")
+
+        NotificationEventBus.notifyChanged()
     }
 }

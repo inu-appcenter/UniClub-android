@@ -8,12 +8,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,6 +34,9 @@ import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.NavGuard
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 //알림 페이지
 //알림 화면 탭 종류
@@ -44,114 +49,149 @@ fun NotificationScreen(
     vm: NotificationViewModel
 ) {
     val ui by vm.uiState.collectAsState()
-    val unread by remember(ui.items) { derivedStateOf { ui.items.filter { !it.isRead } } } //안읽은 알림 필터링
-    val read   by remember(ui.items) { derivedStateOf { ui.items.filter {  it.isRead } } } //읽은 알림 필터링
+
     var currentTab by rememberSaveable { mutableStateOf(NotificationTab.UNREAD) } //탭 상태
 
     //뒤로가기 연타/잔상 클릭 방지용 (ProfileEditScreen과 동일 패턴)
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
-    Column(Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(24.dp))
-
-        TopBar( //상단바
-            title = "알림",
-            onBackClick = {
-                scope.launch {
-                    navGuard.run navGuardRun@{
-                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
-                        if (route != "notification") return@navGuardRun
-
-                        navController.navigateUp()
-                    }
-                }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                vm.refresh()
             }
-        ) //상단바
-
-        //탭 세그먼트 (안읽은/읽은)
-        HeaderSegments(current = currentTab, unreadCount = unread.size) { currentTab = it }
-
-        Row( //전체 읽음 or 전체 삭제
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val isUnreadTab = currentTab == NotificationTab.UNREAD
-            //현재 탭에 따라 액션 가능 여부
-            val actionEnabled = if (isUnreadTab) unread.isNotEmpty() else read.isNotEmpty()
-            //라벨은 탭에 따라 변경
-            val actionLabel = if (isUnreadTab) "전체 읽음" else "전체 삭제"
-            //활성 상태에 때에 따라 색 변경
-            val actionColor = if (actionEnabled) Color(0xFFFF5900) else Color.Transparent
-
-            Text(
-                text = actionLabel,
-                fontSize = figmaTextSizeSp(11f),
-                fontFamily = NotoSansKR,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = (-0.011).em,
-                color = actionColor,
-                modifier = if (actionEnabled) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        if (isUnreadTab) vm.markAllAsRead() else vm.deleteAllRead()
-                    }
-                } else {
-                    Modifier
-                }
-            )
         }
-        Spacer(Modifier.height(10.dp))
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
-        //현재 탭에 대응하는 리스트
-        val list = if (currentTab == NotificationTab.UNREAD) unread else read
+    val unreadList = ui.unread.items
+    val readList = ui.read.items
+    val unreadCount = unreadList.size
 
-        if (list.isEmpty()) { //리스트 없을 때
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "알림이 없어요.",
-                    fontSize = figmaTextSizeSp(20f),
-                    fontFamily = NotoSansKR,
-                    lineHeight = 20.sp * 1.5f,
-                    letterSpacing = (-0.011).em,
-                    color = Color(0xFFD3D3D3)
-                )
-            }
-        } else { //리스트 있을 때
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 13.dp, end = 13.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(15.dp) //카드 간격
-            ) {
-                items(list, key = { it.id }) { item ->
-                    SwipeToDeleteNotification( //스와이프 삭제
-                        item = item,
-                        modifier = Modifier.fillMaxWidth(),
-                        onDelete = { vm.delete(item.id) },
-                        onClick = {
-                            if (!item.isRead) vm.markAsRead(item.id)
-                            navigateByNotification(navController, item) }
-                    )
-                }
-                item { Spacer(Modifier.height(30.dp)) }
+    val list = if (currentTab == NotificationTab.UNREAD) unreadList else readList
+    val tabState = if (currentTab == NotificationTab.UNREAD) ui.unread else ui.read
 
-                if (ui.hasNext) {
-                    item {
-                        LaunchedEffect(ui.currentPage, ui.hasNext) {
-                            vm.loadPage(ui.currentPage + 1)
+    val listState = rememberLazyListState()
+
+    //탭 바뀌면 맨 위로
+    LaunchedEffect(currentTab) {
+        runCatching { listState.scrollToItem(0) }
+    }
+
+    //바닥 근처면 추가 로드(탭별)
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisible >= (list.size - 2).coerceAtLeast(0)
+        }
+    }
+    LaunchedEffect(shouldLoadMore, currentTab, tabState.hasNext, tabState.loading) {
+        if (shouldLoadMore && tabState.hasNext && !tabState.loading) {
+            if (currentTab == NotificationTab.UNREAD) vm.loadMoreUnread()
+            else vm.loadMoreRead()
+        }
+    }
+
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TopBar( //상단바
+                title = "알림",
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run navGuardRun@{
+                            val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
+                            if (route != "notification") return@navGuardRun
+
+                            navController.navigateUp()
                         }
                     }
+                }
+            )
+
+            //탭 세그먼트 (안읽은/읽은)
+            HeaderSegments(current = currentTab, unreadCount = unreadCount) { currentTab = it }
+
+            Row( //전체 읽음 or 전체 삭제
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(20.dp)
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val isUnreadTab = currentTab == NotificationTab.UNREAD
+                //현재 탭에 따라 액션 가능 여부
+                val actionEnabled = if (isUnreadTab) unreadList.isNotEmpty() else readList.isNotEmpty()
+                //라벨은 탭에 따라 변경
+                val actionLabel = if (isUnreadTab) "전체 읽음" else "전체 삭제"
+                //활성 상태에 때에 따라 색 변경
+                val actionColor = if (actionEnabled) Color(0xFFFF5900) else Color.Transparent
+
+                Text(
+                    text = actionLabel,
+                    fontSize = figmaTextSizeSp(11f),
+                    fontFamily = NotoSansKR,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = (-0.011).em,
+                    color = actionColor,
+                    modifier = if (actionEnabled) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (isUnreadTab) vm.markAllAsRead() else vm.deleteAllRead()
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+
+            if (list.isEmpty()) { //리스트 없을 때
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val msg = if (tabState.loading) "불러오는 중..." else "알림이 없어요."
+                    Text(
+                        text = msg,
+                        fontSize = figmaTextSizeSp(20f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 20.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color(0xFFD3D3D3)
+                    )
+                }
+            } else { //리스트 있을 때
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 13.dp, end = 13.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(15.dp) //카드 간격
+                ) {
+                    items(list, key = { it.id }) { item ->
+                        SwipeToDeleteNotification( //스와이프 삭제
+                            item = item,
+                            modifier = Modifier.fillMaxWidth(),
+                            onDelete = { vm.delete(item.id) },
+                            onClick = {
+                                if (!item.isRead) vm.markAsRead(item.id)
+                                navigateByNotification(navController, item) }
+                        )
+                    }
+                    item { Spacer(Modifier.height(30.dp)) }
                 }
             }
         }

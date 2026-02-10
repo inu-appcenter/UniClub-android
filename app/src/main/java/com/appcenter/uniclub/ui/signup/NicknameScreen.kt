@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -46,75 +48,79 @@ fun NicknameScreen(
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .figmaPadding(topPx = 18f)
-    ) {
-        TopBar( //상단바
-            onBackClick = {
-                scope.launch {
-                    navGuard.run nicknameBack@{
-                        val route = navController.currentBackStackEntry
-                            ?.destination
-                            ?.route
-                            .orEmpty()
-                        if (!route.startsWith("nickname")) return@nicknameBack
-
-                        navController.popBackStack()
-                    }
-                }
-            }
-        )
-
-        Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 79f, bottomPx = 410f)) {
-            Text( //상단 타이틀
-                text = "회원가입",
-                fontSize = figmaTextSizeSp(32f),
-                fontFamily = NotoSansKR,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(25.dp))
-
-            InputLabel("닉네임을 입력해주세요.", isEnabled = true)
-            UnderlineInputField(
-                modifier = Modifier.figmaPadding(endPx = 145f),
-                value = ui.nickname,
-                onValueChange = vm::onNickname,
-                enabled = true
-            )
-        }
-
-        Image(
-            painter = painterResource(
-                id = if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
-            ),
-            contentDescription = "하단 버튼",
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .figmaPadding(bottomPx = 51f)
-                .clickable(
-                    enabled = canProceed,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    //다음 버튼도 연타 방지
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TopBar( //상단바
+                onBackClick = {
                     scope.launch {
-                        navGuard.run nextOnce@{
+                        navGuard.run nicknameBack@{
                             val route = navController.currentBackStackEntry
                                 ?.destination
                                 ?.route
                                 .orEmpty()
-                            if (!route.startsWith("nickname")) return@nextOnce
+                            if (!route.startsWith("nickname")) return@nicknameBack
 
-                            onNext()
+                            navController.popBackStack()
                         }
                     }
                 }
-        )
+            )
+
+            Column(modifier = Modifier.figmaPadding(startPx = 30f, topPx = 65f, bottomPx = 410f)) {
+                Text( //상단 타이틀
+                    text = "회원가입",
+                    fontSize = figmaTextSizeSp(32f),
+                    fontFamily = NotoSansKR,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 32.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(25.dp))
+
+                InputLabel("닉네임을 입력해주세요.", isEnabled = true)
+                UnderlineInputField(
+                    modifier = Modifier.figmaPadding(endPx = 145f),
+                    value = ui.nickname,
+                    onValueChange = vm::onNickname,
+                    enabled = true
+                )
+            }
+
+            Image(
+                painter = painterResource(
+                    id = if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
+                ),
+                contentDescription = "하단 버튼",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .figmaPadding(bottomPx = 51f)
+                    .clickable(
+                        enabled = canProceed,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        //다음 버튼도 연타 방지
+                        scope.launch {
+                            navGuard.run nextOnce@{
+                                val route = navController.currentBackStackEntry
+                                    ?.destination
+                                    ?.route
+                                    .orEmpty()
+                                if (!route.startsWith("nickname")) return@nextOnce
+
+                                onNext()
+                            }
+                        }
+                    }
+            )
+        }
     }
 }

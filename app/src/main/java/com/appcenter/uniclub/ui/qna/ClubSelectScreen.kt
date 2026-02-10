@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,150 +60,158 @@ fun ClubSelectScreen(navController: NavHostController) {
 
     LaunchedEffect(Unit) { search("") }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 90.dp) // 선택 버튼 공간 확보
+                .padding(innerPadding)
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
-            //상단바
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "동아리 선택",
-                    fontSize = figmaTextSizeSp(15f),
-                    fontFamily = NotoSansKR,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 15.sp * 1.5f,
-                    letterSpacing = (-0.011).em,
-                    color = Color.Black,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-
-                Text(
-                    text = "취소",
-                    fontSize = figmaTextSizeSp(12f),
-                    fontFamily = NotoSansKR,
-                    lineHeight = 12.sp * 1.5f,
-                    letterSpacing = (-0.011).em,
-                    color = Color.Black,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .figmaPadding(endPx = 23f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            //취소도 연타 방지
-                            scope.launch {
-                                navGuard.run { navController.popBackStack() }
-                            }
-                        }
-                )
-            }
-
-            //검색바
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .figmaPadding(topPx = 26f),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(bottom = 90.dp) //선택 버튼 공간 확보
             ) {
+                //Spacer(modifier = Modifier.height(40.dp))
+
+                //상단바
+                Box(modifier = Modifier.fillMaxWidth().figmaPadding(startPx = 23f, endPx = 23f, topPx = 15f)) {
+                    Text(
+                        text = "동아리 선택",
+                        fontSize = figmaTextSizeSp(15f),
+                        fontFamily = NotoSansKR,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 15.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color.Black,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+
+                    Text(
+                        text = "취소",
+                        fontSize = figmaTextSizeSp(12f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 12.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color.Black,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                scope.launch {
+                                    navGuard.run { navController.popBackStack() }
+                                }
+                            }
+                    )
+                }
+
+                //검색바
                 Box(
                     modifier = Modifier
-                        .figmaSize(widthPx = 303f, heightPx = 35f)
-                        .clip(RoundedCornerShape(13.dp)),
+                        .fillMaxWidth()
+                        .figmaPadding(topPx = 26f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image( //검색바 배경 이미지
-                        painter = painterResource(R.drawable.bg_qna_search),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Row( //텍스트필드,버튼
-                        verticalAlignment = Alignment.CenterVertically,
+                    Box(
                         modifier = Modifier
-                            .figmaPadding(startPx = 16f, topPx = 8f, endPx = 13f, bottomPx = 8f)
-                            .fillMaxWidth()
+                            .figmaSize(widthPx = 303f, heightPx = 35f)
+                            .clip(RoundedCornerShape(13.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        BasicTextField(
-                            value = name,
-                            onValueChange = {
-                                name = it
-                                coroutine.launch { search(name) }
-                            },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f), //남은 폭 모두 사용
-                            decorationBox = { innerTextField ->
-                                innerTextField() //실제 입력 텍스트
-                            }
+                        Image( //검색바 배경 이미지
+                            painter = painterResource(R.drawable.bg_qna_search),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        //입력값 있을 때만 지우기 버튼 표시
-                        if (name.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    name = ""
-                                    coroutine.launch { search("") }
+                        Row( //텍스트필드,버튼
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .figmaPadding(startPx = 16f, topPx = 8f, endPx = 13f, bottomPx = 8f)
+                                .fillMaxWidth()
+                        ) {
+                            BasicTextField(
+                                value = name,
+                                onValueChange = {
+                                    name = it
+                                    coroutine.launch { search(name) }
                                 },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_close),
-                                    contentDescription = "검색어 지우기",
+                                singleLine = true,
+                                modifier = Modifier.weight(1f), //남은 폭 모두 사용
+                                decorationBox = { innerTextField ->
+                                    innerTextField() //실제 입력 텍스트
+                                }
+                            )
+                            //입력값 있을 때만 지우기 버튼 표시
+                            if (name.isNotEmpty()) {
+                                IconButton(
+                                    onClick = {
+                                        name = ""
+                                        coroutine.launch { search("") }
+                                    },
+                                    modifier = Modifier.size(18.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_close),
+                                        contentDescription = "검색어 지우기",
+                                        modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
+                                    )
+                                }
+                            } else { //입력값 없을 땐 검색 아이콘
+                                Image(
+                                    painter = painterResource(R.drawable.ic_qna_search),
+                                    contentDescription = null,
                                     modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
                                 )
                             }
-                        } else { //입력값 없을 땐 검색 아이콘
-                            Image(
-                                painter = painterResource(R.drawable.ic_qna_search),
-                                contentDescription = null,
-                                modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
-                            )
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                //결과 리스트
+                LazyColumn(Modifier.weight(1f)) {
+                    items(results.size) { idx ->
+                        val c = results[idx]
+                        ClubList(
+                            name = c.clubName,
+                            category = c.categoryType.toCategoryDisplayName(),
+                            selected = selectedClub?.clubId == c.clubId,
+                            onClick = { selectedClub = c }
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            //결과 리스트
-            LazyColumn(Modifier.weight(1f)) {
-                items(results.size) { idx ->
-                    val c = results[idx]
-                    ClubList(
-                        name = c.clubName,
-                        category = c.categoryType.toCategoryDisplayName(),
-                        selected = selectedClub?.clubId == c.clubId,
-                        onClick = { selectedClub = c }
-                    )
-                }
+            //하단 선택 버튼 (동아리 선택 시에만 노출)
+            if (selectedClub != null) {
+                Image(
+                    painter = painterResource(R.drawable.btn_select),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(bottom = 20.dp)
+                        .figmaSize(widthPx = 315f, heightPx = 48f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            //이전 화면의 savedStateHandle에 선택한 동아리 이름 저장
+                            navController.previousBackStackEntry?.savedStateHandle?.apply {
+                                set("selectedClubId", selectedClub!!.clubId)
+                                set("selectedClubName", selectedClub!!.clubName)
+                            }
+                            navController.popBackStack()
+                        },
+                    contentScale = ContentScale.Crop
+                )
             }
-        }
-
-        //하단 선택 버튼 (동아리 선택 시에만 노출)
-        if (selectedClub != null) {
-            Image(
-                painter = painterResource(R.drawable.btn_select),
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(bottom = 20.dp)
-                    .figmaSize(widthPx = 315f, heightPx = 48f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        //이전 화면의 savedStateHandle에 선택한 동아리 이름 저장
-                        navController.previousBackStackEntry?.savedStateHandle?.apply {
-                            set("selectedClubId", selectedClub!!.clubId)
-                            set("selectedClubName", selectedClub!!.clubName)
-                        }
-                        navController.popBackStack()
-                    },
-                contentScale = ContentScale.Crop
-            )
         }
     }
 }
@@ -214,7 +223,7 @@ fun ClubList(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
-){
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -223,7 +232,7 @@ fun ClubList(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() },
-    ){
+    ) {
         Text( //동아리명
             text = name,
             fontSize = figmaTextSizeSp(14f),
@@ -231,7 +240,7 @@ fun ClubList(
             fontWeight = FontWeight.Medium,
             lineHeight = 14.sp * 1.5f,
             letterSpacing = (-0.011).em,
-            color = if(selected) Color(0xFFFF5900) else Color.Black
+            color = if (selected) Color(0xFFFF5900) else Color.Black
         )
         Text( //분과
             text = category,
@@ -240,7 +249,7 @@ fun ClubList(
             fontWeight = FontWeight.Medium,
             lineHeight = 10.sp * 1.5f,
             letterSpacing = (-0.011).em,
-            color = if(selected) Color(0xFFFF5900) else Color.Black
+            color = if (selected) Color(0xFFFF5900) else Color.Black
         )
     }
 }

@@ -23,6 +23,12 @@ class NotificationRepository(private val service: NotificationService){
         dto.toDomain()
     }
 
+    suspend fun getUnreadNotifications(page: Int = 0, size: Int = 10): Result<NotificationPage> =
+        getNotifications(page = page, size = size, sort = "createdAt, DESC", isRead = false)
+
+    suspend fun getReadNotifications(page: Int = 0, size: Int = 10): Result<NotificationPage> =
+        getNotifications(page = page, size = size, sort = "createdAt, DESC", isRead = true)
+
     //개별 알림 읽음
     suspend fun markAsRead(notificationId: Long): Result<Unit> =
         runCatching { service.markAsRead(notificationId) }

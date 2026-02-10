@@ -31,7 +31,7 @@ class AuthInterceptor(
         //토큰이 존재하고, 예외 경로가 아닐 경우, 헤더 추가
         val req = if (!token.isNullOrBlank() && !isStudentVerification && !isRegister && !isTerms && !isLogin) {
             original.newBuilder()
-                .addHeader("Authorization", token)
+                .header("Authorization", token)
                 .build()
         } else {
             original

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -52,74 +54,81 @@ fun DeleteAccountScreen(
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Spacer(Modifier.height(24.dp))
+    Scaffold(
+        containerColor = Color.Transparent
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TopBar( //상단바
+                onBackClick = {
+                    scope.launch {
+                        navGuard.run navGuardRun@{
+                            val route =
+                                navController.currentBackStackEntry?.destination?.route.orEmpty()
+                            if (route != "delete") return@navGuardRun
 
-        TopBar( //상단바
-            onBackClick = {
-                scope.launch {
-                    navGuard.run navGuardRun@{
-                        val route = navController.currentBackStackEntry?.destination?.route.orEmpty()
-                        if (route != "delete") return@navGuardRun
-
-                        navController.popBackStack()
+                            navController.popBackStack()
+                        }
                     }
-                }
-            },
-            title = "계정 삭제"
-        )
-
-        Spacer(Modifier.height(43.dp))
-
-        Column(modifier = Modifier.figmaPadding(startPx = 36f)) {
-            Text(
-                text = "계정을 삭제하시겠습니까?",
-                fontSize = figmaTextSizeSp(14f),
-                fontWeight = FontWeight.Bold,
-                fontFamily = NotoSansKR,
-                lineHeight = 14.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color.Black
+                },
+                title = "계정 삭제"
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(43.dp))
 
-            Text( //설명 텍스트
-                text = "계정 삭제 시 활동 내역이 영구 삭제되며 복구가 불가능합니다.\n정말 삭제하시겠습니까?",
-                fontSize = figmaTextSizeSp(11f),
-                fontFamily = NotoSansKR,
-                lineHeight = 11.sp * 1.5f,
-                letterSpacing = (-0.011).em,
-                color = Color(0xFF7D7D7D)
-            )
+            Column(modifier = Modifier.figmaPadding(startPx = 36f)) {
+                Text(
+                    text = "계정을 삭제하시겠습니까?",
+                    fontSize = figmaTextSizeSp(14f),
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = NotoSansKR,
+                    lineHeight = 14.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black
+                )
 
-            Spacer(Modifier.height(44.dp))
+                Spacer(Modifier.height(10.dp))
 
-            //입력 필드
-            InputLabel("비밀번호를 입력해주세요.", isEnabled = isFieldEnabled)
-            UnderlineInputField(
-                modifier = Modifier
-                    .figmaPadding(endPx = 132f)
-                    .clickable { isFieldEnabled = true },
-                value = password,
-                onValueChange = { password = it },
-                enabled = isFieldEnabled
-            )
+                Text( //설명 텍스트
+                    text = "계정 삭제 시 활동 내역이 영구 삭제되며 복구가 불가능합니다.\n정말 삭제하시겠습니까?",
+                    fontSize = figmaTextSizeSp(11f),
+                    fontFamily = NotoSansKR,
+                    lineHeight = 11.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color(0xFF7D7D7D)
+                )
 
-            Spacer(Modifier.height(50.dp))
+                Spacer(Modifier.height(44.dp))
 
-            Image(
-                painter = painterResource(
-                    id = if (password.isNotBlank()) R.drawable.btn_delete_account
-                    else R.drawable.btn_delete_account_disabled
-                ),
-                contentDescription = "계정 삭제 버튼",
-                modifier = Modifier
-                    .figmaSize(widthPx = 157f, heightPx = 30f)
-                    .clickable(enabled = password.isNotBlank()) {
-                        vm.deleteAccount(password)
-                    }
-            )
+                //입력 필드
+                InputLabel("비밀번호를 입력해주세요.", isEnabled = isFieldEnabled)
+                UnderlineInputField(
+                    modifier = Modifier
+                        .figmaPadding(endPx = 132f)
+                        .clickable { isFieldEnabled = true },
+                    value = password,
+                    onValueChange = { password = it },
+                    enabled = isFieldEnabled
+                )
+
+                Spacer(Modifier.height(50.dp))
+
+                Image(
+                    painter = painterResource(
+                        id = if (password.isNotBlank()) R.drawable.btn_delete_account
+                        else R.drawable.btn_delete_account_disabled
+                    ),
+                    contentDescription = "계정 삭제 버튼",
+                    modifier = Modifier
+                        .figmaSize(widthPx = 157f, heightPx = 30f)
+                        .clickable(enabled = password.isNotBlank()) {
+                            vm.deleteAccount(password)
+                        }
+                )
+            }
         }
     }
 }

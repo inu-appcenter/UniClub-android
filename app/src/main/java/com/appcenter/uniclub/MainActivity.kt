@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -34,9 +35,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appcenter.uniclub.di.ServiceLocator
-import com.appcenter.uniclub.ui.theme.UniClubTheme
-import com.appcenter.uniclub.ui.home.HomeScreen
+import com.appcenter.uniclub.ui.SplashScreen
 import com.appcenter.uniclub.ui.components.BottomNavigationBar
+import com.appcenter.uniclub.ui.home.HomeScreen
 import com.appcenter.uniclub.ui.home.clublist.ClubListScreen
 import com.appcenter.uniclub.ui.login.LoginScreen
 import com.appcenter.uniclub.ui.login.LoginViewModel
@@ -51,18 +52,17 @@ import com.appcenter.uniclub.ui.notification.NotificationViewModel
 import com.appcenter.uniclub.ui.notification.NotificationViewModelFactory
 import com.appcenter.uniclub.ui.promotion.AdminPromotionScreen
 import com.appcenter.uniclub.ui.promotion.UserPromotionScreen
+import com.appcenter.uniclub.ui.qna.ClubSelectScreen
 import com.appcenter.uniclub.ui.qna.QnAScreen
+import com.appcenter.uniclub.ui.qna.QuestionEditScreen
+import com.appcenter.uniclub.ui.qna.QuestionScreen
 import com.appcenter.uniclub.ui.search.SearchScreen
 import com.appcenter.uniclub.ui.signup.AgreementScreen
+import com.appcenter.uniclub.ui.signup.NicknameScreen
 import com.appcenter.uniclub.ui.signup.SignUpScreen
 import com.appcenter.uniclub.ui.signup.SignUpViewModel
 import com.appcenter.uniclub.ui.signup.SignUpViewModelFactory
-import androidx.compose.ui.platform.LocalContext
-import com.appcenter.uniclub.ui.SplashScreen
-import com.appcenter.uniclub.ui.qna.ClubSelectScreen
-import com.appcenter.uniclub.ui.qna.QuestionEditScreen
-import com.appcenter.uniclub.ui.qna.QuestionScreen
-import com.appcenter.uniclub.ui.signup.NicknameScreen
+import com.appcenter.uniclub.ui.theme.UniClubTheme
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +71,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
+
     private val notificationVm: NotificationViewModel by viewModels {
         NotificationViewModelFactory(
             ServiceLocator.notificationRepository(application as App)
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("FCM", "MainActivity onCreate reached")
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
@@ -92,15 +94,12 @@ class MainActivity : ComponentActivity() {
             val rootNavController = rememberNavController()
             LogNavChanges("ROOT_NAV", rootNavController)
 
-            // ✅ 핵심: bottomNavController를 여기서 1번만 생성해서 재사용
-            val bottomNavController = rememberNavController()
-            LogNavChanges("BOTTOM_NAV", bottomNavController)
-
             val entry by rootNavController.currentBackStackEntryAsState()
             LaunchedEffect(entry) {
                 Log.d("NAV_TRACE", "route=${entry?.destination?.route}")
             }
 
+            // FCM 토큰 등록(로그인된 경우만)
             LaunchedEffect(Unit) {
                 FirebaseMessaging.getInstance().token
                     .addOnSuccessListener { token ->
@@ -115,6 +114,7 @@ class MainActivity : ComponentActivity() {
                     }
             }
 
+            // 서버 401 등으로 logoutEvent 발생 시 강제 로그인 화면 이동
             LaunchedEffect(Unit) {
                 app.logoutEvent.collect {
                     rootNavController.navigate("login") {
@@ -131,6 +131,7 @@ class MainActivity : ComponentActivity() {
                     composable("splash") { SplashScreen(rootNavController) }
 
                     composable("login") {
+                        // (주의) viewModel()을 쓰는 편이 더 안정적이지만, 우선 기존 구조 유지
                         val vm = remember { LoginViewModel(repo, fcmRepo) }
                         LoginScreen(
                             onLoginSuccess = {
@@ -218,9 +219,12 @@ class MainActivity : ComponentActivity() {
                     ) { entry ->
                         val clubId = entry.arguments?.getLong("clubId")!!
 
+                        val bottomNavController = rememberNavController()
+                        LogNavChanges("BOTTOM_NAV", bottomNavController)
+
                         MainScaffold(
                             rootNavController = rootNavController,
-                            bottomNavController = bottomNavController, // ✅ 주입
+                            bottomNavController = bottomNavController,
                             startDestination = "home",
                             startClubId = clubId,
                             notificationVm = notificationVm,
@@ -228,8 +232,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // (root 그래프에 있던 qna/question 등은 그대로 둬도 됨)
+                    //(root 그래프) qna / question 등
                     composable("qna") { QnAScreen(navController = rootNavController) }
+
                     composable(
                         route = "question/{questionId}",
                         arguments = listOf(navArgument("questionId") { type = NavType.LongType })
@@ -237,6 +242,7 @@ class MainActivity : ComponentActivity() {
                         val questionId = backStackEntry.arguments?.getLong("questionId")!!
                         QuestionScreen(navController = rootNavController, questionId = questionId)
                     }
+
                     composable("questionEdit") {
                         QuestionEditScreen(
                             navController = rootNavController,
@@ -246,6 +252,7 @@ class MainActivity : ComponentActivity() {
                             initialContent = ""
                         )
                     }
+
                     composable(
                         route = "questionEditFull?id={id}&clubId={clubId}&clubName={clubName}&content={content}",
                         arguments = listOf(
@@ -275,7 +282,7 @@ class MainActivity : ComponentActivity() {
 
                     composable("clubSelect") { ClubSelectScreen(navController = rootNavController) }
 
-                    // ✅ profileEdit은 root에 그대로 둠(사용자 요구)
+                    //mypage 관련(root)
                     composable("alarmSetting") {
                         val app2 = rootNavController.context.applicationContext as App
                         val notificationRepo = ServiceLocator.notificationRepository(app2)
@@ -287,9 +294,12 @@ class MainActivity : ComponentActivity() {
                     composable("delete") { DeleteAccountScreen(navController = rootNavController) }
 
                     composable("main") {
+                        val bottomNavController = rememberNavController()
+                        LogNavChanges("BOTTOM_NAV", bottomNavController)
+
                         MainScaffold(
                             rootNavController = rootNavController,
-                            bottomNavController = bottomNavController, // ✅ 주입
+                            bottomNavController = bottomNavController,
                             startDestination = "home",
                             notificationVm = notificationVm
                         )
@@ -303,14 +313,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScaffold(
     rootNavController: NavHostController,
-    bottomNavController: NavHostController, // ✅ 주입받기
+    bottomNavController: NavHostController,
     startDestination: String,
     startClubId: Long? = null,
     onBackToNotification: (() -> Unit)? = null,
     notificationVm: NotificationViewModel
 ) {
-    // ✅ 여기서 rememberNavController() 만들지 않습니다.
-
     val bottomEntry = bottomNavController.currentBackStackEntryAsState().value
     LaunchedEffect(bottomEntry) {
         Log.d("NAV", "bottom route=${bottomEntry?.destination?.route}")
@@ -325,6 +333,7 @@ fun MainScaffold(
                         .padding(innerPadding)
                         .windowInsetsPadding(WindowInsets.navigationBars)
                 ) {
+                    //startClubId로 들어오면 promotion으로 이동
                     LaunchedEffect(startClubId) {
                         if (startClubId != null) {
                             bottomNavController.navigate("promotion/$startClubId") {
@@ -340,16 +349,17 @@ fun MainScaffold(
                         composable("home") {
                             HomeScreen(
                                 bottomNavController = bottomNavController,
-                                rootNavController = rootNavController,
-                                notificationViewModel = notificationVm
+                                rootNavController = rootNavController
                             )
                         }
+
                         composable("mypage") {
                             MypageScreen(
                                 navController = bottomNavController,
                                 rootNavController = rootNavController
                             )
                         }
+
                         composable(
                             "clublist/{categoryName}",
                             arguments = listOf(navArgument("categoryName") {
@@ -360,6 +370,7 @@ fun MainScaffold(
                             val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
                             ClubListScreen(navController = bottomNavController, categoryName = category)
                         }
+
                         composable(
                             "promotion/{clubId}",
                             arguments = listOf(navArgument("clubId") { type = NavType.LongType })
@@ -378,6 +389,7 @@ fun MainScaffold(
                                 app = app
                             )
                         }
+
                         composable(
                             "admin_promotion/{clubId}",
                             arguments = listOf(navArgument("clubId") { type = NavType.LongType })
@@ -390,6 +402,7 @@ fun MainScaffold(
                                 )
                             }
                         }
+
                         composable("search") { SearchScreen(navController = bottomNavController) }
                     }
                 }
