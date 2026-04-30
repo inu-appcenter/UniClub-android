@@ -38,6 +38,8 @@ import com.appcenter.uniclub.util.figmaTextSizeSp
 import kotlinx.coroutines.delay
 import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 
@@ -54,6 +56,8 @@ fun LoginScreen(
 
     //로그인 버튼 활성화 조건 (둘다 비어있지 X)
     val isLoginEnabled = ui.studentId.isNotBlank() && ui.password.isNotBlank() && !ui.loading
+
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         //로고 이미지
@@ -83,7 +87,11 @@ fun LoginScreen(
                     label = "비밀번호",
                     text = ui.password,
                     onTextChange = vm::onPwChange,
-                    isPassword = true
+                    isPassword = true,
+                    showPw = isPasswordVisible,
+                    onPwClick = {
+                        isPasswordVisible = !isPasswordVisible
+                    }
                 )
                 Spacer(modifier = Modifier.height(40.dp))
 
@@ -154,7 +162,9 @@ fun LoginInputField(
     label: String,
     text: String, //현재 입력 값
     onTextChange: (String) -> Unit, //텍스트 변경 콜백
-    isPassword: Boolean = false //비밀번호 true일 경우 점으로 표시
+    isPassword: Boolean = false, //비밀번호 true일 경우 점으로 표시
+    showPw: Boolean = true,
+    onPwClick: () -> Unit = {}
 ) {
     //밑줄 색상 결정: 값이 있으면 검정, 없으면 회색
     val underlineColor = if (text.isNotBlank()) Color.Black else Color(0xFFBFBFBF)
@@ -177,23 +187,46 @@ fun LoginInputField(
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp)
         ) {
-            //텍스트 필드
-            BasicTextField(
-                value = text,
-                onValueChange = onTextChange,
-                singleLine = true,
-                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = figmaTextSizeSp(18f),
-                    fontFamily = NotoSansKR,
-                    lineHeight = 18.sp * 1.5f,
-                    letterSpacing = (-0.011).em,
-                    color = Color.Black
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp) //텍스트와 밑줄 사이 여백
-            )
+            Row {
+                //텍스트 필드
+                BasicTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    singleLine = true,
+                    visualTransformation = if (isPassword && !showPw) {
+                        PasswordVisualTransformation()
+                    } else {
+                        VisualTransformation.None
+                    },
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = figmaTextSizeSp(18f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 18.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color.Black
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(bottom = 4.dp) //텍스트와 밑줄 사이 여백
+                )
+
+                if (isPassword) {
+                    Image(
+                        painter = painterResource(
+                            if (showPw) R.drawable.ic_pw_see
+                            else R.drawable.ic_pw_see_off
+                        ),
+                        contentDescription = "비밀번호 확인",
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(20.dp)
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { onPwClick() }
+                    )
+                }
+            }
 
             //밑줄
             Box(
