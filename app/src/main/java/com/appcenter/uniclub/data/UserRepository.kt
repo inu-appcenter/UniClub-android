@@ -10,7 +10,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
-import retrofit2.Response
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,13 +35,6 @@ class UserRepository(
     suspend fun register(req: RegisterRequestDto): Result<Unit> =
         runCatching {
             val res = service.register(req)
-            if (!res.isSuccessful) throw HttpException(res)
-            Unit
-        }
-
-    suspend fun saveRegisterTerms(req: RegisterTermsRequestDto): Result<Unit> =
-        runCatching {
-            val res = service.saveRegisterTerms(req)
             if (!res.isSuccessful) throw HttpException(res)
             Unit
         }
@@ -122,7 +114,16 @@ class UserRepository(
     }
 
     //계정 삭제
-    suspend fun deleteUser(password: String): Response<Unit> {
-        return service.deleteUser(UserDeleteRequestDto(password))
-    }
+    suspend fun deleteUser(password: String): Result<Unit> =
+        runCatching {
+            val res = service.deleteUser(UserDeleteRequestDto(password))
+
+            when (res.code()) {
+                204 -> {
+                    tokenStore.clear()
+                    Unit
+                }
+                else -> { throw HttpException(res) }
+            }
+        }
 }

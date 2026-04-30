@@ -1,66 +1,70 @@
 package com.appcenter.uniclub.network.dto
 
-//회원가입 요청: POST /api/v1/auth/register
-data class RegisterRequestDto(
-    val studentId: String,
-    val name: String,
-    val major: String,
-    val nickname: String,
-    val personalInfoCollectionAgreement: Boolean,
-    val marketingAdvertisement: Boolean,
-    val studentVerification: Boolean
-)
+import androidx.annotation.Keep
+import com.google.gson.annotations.SerializedName
 
-//개인정보 약관 동의 정보 저장 요청: POST /api/v1/users/terms
-data class RegisterTermsRequestDto(
-    val studentId: String,
-    val personalInfoCollectionAgreement: Boolean,
-    val marketingAdvertisement: Boolean
+//회원가입 요청: POST /api/v1/auth/register
+@Keep
+data class RegisterRequestDto(
+    @field:SerializedName("studentId") val studentId: String,
+    @field:SerializedName("password") val password: String,
+    @field:SerializedName("name") val name: String,
+    @field:SerializedName("major") val major: String,
+    @field:SerializedName("nickname") val nickname: String,
+    @field:SerializedName("personalInfoCollectionAgreement") val personalInfoCollectionAgreement: Boolean,
+    @field:SerializedName("marketingAdvertisement") val marketingAdvertisement: Boolean
 )
 
 //재학생 인증 요청: POST /api/v1/auth/register/student-verification
+@Keep
 data class StudentVerificationRequestDto(
-    val studentId: String,
-    val password: String
+    @field:SerializedName("studentId") val studentId: String,
+    @field:SerializedName("password") val password: String
 )
 
 //재학생 인증 응답
+@Keep
 data class StudentVerificationResponseDto(
-    val verification: Boolean
+    @field:SerializedName("verification") val verification: Boolean
 )
 
 //로그인 요청: POST /api/v1/auth/login
+@Keep
 data class LoginRequestDto(
-    val studentId: String,
-    val password: String
+    @field:SerializedName("studentId") val studentId: String,
+    @field:SerializedName("password") val password: String
 )
 
 //로그인 응답
+@Keep
 data class LoginResponseDto(
-    val userId: Long,
-    val accessToken: String,
-    val tokenType: String,
-    val expiresIn: Long
+    @field:SerializedName("userId") val userId: Long,
+    @field:SerializedName("accessToken") val accessToken: String,
+    @field:SerializedName("tokenType") val tokenType: String,
+    @field:SerializedName("expiresIn") val expiresIn: Long
 )
 
 //내 정보 수정: PATCH /api/v1/users/me
+@Keep
 data class UpdateMeRequestDto(
-    val name: String,
-    val major: String,
-    val nickname: String,
-    val profileImageLink: String? = null
+    @field:SerializedName("name") val name: String,
+    @field:SerializedName("major") val major: String,
+    @field:SerializedName("nickname") val nickname: String,
+    @field:SerializedName("profileImageLink") val profileImageLink: String? = null
 )
 
 //내 정보 조회
+@Keep
 data class MyPageResponseDto(
-    val nickname: String?,
-    val name: String,
-    val studentId: String,
-    val major: String,
-    val profileImageLink: String?
+    @field:SerializedName("nickname") val nickname: String?,
+    @field:SerializedName("name") val name: String,
+    @field:SerializedName("studentId") val studentId: String,
+    @field:SerializedName("major") val major: String,
+    @field:SerializedName("profileImageLink") val profileImageLink: String?
 )
 
 //계정 삭제: DELETE /api/v1/users
+@Keep
 data class UserDeleteRequestDto(
-    val password: String
+    @field:SerializedName("password") val password: String
 )

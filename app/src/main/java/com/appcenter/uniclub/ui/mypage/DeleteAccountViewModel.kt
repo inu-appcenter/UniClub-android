@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.mypage
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -7,7 +8,7 @@ import com.appcenter.uniclub.data.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.Response
+import retrofit2.HttpException
 
 sealed class DeleteAccountUiState {
     object Idle : DeleteAccountUiState()
@@ -23,22 +24,26 @@ class DeleteAccountViewModel(private val repository: UserRepository) : ViewModel
     fun deleteAccount(password: String) {
         viewModelScope.launch {
             _uiState.value = DeleteAccountUiState.Loading
-            try {
-                val response: Response<Unit> = repository.deleteUser(password)
-                if (response.isSuccessful) {
+
+            val result = repository.deleteUser(password)
+
+            result
+                .onSuccess {
                     _uiState.value = DeleteAccountUiState.Success
-                } else {
-                    val errorMsg = when (response.code()) {
+                }
+                .onFailure { e ->
+                    Log.d("DeleteAccount", "deleteUser failed: ${e.message}", e)
+
+                    val code = (e as? HttpException)?.code()
+                    val errorMsg = when (code) {
                         401 -> "비밀번호가 일치하지 않습니다."
                         404 -> "유저를 찾을 수 없습니다."
                         410 -> "이미 삭제된 유저입니다."
-                        else -> "알 수 없는 오류 (${response.code()})"
+                        null -> "네트워크 오류: ${e.message}"
+                        else -> "알 수 없는 오류 ($code)"
                     }
                     _uiState.value = DeleteAccountUiState.Error(errorMsg)
                 }
-            } catch (e: Exception) {
-                _uiState.value = DeleteAccountUiState.Error("네트워크 오류: ${e.message}")
-            }
         }
     }
 }
