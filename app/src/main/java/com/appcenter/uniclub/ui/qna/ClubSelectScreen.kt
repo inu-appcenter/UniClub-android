@@ -195,7 +195,6 @@ fun ClubSelectScreen(navController: NavHostController) {
                     contentDescription = null,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .windowInsetsPadding(WindowInsets.navigationBars)
                         .padding(bottom = 20.dp)
                         .figmaSize(widthPx = 315f, heightPx = 48f)
                         .clickable(

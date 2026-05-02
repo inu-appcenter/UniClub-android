@@ -65,4 +65,10 @@ interface QnAService {
     suspend fun deleteAnswer(
         @Path("answerId") answerId: Long
     ): Unit
+
+    //질문/답변 신고
+    @POST("/api/v1/qna/reports")
+    suspend fun createReport(
+        @Body body: ReportCreateRequestDto
+    ): Unit
 }

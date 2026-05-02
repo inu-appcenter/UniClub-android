@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.QnARepository
 import com.appcenter.uniclub.network.dto.QuestionResponseDto
+import com.appcenter.uniclub.network.dto.ReportTargetType
 import com.appcenter.uniclub.network.dto.SearchQuestionResponseDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,6 +60,25 @@ class QnaListViewModel(private val repo: QnARepository) : ViewModel() {
                 }
                 .onFailure { e ->
                     _ui.update { it.copy(error = e) }
+                }
+        }
+    }
+
+    fun reportQuestion(questionId: Long, reason: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _ui.update { it.copy(loading = true, error = null) }
+
+            repo.createReport(
+                targetType = ReportTargetType.QUESTION,
+                targetId = questionId,
+                reason = reason
+            )
+                .onSuccess {
+                    _ui.update { it.copy(loading = false) }
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _ui.update { it.copy(loading = false, error = e) }
                 }
         }
     }
@@ -140,7 +160,7 @@ class QuestionDetailViewModel(private val repo: QnARepository) : ViewModel() {
         }
     }
 
-    /** 특정 answerId 를 로컬 상태에서 deleted=true, content="" 로 변경 */
+    //특정 answerId 를 로컬 상태에서 deleted=true, content="" 로 변경
     private fun setAnswerDeletedLocally(answerId: Long) {
         val current = _ui.value.data ?: return
         val updated = current.answers.map { ans ->
@@ -150,10 +170,28 @@ class QuestionDetailViewModel(private val repo: QnARepository) : ViewModel() {
         _ui.update { it.copy(data = current.copy(answers = updated)) }
     }
 
-    /** 질문의 answered 플래그를 로컬에서 토글 */
+    //질문의 answered 플래그를 로컬에서 토글
     private fun toggleAnsweredLocally() {
         val current = _ui.value.data ?: return
         _ui.update { it.copy(data = current.copy(answered = !current.answered)) }
+    }
+
+    fun reportAnswer(answerId: Long, reason: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _ui.update { it.copy(error = null) }
+
+            repo.createReport(
+                targetType = ReportTargetType.ANSWER,
+                targetId = answerId,
+                reason = reason
+            )
+                .onSuccess {
+                    onSuccess()
+                }
+                .onFailure { e ->
+                    _ui.update { it.copy(error = e) }
+                }
+        }
     }
 }
 
@@ -188,10 +226,10 @@ class QuestionEditViewModel(private val repo: QnARepository) : ViewModel() {
         }
     }
 
-    fun update(questionId: Long, content: String, anonymous: Boolean) {
+    fun update(questionId: Long, content: String) {
         viewModelScope.launch {
             _ui.update { it.copy(submitting = true, error = null, success = false) }
-            repo.updateQuestion(questionId, content, anonymous)
+            repo.updateQuestion(questionId, content)
                 .onSuccess { _ui.update { it.copy(submitting = false, success = true) } }
                 .onFailure { e -> _ui.update { it.copy(submitting = false, success = true) } }
         }

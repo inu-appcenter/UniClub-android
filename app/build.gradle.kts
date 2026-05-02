@@ -16,14 +16,16 @@ android {
         applicationId = "com.appcenter.uniclub"
         minSdk = 25
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.1.0"
+        versionCode = 11
+        versionName = "1.2.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

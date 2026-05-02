@@ -32,12 +32,12 @@ class QnARepository(private val api: QnAService) {
         runCatching { api.deleteQuestion(questionId) }
 
     suspend fun updateQuestion(
-        questionId: Long, content: String, anonymous: Boolean
+        questionId: Long, content: String
     ): Result<Unit> =
         runCatching {
             api.updateQuestion(
                 questionId = questionId,
-                body = QuestionUpdateRequestDto(content, anonymous)
+                body = QuestionUpdateRequestDto(content)
             )
         }
 
@@ -58,4 +58,19 @@ class QnARepository(private val api: QnAService) {
 
     suspend fun deleteAnswer(answerId: Long): Result<Unit> =
         runCatching { api.deleteAnswer(answerId) }
+
+    suspend fun createReport(
+        targetType: String,
+        targetId: Long,
+        reason: String?
+    ): Result<Unit> =
+        runCatching {
+            api.createReport(
+                ReportCreateRequestDto(
+                    targetType = targetType,
+                    targetId = targetId,
+                    reason = reason?.takeIf { it.isNotBlank() }
+                )
+            )
+        }
 }
