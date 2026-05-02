@@ -90,6 +90,8 @@ fun QnAScreen(navController: NavHostController) {
     var showDeleteDialog by remember { mutableStateOf(false) } //삭제,신고 다이얼로그
     var showReportDialog by remember { mutableStateOf(false) }
 
+    var reportReason by remember { mutableStateOf("") }
+
     //선택된 동아리
     var selectedClubName by remember { mutableStateOf("") }
     var selectedClubId by remember { mutableStateOf<Long?>(null) }
@@ -124,194 +126,189 @@ fun QnAScreen(navController: NavHostController) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .imePadding()
             ) {
 
-                item { //상단바
-                    TopBar(
-                        onBackClick = {
-                            scope.launch {
-                                navGuard.run { navController.popBackStack() }
-                            }
-                        },
-                        title = "질의응답"
-                    )
-                }
+                TopBar( //상단바
+                    onBackClick = {
+                        scope.launch {
+                            navGuard.run { navController.popBackStack() }
+                        }
+                    },
+                    title = "질의응답"
+                )
 
-                item {
-                    Spacer(modifier = Modifier.height(26.dp))
-                    Row( //검색바 영역
-                        verticalAlignment = Alignment.CenterVertically,
+                Spacer(modifier = Modifier.height(26.dp))
+                Row( //검색바 영역
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .figmaPadding(startPx = 29f, endPx = 29f)
+                ) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .figmaPadding(startPx = 29f, endPx = 29f)
+                            .figmaSize(widthPx = 303f, heightPx = 35f)
+                            .clip(RoundedCornerShape(13.dp))
                     ) {
-                        Box(
+                        Image(
+                            painter = painterResource(R.drawable.bg_qna_search),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        Row( //내부 컨텐츠
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .figmaSize(widthPx = 303f, heightPx = 35f)
-                                .clip(RoundedCornerShape(13.dp))
+                                .figmaPadding(startPx = 16f, topPx = 8f, endPx = 13f, bottomPx = 8f)
+                                .fillMaxWidth()
                         ) {
                             Image(
-                                painter = painterResource(R.drawable.bg_qna_search),
+                                painter = painterResource(R.drawable.ic_qna_search),
                                 contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
                             )
-
-                            Row( //내부 컨텐츠
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .figmaPadding(startPx = 16f, topPx = 8f, endPx = 13f, bottomPx = 8f)
-                                    .fillMaxWidth()
-                            ) {
-                                Image(
-                                    painter = painterResource(R.drawable.ic_qna_search),
-                                    contentDescription = null,
-                                    modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
-                                )
-                                Spacer(modifier = Modifier.width(9.dp))
-                                BasicTextField( //검색 입력 텍스트필드
-                                    value = query,
-                                    onValueChange = { query = it },
-                                    singleLine = true,
-                                    modifier = Modifier.weight(1f),
-                                    textStyle = TextStyle(
-                                        color = Color.Black,
-                                        fontSize = figmaTextSizeSp(12f),
-                                        fontFamily = NotoSansKR,
-                                        lineHeight = 12.sp * 1.5f,
-                                        letterSpacing = (-0.011).em
-                                    ),
-                                    decorationBox = { innerTextField ->
-                                        if (query.isEmpty()) { //플레이스홀더 렌더
-                                            Text(
-                                                text = "질문을 검색해보세요.",
-                                                fontSize = figmaTextSizeSp(12f),
-                                                fontFamily = NotoSansKR,
-                                                lineHeight = 12.sp * 1.5f,
-                                                letterSpacing = (-0.011).em,
-                                                color = Color(0xFF595959)
-                                            )
-                                        }
-                                        innerTextField() //실제 입력 텍스트 표시
-                                    }
-                                )
-
-                                //입력값 있을 때만 우측 지우기 버튼 표시
-                                if (query.isNotEmpty()) {
-                                    IconButton(
-                                        onClick = { query = "" },
-                                        modifier = Modifier.size(18.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_close),
-                                            contentDescription = "검색어 지우기",
-                                            tint = Color.Black,
-                                            modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
+                            Spacer(modifier = Modifier.width(9.dp))
+                            BasicTextField( //검색 입력 텍스트필드
+                                value = query,
+                                onValueChange = { query = it },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                textStyle = TextStyle(
+                                    color = Color.Black,
+                                    fontSize = figmaTextSizeSp(12f),
+                                    fontFamily = NotoSansKR,
+                                    lineHeight = 12.sp * 1.5f,
+                                    letterSpacing = (-0.011).em
+                                ),
+                                decorationBox = { innerTextField ->
+                                    if (query.isEmpty()) { //플레이스홀더 렌더
+                                        Text(
+                                            text = "질문을 검색해보세요.",
+                                            fontSize = figmaTextSizeSp(12f),
+                                            fontFamily = NotoSansKR,
+                                            lineHeight = 12.sp * 1.5f,
+                                            letterSpacing = (-0.011).em,
+                                            color = Color(0xFF595959)
                                         )
                                     }
+                                    innerTextField() //실제 입력 텍스트 표시
+                                }
+                            )
+
+                            //입력값 있을 때만 우측 지우기 버튼 표시
+                            if (query.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { query = "" },
+                                    modifier = Modifier.size(18.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_close),
+                                        contentDescription = "검색어 지우기",
+                                        tint = Color.Black,
+                                        modifier = Modifier.figmaSize(widthPx = 12f, heightPx = 12f)
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(33.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .figmaPadding(startPx = 30f, endPx = 30f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        //동아리 선택 버튼
-                        ClubSelectButton(
-                            navController = navController,
-                            selectedValue = selectedClubName
-                        )
-
-                        Row { //필터 토글
-                            Box( //답변 완료만
-                                modifier = Modifier
-                                    .figmaSize(widthPx = 68f, heightPx = 17f)
-                                    .offset(y = 5.dp)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { answered = !answered }
-                            ) {
-                                Image(
-                                    painter = painterResource(
-                                        if (answered) R.drawable.btn_only_answered
-                                        else R.drawable.btn_only_answered_disabled
-                                    ),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Box( //내 질문만
-                                modifier = Modifier
-                                    .figmaSize(widthPx = 59f, heightPx = 17f)
-                                    .offset(y = 5.dp)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { my = !my }
-                            ) {
-                                Image(
-                                    painter = painterResource(
-                                        if (my) R.drawable.btn_my else R.drawable.btn_my_disabled
-                                    ),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item { Spacer(modifier = Modifier.height(13.dp)) }
-
-                //질문 리스트
-                items(ui.items, key = { it.questionId }) { q ->
-                    val item = QnaListItem(
-                        id = q.questionId,
-                        authorName = q.nickname,
-                        authorProfileUrl = q.profile,
-                        clubName = q.clubName,
-                        createdAt = q.updatedAt,
-                        question = q.content,
-                        hasAnswer = q.countAnswer > 0,
-                        answerCount = q.countAnswer.toInt(),
-                        isMine = q.owner
+                Spacer(modifier = Modifier.height(33.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .figmaPadding(startPx = 30f, endPx = 30f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    //동아리 선택 버튼
+                    ClubSelectButton(
+                        navController = navController,
+                        selectedValue = selectedClubName
                     )
-                    val onMenuClick: (Boolean, Long) -> Unit = { isMine, id ->
-                        activeMenuForMine = isMine
-                        selectedQuestionId = id
-                    }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                            .figmaPadding(startPx = 26f, endPx = 26f, bottomPx = 13f)
-                    ) {
-                        if (item.hasAnswer && item.answerCount > 0) {
-                            QnaCardAnswered(item, onMenuClick, navController)
-                        } else {
-                            QnaCardNoAnswer(item, onMenuClick, navController)
+                    Row { //필터 토글
+                        Box( //답변 완료만
+                            modifier = Modifier
+                                .figmaSize(widthPx = 68f, heightPx = 17f)
+                                .offset(y = 5.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { answered = !answered }
+                        ) {
+                            Image(
+                                painter = painterResource(
+                                    if (answered) R.drawable.btn_only_answered
+                                    else R.drawable.btn_only_answered_disabled
+                                ),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Box( //내 질문만
+                            modifier = Modifier
+                                .figmaSize(widthPx = 59f, heightPx = 17f)
+                                .offset(y = 5.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { my = !my }
+                        ) {
+                            Image(
+                                painter = painterResource(
+                                    if (my) R.drawable.btn_my else R.drawable.btn_my_disabled
+                                ),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                     }
                 }
 
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+                Spacer(modifier = Modifier.height(13.dp))
+
+                LazyColumn {
+                    //질문 리스트
+                    items(ui.items, key = { it.questionId }) { q ->
+                        val item = QnaListItem(
+                            id = q.questionId,
+                            authorName = q.nickname,
+                            authorProfileUrl = q.profile,
+                            clubName = q.clubName,
+                            createdAt = q.updatedAt,
+                            question = q.content,
+                            hasAnswer = q.countAnswer > 0,
+                            answerCount = q.countAnswer.toInt(),
+                            isMine = q.owner
+                        )
+                        val onMenuClick: (Boolean, Long) -> Unit = { isMine, id ->
+                            activeMenuForMine = isMine
+                            selectedQuestionId = id
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                .figmaPadding(startPx = 26f, endPx = 26f, bottomPx = 13f)
+                        ) {
+                            if (item.hasAnswer && item.answerCount > 0) {
+                                QnaCardAnswered(item, onMenuClick, navController)
+                            } else {
+                                QnaCardNoAnswer(item, onMenuClick, navController)
+                            }
+                        }
+                    }
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
             }
 
             //질문하기 버튼도 연타 방지
@@ -454,12 +451,22 @@ fun QnAScreen(navController: NavHostController) {
             )
         }
         if (showReportDialog) { //신고 다이얼로그
-            Dialog(
+            ReportDialog(
                 title = "이 질문을 신고하시겠습니까?",
-                onDismiss = { showReportDialog = false },
-                onConfirm = {
+                reason = reportReason,
+                onReasonChange = { reportReason = it },
+                onDismiss = {
                     showReportDialog = false
-                    // TODO: 신고 동작
+                    reportReason = ""
+                },
+                onConfirm = { reason ->
+                    val questionId = selectedQuestionId ?: return@ReportDialog
+
+                    vm.reportQuestion(questionId, reason) {
+                        showReportDialog = false
+                        reportReason = ""
+                        activeMenuForMine = null
+                    }
                 }
             )
         }

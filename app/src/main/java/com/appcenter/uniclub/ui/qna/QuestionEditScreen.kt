@@ -1,6 +1,7 @@
 package com.appcenter.uniclub.ui.qna
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -65,6 +66,8 @@ fun QuestionEditScreen(
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
+    val isEditMode = questionId != 0L
+
     var selectedClubId by remember { mutableStateOf(initialClubId) } //선택된 동아리아이디
     var selectedClubName by remember { mutableStateOf(initialClubName) } //선택된 동아리명
     var body by remember { mutableStateOf(initialContent) } //질문 본문
@@ -101,7 +104,7 @@ fun QuestionEditScreen(
                             navGuard.run { navController.popBackStack() }
                         }
                     },
-                    title = if (questionId == 0L) "질문하기" else "질문 수정"
+                    title = if (!isEditMode) "질문하기" else "질문 수정"
                 )
 
                 Box( //동아리 선택바
@@ -142,7 +145,7 @@ fun QuestionEditScreen(
                                 .fillMaxWidth()
                         ) {
                             Text(
-                                text = if (questionId == 0L)
+                                text = if (!isEditMode)
                                     "질문할 동아리를 검색하세요."
                                 else
                                     "동아리 변경이 불가능합니다",
@@ -218,51 +221,75 @@ fun QuestionEditScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .figmaPadding(bottomPx = 20f)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .imePadding(),
-                //가운데 정렬 + 두 버튼 사이 11
+                    .figmaPadding(bottomPx = 20f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(
-                    11.dp,
-                    Alignment.CenterHorizontally
-                )
+                horizontalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(
-                        if (isAnonymous)
-                            R.drawable.btn_anonymous
-                        else
-                            R.drawable.btn_anonymous_disabled
-                    ),
-                    contentDescription = "익명버튼",
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { isAnonymous = !isAnonymous }
-                )
-
-                Image(
-                    painter = painterResource(R.drawable.btn_qna_submit),
-                    contentDescription = "질문 등록 버튼",
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
+                if (!isEditMode) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(11.dp)
                     ) {
-                        //등록/수정 연타 방지
-                        scope.launch {
-                            navGuard.run {
-                                val trimmed = body.trim()
-                                if (questionId == 0L) { //신규 등록
-                                    val cid = selectedClubId ?: return@run
-                                    vm.create(cid, trimmed, isAnonymous)
-                                } else { //수정
-                                    vm.update(questionId, trimmed, isAnonymous)
+                        Image(
+                            painter = painterResource(
+                                if (isAnonymous)
+                                    R.drawable.btn_anonymous
+                                else
+                                    R.drawable.btn_anonymous_disabled
+                            ),
+                            contentDescription = "익명버튼",
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { isAnonymous = !isAnonymous }
+                        )
+
+                        Image(
+                            painter = painterResource(R.drawable.btn_qna_submit),
+                            contentDescription = "질문 등록 버튼",
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                //등록/수정 연타 방지
+                                scope.launch {
+                                    navGuard.run {
+                                        val trimmed = body.trim()
+                                        val cid = selectedClubId ?: return@run
+                                        vm.create(cid, trimmed, isAnonymous)
+                                    }
                                 }
                             }
-                        }
+                        )
                     }
-                )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .figmaSize(widthPx = 307f, heightPx = 48f)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color(0xFF2B2B2B))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                scope.launch {
+                                    navGuard.run {
+                                        val trimmed = body.trim()
+                                        vm.update(questionId, trimmed)
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "등록하기",
+                            color = Color.White,
+                            fontFamily = NotoSansKR,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = figmaTextSizeSp(14f)
+                        )
+                    }
+                }
             }
 
             //성공 시 뒤로가기

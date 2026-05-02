@@ -1,13 +1,21 @@
 package com.appcenter.uniclub.ui.mypage
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -48,14 +56,28 @@ fun DeleteAccountScreen(
     var password by remember { mutableStateOf("") } //사용자가 입력한 비밀번호 상태
     var isFieldEnabled by remember { mutableStateOf(false) } //입력 필드 활성화 여부
 
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
     val uiState by vm.uiState.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     //뒤로가기 연타/잔상 클릭 방지용
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 800L) }
 
+    LaunchedEffect(uiState) {
+        if (uiState is DeleteAccountUiState.Success) {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     Scaffold(
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -111,11 +133,14 @@ fun DeleteAccountScreen(
                         .clickable { isFieldEnabled = true },
                     value = password,
                     onValueChange = { password = it },
-                    enabled = isFieldEnabled
+                    enabled = isFieldEnabled,
+                    isPassword = true
                 )
 
                 Spacer(Modifier.height(50.dp))
 
+                val isLoading = uiState is DeleteAccountUiState.Loading
+                val canClick = password.isNotBlank() && !isLoading
                 Image(
                     painter = painterResource(
                         id = if (password.isNotBlank()) R.drawable.btn_delete_account
@@ -124,10 +149,24 @@ fun DeleteAccountScreen(
                     contentDescription = "계정 삭제 버튼",
                     modifier = Modifier
                         .figmaSize(widthPx = 157f, heightPx = 30f)
-                        .clickable(enabled = password.isNotBlank()) {
+                        .clickable(
+                            enabled = canClick,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            Log.d(
+                                "DeleteAccount",
+                                "Delete button clicked. pwLen=${password.length}, enabled=$canClick"
+                            )
                             vm.deleteAccount(password)
                         }
                 )
+            }
+        }
+        //로딩 표시(사용자가 “반응 없음”이라고 느끼는 걸 방지)
+        if (uiState is DeleteAccountUiState.Loading) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                CircularProgressIndicator()
             }
         }
     }

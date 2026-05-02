@@ -109,7 +109,7 @@ private fun QnaBaseCard(
                 fontWeight = FontWeight.Medium, lineHeight = 11.sp * 1.5f, letterSpacing = (-0.011).em
             )
             Text( //작성일시
-                text = TimeUtils.toFormattedTime(date), fontFamily = NotoSansKR, fontSize = figmaTextSizeSp(9f),
+                text = TimeUtils.toFormattedTime(date), fontFamily = NotoSansKR, fontSize = figmaTextSizeSp(11f),
                 lineHeight = 9.sp * 1.5f, letterSpacing = (-0.011).em, color = Color(0xFF7D7D7D)
             )
         }

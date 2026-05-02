@@ -1,20 +1,31 @@
 package com.appcenter.uniclub.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.appcenter.uniclub.R
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaTextSizeSp
@@ -45,25 +56,49 @@ fun UnderlineInputField(
 ) {
     //밑줄 색상: 활성/비활성 구분
     val underlineColor = if (enabled) Color.Black else Color(0xFFBFBFBF) //비활성화 시 회색
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        //실제 입력 영역
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            enabled = enabled,
-            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                fontSize = 15.sp,
-                fontFamily = NotoSansKR,
-                lineHeight = 15.sp * 1.5f,
-                color = if (enabled) Color.Black else Color.Gray
-            ),
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-            modifier = Modifier
-                .fillMaxWidth()
-                .figmaPadding(bottomPx = 4f)
-        )
+        Row {
+            //실제 입력 영역
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                enabled = enabled,
+                textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                    fontSize = 15.sp,
+                    fontFamily = NotoSansKR,
+                    lineHeight = 15.sp * 1.5f,
+                    color = if (enabled) Color.Black else Color.Gray
+                ),
+                visualTransformation =
+                    if (isPassword && !isPasswordVisible) PasswordVisualTransformation()
+                    else VisualTransformation.None,
+                modifier = Modifier
+                    .weight(1f)
+                    .figmaPadding(bottomPx = 4f)
+            )
+
+            if (isPassword) {
+                Image(
+                    painter = painterResource(
+                        if (isPasswordVisible) R.drawable.ic_pw_see
+                        else R.drawable.ic_pw_see_off
+                    ),
+                    contentDescription = "비밀번호 보기",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            isPasswordVisible = !isPasswordVisible
+                        }
+                )
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()

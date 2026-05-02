@@ -1,9 +1,11 @@
 package com.appcenter.uniclub.ui.qna
 
+import android.view.WindowManager
 import retrofit2.HttpException
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,7 +13,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -52,6 +57,7 @@ import com.appcenter.uniclub.R
 import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.network.dto.AnswerResponseDto
 import com.appcenter.uniclub.ui.components.Dialog
+import com.appcenter.uniclub.ui.components.SetSoftInputMode
 import com.appcenter.uniclub.ui.components.TopBar
 import com.appcenter.uniclub.ui.theme.NotoSansKR
 import com.appcenter.uniclub.util.NavGuard
@@ -61,6 +67,7 @@ import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -114,11 +121,14 @@ private fun rememberImeExtraLiftPx(extraLiftWhenImeDp: Dp = EXTRA_LIFT_DP): Floa
 }
 
 //화면
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun QuestionScreen(
     navController: NavHostController,
     questionId: Long
 ) {
+    SetSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+
     val app = LocalContext.current.applicationContext as App
     val vm: QuestionDetailViewModel = viewModel(
         factory = QuestionDetailViewModelFactory(ServiceLocator.qnaRepository(app))
@@ -151,6 +161,12 @@ fun QuestionScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var deletedIds by remember { mutableStateOf(setOf<Long>()) } //삭제 표시용
+    val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val imeBottomDp = with(density) {
+        WindowInsets.ime.getBottom(this).toDp()
+    }
+    val isImeVisible = imeBottomDp > 0.dp
 
     //답글 모드
     var replyParentId by remember { mutableStateOf<Long?>(null) }
@@ -160,6 +176,8 @@ fun QuestionScreen(
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val inputFocusRequester = remember { FocusRequester() }
+
+    var reportReason by remember { mutableStateOf("") }
 
     Scaffold(
         containerColor = Color.Transparent
@@ -205,6 +223,7 @@ fun QuestionScreen(
 
             //본문 리스트 (IME 무시)
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
@@ -218,6 +237,9 @@ fun QuestionScreen(
                         })
                     }
                     .figmaPadding(topPx = 40f),
+                contentPadding = PaddingValues(
+                    bottom = if (isImeVisible) imeBottomDp + 130.dp else 90.dp
+                )
             ) {
 
                 val q = ui.data
@@ -255,7 +277,7 @@ fun QuestionScreen(
                                 )
                                 Text(
                                     text = TimeUtils.toFormattedTime(q.updatedAt),
-                                    fontSize = figmaTextSizeSp(8f),
+                                    fontSize = figmaTextSizeSp(12f),
                                     fontFamily = NotoSansKR,
                                     lineHeight = 8.sp * 1.5f,
                                     letterSpacing = (-0.011).em,
@@ -318,7 +340,7 @@ fun QuestionScreen(
                     val parents = q.answers.filter { it.parentAnswerId == null }
                     val childrenMap = q.answers.filter { it.parentAnswerId != null }.groupBy { it.parentAnswerId!! }
 
-                    items(parents, key = { it.answerId }) { parent ->
+                    itemsIndexed(parents, key = { _, item -> item.answerId }) { parentIndex, parent ->
                         val parentIsDeleted = parent.deleted || deletedIds.contains(parent.answerId)
 
                         Column(
@@ -341,8 +363,17 @@ fun QuestionScreen(
                                 onReplyClick = {
                                     replyParentId = parent.answerId
                                     replyTargetName = parent.nickname
+
                                     inputFocusRequester.requestFocus()
                                     keyboard?.show()
+
+                                    scope.launch {
+                                        delay(300)
+                                        listState.animateScrollToItem(
+                                            index = parentIndex + 2,
+                                            scrollOffset = -450
+                                        )
+                                    }
                                 }
                             )
 
@@ -355,12 +386,6 @@ fun QuestionScreen(
                                         selectedAnswerId = child.answerId
                                         selectedAnswerMine = mine
                                         showAction = true
-                                    },
-                                    onReplyClick = {
-                                        replyParentId = parent.answerId
-                                        replyTargetName = parent.nickname
-                                        inputFocusRequester.requestFocus()
-                                        keyboard?.show()
                                     }
                                 )
                             }
@@ -451,10 +476,22 @@ fun QuestionScreen(
                 )
             }
             if (showReportDialog) {
-                Dialog(
-                    title = "이 댓글을 신고하시겠습니까?",
-                    onDismiss = { showReportDialog = false },
-                    onConfirm = { showReportDialog = false }
+                ReportDialog(
+                    title = "이 답변을 신고하시겠습니까?",
+                    reason = reportReason,
+                    onReasonChange = { reportReason = it },
+                    onDismiss = {
+                        showReportDialog = false
+                        reportReason = ""
+                    },
+                    onConfirm = { reason ->
+                        val answerId = selectedAnswerId ?: return@ReportDialog
+
+                        vm.reportAnswer(answerId, reason) {
+                            showReportDialog = false
+                            reportReason = ""
+                        }
+                    }
                 )
             }
         }
@@ -489,8 +526,7 @@ private fun AnswerParentItem(
 private fun AnswerChildItem(
     ans: AnswerResponseDto,
     answered: Boolean,
-    onMore: (mine: Boolean) -> Unit,
-    onReplyClick: () -> Unit
+    onMore: (mine: Boolean) -> Unit
 ) {
     ReplyCardBox(
         name = ans.nickname,
@@ -500,8 +536,7 @@ private fun AnswerChildItem(
         isPresident = ans.president,
         answered = answered,
         mine = ans.owner,
-        onMoreClick = { onMore(ans.owner) },
-        onReplyClick = onReplyClick
+        onMoreClick = { onMore(ans.owner) }
     )
 }
 
@@ -642,7 +677,7 @@ fun CommentCardBox(
                             letterSpacing = (-0.011).em,
                             color = Color(0xFFA9A9A9),
                             modifier = Modifier
-                                .offset(x = (-5).dp, y = (-5).dp)
+                                .offset(x = (-5).dp, y = (-1).dp)
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
@@ -671,8 +706,7 @@ fun ReplyCardBox(
     cornerRadius: Dp = 20.dp,
     shadowElevation: Dp = 8.dp,
     shadowColor: Color = Color(0x1A000000),
-    onMoreClick: () -> Unit = {},
-    onReplyClick: () -> Unit = {}
+    onMoreClick: () -> Unit = {}
 ) {
     val fixedPadding = PaddingValues(start = 20.dp, top = 11.dp, end = 13.dp, bottom = 7.dp)
 
@@ -781,23 +815,6 @@ fun ReplyCardBox(
                         lineHeight = 11.sp * 1.5f,
                         letterSpacing = (-0.011).em
                     )
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Spacer(Modifier.weight(1f))
-                        Text(
-                            text = "답글쓰기",
-                            fontFamily = NotoSansKR,
-                            fontSize = figmaTextSizeSp(9f),
-                            lineHeight = 9.sp * 1.5f,
-                            letterSpacing = (-0.011).em,
-                            color = Color(0xFFA9A9A9),
-                            modifier = Modifier
-                                .offset(x = (-5).dp, y = (-5).dp)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) { onReplyClick() }
-                        )
-                    }
                 }
             }
         }
@@ -825,21 +842,24 @@ fun CommentInputBar(
     val gap = 8.dp
     val innerHPadding = FIELD_INNER_H
     val sendTap = SEND_TAP
+    val maxBarHeight = 110.dp
 
-    //IME가 열릴 때만 적용되는 추가 리프트
-    val extraLiftPx = rememberImeExtraLiftPx(EXTRA_LIFT_DP)
+    val density = LocalDensity.current
+    val imeBottom = WindowInsets.ime.getBottom(density)
+    val isImeVisible = imeBottom > 0
+    val actualBottomPadding = if (isImeVisible) 0.dp else paddingBottom
 
     Box(
         modifier = modifier
-            .graphicsLayer { translationY = -extraLiftPx } //키보드 열릴 때 더 올리기
-            .padding(start = paddingStart, end = paddingEnd, bottom = paddingBottom)
-            .height(BAR_HEIGHT),
+            .imePadding()
+            .padding(start = paddingStart, end = paddingEnd, bottom = actualBottomPadding)
+            .heightIn(min = BAR_HEIGHT, max = maxBarHeight),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(BAR_HEIGHT),
+                .heightIn(min = BAR_HEIGHT, max = maxBarHeight),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image( //익명 버튼
@@ -862,20 +882,20 @@ fun CommentInputBar(
             Box( //댓글 필드
                 modifier = Modifier
                     .weight(1f)
-                    .height(BAR_HEIGHT),
+                    .heightIn(min = BAR_HEIGHT, max = maxBarHeight),
                 contentAlignment = Alignment.CenterStart
             ) {
-                Image(
-                    painter = painterResource(R.drawable.bg_comment_input),
-                    contentDescription = "입력 배경",
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier.matchParentSize()
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(shape = RoundedCornerShape(18.dp))
+                        .background(Color(0xFF2B2B2B))
                 )
 
                 BasicTextField(
                     value = text,
                     onValueChange = { text = it },
-                    singleLine = true,
+                    singleLine = false,
                     textStyle = TextStyle(
                         color = Color.White,
                         fontSize = figmaTextSizeSp(11f),

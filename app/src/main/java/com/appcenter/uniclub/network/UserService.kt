@@ -3,8 +3,8 @@ package com.appcenter.uniclub.network
 import com.appcenter.uniclub.network.dto.*
 import retrofit2.Response
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 
@@ -21,12 +21,6 @@ interface UserService {
     suspend fun studentVerification(
         @Body body: StudentVerificationRequestDto
     ): Response<StudentVerificationResponseDto>
-
-    // 개인정보 약관 동의 정보 저장
-    @POST("api/v1/users/terms")
-    suspend fun saveRegisterTerms(
-        @Body body: RegisterTermsRequestDto
-    ): Response<Unit>
 
     // 로그인
     @POST("api/v1/auth/login")
@@ -50,7 +44,7 @@ interface UserService {
     suspend fun getMyPage(): MyPageResponseDto
 
     //계정 삭제
-    @DELETE("api/v1/users")
+    @HTTP(method = "DELETE", path = "/api/v1/users", hasBody = true)
     suspend fun deleteUser(
         @Body request: UserDeleteRequestDto
     ): Response<Unit>
