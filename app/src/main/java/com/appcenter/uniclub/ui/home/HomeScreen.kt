@@ -108,12 +108,12 @@ fun HomeScreen(
 
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            ClubCardCarousel(navController = bottomNavController, vm = clubVm)
+            ClubCardCarousel(navController = rootNavController, vm = clubVm)
         }
 
         item {
-            CategorySection(navController = bottomNavController) { category ->
-                bottomNavController.navigate("clublist/$category")
+            CategorySection(navController = rootNavController) { category ->
+                rootNavController.navigate("clublist/$category")
             }
         }
 

@@ -8,6 +8,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -109,6 +110,7 @@ fun AdminPromotionScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState) //스크롤
                 .zIndex(0f)
+                .padding(top = 43.dp)
         ) {
             //배너 + 상단바 + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {
@@ -235,9 +237,11 @@ fun AdminPromotionScreen(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text( //동아리명
-                        text = ui.clubName.ifBlank { "동아리명" },
+                        text = ui.clubName,
                         color = Color.White,
-                        modifier = Modifier.padding(start = 12.dp),
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .basicMarquee(),
                         fontSize = figmaTextSizeSp(14f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
