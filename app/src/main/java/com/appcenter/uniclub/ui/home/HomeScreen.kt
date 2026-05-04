@@ -95,7 +95,7 @@ fun HomeScreen(
                 EventImageCarousel(eventList = remoteBanner.map { it.mediaLink })
             } else { //서버에서 이미지가 없을 때 → 로컬 기본 이미지 사용
                 val localList: List<Int> =
-                    if (bannerList.isNotEmpty()) bannerList else listOf(R.drawable.event_default)
+                    if (bannerList.isNotEmpty()) bannerList else listOf(R.drawable.bg_event_default)
                 EventImageCarousel(
                     eventList = localList
                 )
