@@ -94,10 +94,9 @@ fun ClubListScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item { Spacer(Modifier.height(43.dp)) }
 
             item { //상단바
                 TopBar(

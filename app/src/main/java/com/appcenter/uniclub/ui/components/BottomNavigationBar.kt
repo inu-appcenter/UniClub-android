@@ -26,18 +26,15 @@ import androidx.compose.ui.graphics.Color
 //하단 내비게이션 바 (수정 필요)
 @Composable
 fun BottomNavigationBar(
-    rootNavController: NavHostController,
-    bottomNavController: NavHostController
+    navController: NavHostController
 ) {
-    val rootBackStackEntry = rootNavController.currentBackStackEntryAsState().value
-    val bottomBackStackEntry = bottomNavController.currentBackStackEntryAsState().value
-
-    val currentRoute = bottomBackStackEntry?.destination?.route ?: rootBackStackEntry?.destination?.route
+    val backStackEntry = navController.currentBackStackEntryAsState().value
+    val currentRoute = backStackEntry?.destination?.route
 
     val barImage = remember(currentRoute) {
         when (currentRoute) {
             "qna" -> R.drawable.qna_navigation
-            "mypage", "alarmSetting", "profileEdit", "inquiry", "terms", "delete" -> R.drawable.my_navigation
+            "mypage" -> R.drawable.my_navigation
             else -> R.drawable.home_navigation
         }
     }
@@ -62,7 +59,6 @@ fun BottomNavigationBar(
                 .matchParentSize()
                 .align(Alignment.BottomCenter) // 이미지 위에 딱 맞게
         ) {
-            // QnA → rootNavController
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -72,17 +68,13 @@ fun BottomNavigationBar(
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
                         if (currentRoute != "qna") {
-                            rootNavController.navigate("qna") {
+                            navController.navigate("qna") {
                                 launchSingleTop = true
-                                popUpTo(rootNavController.graph.startDestinationId) {
-                                    inclusive = false
-                                }
                             }
                         }
                     }
             )
 
-            // Home → bottomNavController
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -92,9 +84,9 @@ fun BottomNavigationBar(
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
                         if (currentRoute != "home") {
-                            bottomNavController.navigate("home") {
+                            navController.navigate("home") {
                                 launchSingleTop = true
-                                popUpTo(bottomNavController.graph.startDestinationId) {
+                                popUpTo("home") {
                                     inclusive = false
                                 }
                             }
@@ -102,7 +94,6 @@ fun BottomNavigationBar(
                     }
             )
 
-            // MyPage → bottomNavController
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -112,11 +103,8 @@ fun BottomNavigationBar(
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
                         if (currentRoute != "mypage") {
-                            bottomNavController.navigate("mypage") {
+                            navController.navigate("mypage") {
                                 launchSingleTop = true
-                                popUpTo(bottomNavController.graph.startDestinationId) {
-                                    inclusive = false
-                                }
                             }
                         }
                     }

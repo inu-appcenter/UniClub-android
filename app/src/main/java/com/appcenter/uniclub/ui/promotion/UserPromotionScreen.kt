@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -142,7 +143,7 @@ fun UserPromotionScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState) //스크롤
                 .zIndex(0f)
-                .padding(top = 43.dp)
+                .statusBarsPadding()
         ) {
             //배너 + TopBar + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {

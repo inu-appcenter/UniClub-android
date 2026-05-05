@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,17 +38,17 @@ fun TopBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .figmaPadding(startPx = 23f, endPx = 23f, topPx = 15f)
+            .figmaPadding(startPx = 23f, endPx = 23f, topPx = 15f),
+        contentAlignment = Alignment.Center
     ) {
         title?.let {
-            androidx.compose.material3.Text(
+            Text(
                 text = it,
                 fontSize = figmaTextSizeSp(15f),
                 fontFamily = NotoSansKR,
                 fontWeight = FontWeight.Bold,
                 lineHeight = 15.sp * 1.5f,
                 letterSpacing = (-0.011).em,
-                color = Color.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.align(Alignment.Center)
@@ -57,8 +58,7 @@ fun TopBar(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                // 👇 터치 영역만 키움 (원하는 만큼 조절 가능)
-                .figmaSize(widthPx = 40f, heightPx = 40f)
+                .figmaSize(widthPx = 25f, heightPx = 23f)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -67,31 +67,15 @@ fun TopBar(
                         navGuard.run { onBackClick() }
                     }
                 },
-            contentAlignment = Alignment.CenterStart // 아이콘 위치 유지
+            contentAlignment = Alignment.CenterStart
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_back_arrow),
                 contentDescription = "뒤로가기",
                 modifier = Modifier
-                    .figmaSize(widthPx = 11f, heightPx = 20f) // 👈 아이콘 크기는 그대로
+                    .figmaSize(widthPx = 11f, heightPx = 20f)
             )
         }
-//        Image(
-//            painter = painterResource(id = R.drawable.ic_back_arrow),
-//            contentDescription = "뒤로가기",
-//            modifier = Modifier
-//                .figmaSize(widthPx = 11f, heightPx = 20f)
-//                .align(Alignment.CenterStart)
-//                .clickable(
-//                    indication = null,
-//                    interactionSource = remember { MutableInteractionSource() }
-//                ) {
-//                    //여기서 연타/레이스 방지: pop/navigate가 짧은 시간에 2번 못 들어가게
-//                    scope.launch {
-//                        navGuard.run { onBackClick() }
-//                    }
-//                }
-//        )
 
         rightIconResId?.let { id ->
             Image(

@@ -110,7 +110,7 @@ fun AdminPromotionScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState) //스크롤
                 .zIndex(0f)
-                .padding(top = 43.dp)
+                .statusBarsPadding()
         ) {
             //배너 + 상단바 + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {

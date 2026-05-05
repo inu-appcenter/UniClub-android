@@ -1,45 +1,51 @@
 package com.appcenter.uniclub.network.dto
 
+import androidx.annotation.Keep
+import com.google.gson.annotations.SerializedName
+
 enum class Role { GUEST, MEMBER, ADMIN, PRESIDENT }
 
+@Keep
 data class DescriptionMediaDto(
-    val mediaLink: String,
-    val mediaType: String,     // "MAIN_PAGE", "CLUB_PROMOTION", ...
-    val updatedAt: String,     // ISO string 그대로 사용 (필요시 나중에 LocalDateTime 파싱)
-    val main: Boolean
+    @field:SerializedName("mediaLink") val mediaLink: String,
+    @field:SerializedName("mediaType") val mediaType: String,
+    @field:SerializedName("updatedAt") val updatedAt: String,
+    @field:SerializedName("main") val main: Boolean
 )
 
+@Keep
 data class ClubPromotionResponseDto(
-    val role: Role,            // 서버에서 "ADMIN"/"PRESIDENT"/... 로 내려옴
-    val name: String,
-    val status: String?,
-    val startTime: String?,
-    val endTime: String?,
-    val simpleDescription: String?,
-    val description: String?,
-    val notice: String?,
-    val location: String?,
-    val presidentName: String?,
-    val presidentPhone: String?,
-    val youtubeLink: String?,
-    val instagramLink: String?,
-    val applicationFormLink: String?,
-    val favorite: Boolean,
-    val mediaList: List<DescriptionMediaDto>
+    @field:SerializedName("role") val role: Role,
+    @field:SerializedName("name") val name: String,
+    @field:SerializedName("status") val status: String?,
+    @field:SerializedName("startTime") val startTime: String?,
+    @field:SerializedName("endTime") val endTime: String?,
+    @field:SerializedName("simpleDescription") val simpleDescription: String?,
+    @field:SerializedName("description") val description: String?,
+    @field:SerializedName("notice") val notice: String?,
+    @field:SerializedName("location") val location: String?,
+    @field:SerializedName("presidentName") val presidentName: String?,
+    @field:SerializedName("presidentPhone") val presidentPhone: String?,
+    @field:SerializedName("youtubeLink") val youtubeLink: String?,
+    @field:SerializedName("instagramLink") val instagramLink: String?,
+    @field:SerializedName("applicationFormLink") val applicationFormLink: String?,
+    @field:SerializedName("favorite") val favorite: Boolean,
+    @field:SerializedName("mediaList") val mediaList: List<DescriptionMediaDto>
 )
 
+@Keep
 data class ClubPromotionRegisterRequestDto(
-    val name: String,
-    val status: String?,
-    val startTime: String?,
-    val endTime: String?,
-    val simpleDescription: String?,
-    val description: String?,
-    val notice: String?,
-    val location: String?,
-    val presidentName: String?,
-    val presidentPhone: String?,
-    val youtubeLink: String?,
-    val instagramLink: String?,
-    val applicationFormLink: String?
+    @field:SerializedName("name") val name: String,
+    @field:SerializedName("status") val status: String?,
+    @field:SerializedName("startTime") val startTime: String?,
+    @field:SerializedName("endTime") val endTime: String?,
+    @field:SerializedName("simpleDescription") val simpleDescription: String?,
+    @field:SerializedName("description") val description: String?,
+    @field:SerializedName("notice") val notice: String?,
+    @field:SerializedName("location") val location: String?,
+    @field:SerializedName("presidentName") val presidentName: String?,
+    @field:SerializedName("presidentPhone") val presidentPhone: String?,
+    @field:SerializedName("youtubeLink") val youtubeLink: String?,
+    @field:SerializedName("instagramLink") val instagramLink: String?,
+    @field:SerializedName("applicationFormLink") val applicationFormLink: String?
 )

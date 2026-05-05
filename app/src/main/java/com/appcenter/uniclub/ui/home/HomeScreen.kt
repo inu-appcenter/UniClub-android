@@ -48,7 +48,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
-
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -79,7 +78,6 @@ fun HomeScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-
 
     val bannerList by homeVm.bannerList.collectAsState() //로컬 fallback
     val remoteBanner by homeVm.remoteBanner.collectAsState() //서버 배너
