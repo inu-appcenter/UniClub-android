@@ -1,6 +1,5 @@
 package com.appcenter.uniclub.ui.home.clublist
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -77,27 +76,29 @@ fun ClubListScreen(
     val listState = rememberLazyListState()
 
     //끝까지 스크롤 시 다음 페이지 로드
-    LaunchedEffect(listState, state.clubs, state.hasNext) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collectLatest { lastVisible ->
-                val lastIndex = state.clubs.lastIndex
-                if (lastVisible != null &&
-                    lastIndex >= 0 &&
-                    lastVisible >= lastIndex - 1 &&
-                    state.hasNext &&
-                    !state.loading
-                ) {
-                    vm.loadNextPage()
-                }
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalCount = layout.totalItemsCount
+            lastVisible to totalCount
+        }.collectLatest { (lastVisible, totalCount) ->
+            val nearEnd = totalCount > 0 && lastVisible >= totalCount - 2
+            if (nearEnd && state.hasNext && !state.loading) {
+                vm.loadNextPage()
             }
+        }
     }
 
     //Box로 감싸서 드롭다운 메뉴가 LazyColumn 위에 겹쳐 보이게 처리
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            item { Spacer(Modifier.height(43.dp)) }
+
             item { //상단바
                 TopBar(
                     onBackClick = {
@@ -156,7 +157,10 @@ fun ClubListScreen(
 
             item { Spacer(modifier = Modifier.height(20.dp)) }
 
-            items(state.clubs) { clubDto ->
+            items(
+                state.clubs,
+                key = { it.id }
+            ) { clubDto ->
                 ClubCard(
                     club = clubDto.toClub(),
                     onClick = { navController.navigate("promotion/${clubDto.id}") },

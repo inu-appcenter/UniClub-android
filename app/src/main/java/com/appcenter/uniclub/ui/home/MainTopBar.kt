@@ -52,7 +52,7 @@ fun MainTopBar(
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
-                    ) { navController.navigate("search") }
+                    ) { rootNavController.navigate("search") }
             )
 
             Spacer(modifier = Modifier.figmaPadding(startPx = 22f)) //아이콘 사이 간격

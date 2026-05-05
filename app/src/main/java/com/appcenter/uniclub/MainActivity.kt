@@ -1,5 +1,6 @@
 package com.appcenter.uniclub
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -226,9 +227,7 @@ class MainActivity : ComponentActivity() {
                             rootNavController = rootNavController,
                             bottomNavController = bottomNavController,
                             startDestination = "home",
-                            startClubId = clubId,
-                            notificationVm = notificationVm,
-                            onBackToNotification = { rootNavController.popBackStack("notification", false) }
+                            startClubId = clubId
                         )
                     }
 
@@ -293,6 +292,53 @@ class MainActivity : ComponentActivity() {
                     composable("terms") { TermsScreen(navController = rootNavController) }
                     composable("delete") { DeleteAccountScreen(navController = rootNavController) }
 
+                    composable(
+                        "clublist/{categoryName}",
+                        arguments = listOf(navArgument("categoryName") {
+                            type = NavType.StringType
+                            defaultValue = "전체"
+                        })
+                    ) { backStackEntry ->
+                        val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
+                        val decodedCategory = Uri.decode(category)
+
+                        ClubListScreen(
+                            navController = rootNavController,
+                            categoryName = decodedCategory
+                        )
+                    }
+
+                    composable(
+                        "promotion/{clubId}",
+                        arguments = listOf(navArgument("clubId") { type = NavType.LongType })
+                    ) { backStackEntry ->
+                        val clubId = backStackEntry.arguments?.getLong("clubId")!!
+                        val app = (LocalContext.current.applicationContext as App)
+
+                        UserPromotionScreen(
+                            navController = rootNavController,
+                            rootNavController = rootNavController,
+                            onBackClick = { rootNavController.popBackStack() },
+                            clubId = clubId,
+                            app = app
+                        )
+                    }
+
+                    composable(
+                        "admin_promotion/{clubId}",
+                        arguments = listOf(navArgument("clubId") { type = NavType.LongType })
+                    ) { backStackEntry ->
+                        val clubId = backStackEntry.arguments?.getLong("clubId")
+                        if (clubId != null) {
+                            AdminPromotionScreen(
+                                navController = rootNavController,
+                                clubId = clubId
+                            )
+                        }
+                    }
+
+                    composable("search") { SearchScreen(navController = rootNavController) }
+
                     composable("main") {
                         val bottomNavController = rememberNavController()
                         LogNavChanges("BOTTOM_NAV", bottomNavController)
@@ -300,8 +346,7 @@ class MainActivity : ComponentActivity() {
                         MainScaffold(
                             rootNavController = rootNavController,
                             bottomNavController = bottomNavController,
-                            startDestination = "home",
-                            notificationVm = notificationVm
+                            startDestination = "home"
                         )
                     }
                 }
@@ -315,9 +360,7 @@ fun MainScaffold(
     rootNavController: NavHostController,
     bottomNavController: NavHostController,
     startDestination: String,
-    startClubId: Long? = null,
-    onBackToNotification: (() -> Unit)? = null,
-    notificationVm: NotificationViewModel
+    startClubId: Long? = null
 ) {
     val bottomEntry = bottomNavController.currentBackStackEntryAsState().value
     LaunchedEffect(bottomEntry) {
@@ -359,51 +402,6 @@ fun MainScaffold(
                                 rootNavController = rootNavController
                             )
                         }
-
-                        composable(
-                            "clublist/{categoryName}",
-                            arguments = listOf(navArgument("categoryName") {
-                                type = NavType.StringType
-                                defaultValue = "전체"
-                            })
-                        ) { backStackEntry ->
-                            val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
-                            ClubListScreen(navController = bottomNavController, categoryName = category)
-                        }
-
-                        composable(
-                            "promotion/{clubId}",
-                            arguments = listOf(navArgument("clubId") { type = NavType.LongType })
-                        ) { backStackEntry ->
-                            val clubId = backStackEntry.arguments?.getLong("clubId")!!
-                            val app = (LocalContext.current.applicationContext as App)
-
-                            UserPromotionScreen(
-                                navController = bottomNavController,
-                                rootNavController = rootNavController,
-                                onBackClick = {
-                                    if (onBackToNotification != null) onBackToNotification()
-                                    else bottomNavController.popBackStack()
-                                },
-                                clubId = clubId,
-                                app = app
-                            )
-                        }
-
-                        composable(
-                            "admin_promotion/{clubId}",
-                            arguments = listOf(navArgument("clubId") { type = NavType.LongType })
-                        ) { backStackEntry ->
-                            val clubId = backStackEntry.arguments?.getLong("clubId")
-                            if (clubId != null) {
-                                AdminPromotionScreen(
-                                    navController = bottomNavController,
-                                    clubId = clubId
-                                )
-                            }
-                        }
-
-                        composable("search") { SearchScreen(navController = bottomNavController) }
                     }
                 }
             }

@@ -2,6 +2,7 @@ package com.appcenter.uniclub.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -29,33 +29,33 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.appcenter.uniclub.App
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.appcenter.uniclub.util.figmaTextSizeSp
 import com.appcenter.uniclub.R
-import com.appcenter.uniclub.di.ServiceLocator
 import com.appcenter.uniclub.ui.theme.NotoSansKR
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 
 //동아리 추천 카드캐러셀
@@ -66,36 +66,72 @@ fun ClubCardCarousel(
 ) {
     val state by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
-    //화면에 보여줄 리스트(마지막 null은 로딩 카드)
-    val displayList = remember(state.clubs, state.isRefreshing) {
+    var showLoadingCard by remember { mutableStateOf(false) }
+    var isCarouselWorking by remember { mutableStateOf(false) }
+
+    val displayList = remember(state.clubs) {
         state.clubs + listOf(null)
     }
 
-    // 마지막 아이템 도달 감지 → API 재호출
-    LaunchedEffect(listState, state.isRefreshing, state.clubs) {
+    LaunchedEffect(listState) {
         snapshotFlow {
-            val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            val totalItems = listState.layoutInfo.totalItemsCount
-            last?.let {
-                // 마지막 아이템이고, 오른쪽 끝까지 다 보였는지 체크
-                (it.index == totalItems - 1) &&
-                        (it.offset + it.size <= listState.layoutInfo.viewportEndOffset)
-            } ?: false
+            val lastClubIndex = state.clubs.lastIndex
+
+            if (lastClubIndex < 0) {
+                false
+            } else {
+                listState.layoutInfo.visibleItemsInfo.any { item ->
+                    item.index == lastClubIndex &&
+                            item.offset + item.size <= listState.layoutInfo.viewportEndOffset
+                }
+            }
         }
-            .distinctUntilChanged() // 같은 값이면 무시
-            .collectLatest { fullyVisible ->
-                if (fullyVisible && !state.isRefreshing) {
-                    vm.refresh()
-                    coroutineScope.launch {
-                        yield() // 한 프레임 양보
-                        listState.scrollToItem(0) // 맨 앞으로 스크롤
+            .distinctUntilChanged()
+            .collectLatest { lastClubFullyVisible ->
+                if (
+                    lastClubFullyVisible &&
+                    !state.isRefreshing &&
+                    !isCarouselWorking
+                ) {
+                    isCarouselWorking = true
+
+                    try {
+                        //마지막 카드 잠깐 보여주기
+                        delay(800)
+
+                        //로딩 카드로 이동
+                        showLoadingCard = true
+                        listState.animateScrollToItem(state.clubs.size)
+
+                        delay(300)
+
+                        //API 재호출
+                        vm.refresh()
+
+                        //refresh 시작 감지
+                        withTimeoutOrNull(1000) {
+                            snapshotFlow { state.isRefreshing }
+                                .first { it }
+                        }
+
+                        //refresh 종료 감지
+                        withTimeoutOrNull(5000) {
+                            snapshotFlow { state.isRefreshing }
+                                .first { !it }
+                        }
+
+                        //무조건 맨 처음 카드로 이동
+                        listState.scrollToItem(0)
+
+                        delay(300)
+                    } finally {
+                        showLoadingCard = false
+                        isCarouselWorking = false
                     }
                 }
             }
     }
-
 
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val startPadding = (18f / 360f) * screenWidthDp
@@ -104,16 +140,17 @@ fun ClubCardCarousel(
     LazyRow(
         state = listState,
         contentPadding = PaddingValues(start = startPadding.dp),
-        horizontalArrangement = Arrangement.spacedBy(spacing.dp) //카드 간 간격
+        horizontalArrangement = Arrangement.spacedBy(spacing.dp)
     ) {
         items(displayList) { item ->
             if (item == null) {
-                // 새로고침 아이콘
                 Box(
                     modifier = Modifier.figmaSize(widthPx = 136f, heightPx = 206f),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (state.isRefreshing) CircularProgressIndicator(strokeWidth = 2.dp)
+                    if (showLoadingCard || state.isRefreshing) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
                 }
             } else {
                 RecommendClub(
@@ -139,6 +176,11 @@ fun RecommendClub(
     Box(
         modifier = Modifier
             .figmaSize(widthPx = 136f, heightPx = 206f)
+            .shadow(
+                elevation = 5.dp,
+                shape = RoundedCornerShape(17.dp),
+                clip = false
+            )
             .clip(RoundedCornerShape(17.dp)) //모서리
             .clickable { onClick() }
     ) {
@@ -153,10 +195,10 @@ fun RecommendClub(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            Box(
-                modifier = Modifier
-                    .figmaSize(widthPx = 136f, heightPx = 206f)
-                    .background(Color(0xFFD9D9D9))
+            Image(
+                painter = painterResource(R.drawable.bg_carousel),
+                contentDescription = null,
+                modifier = Modifier.matchParentSize()
             )
         }
 
@@ -178,6 +220,9 @@ fun RecommendClub(
                 //동아리 이름
                 Text(
                     text = clubName,
+                    modifier = Modifier
+                        .weight(1f)
+                        .basicMarquee(),
                     color = Color.White,
                     fontSize = figmaTextSizeSp(13f),
                     fontFamily = NotoSansKR,

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -141,6 +142,7 @@ fun UserPromotionScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState) //스크롤
                 .zIndex(0f)
+                .padding(top = 43.dp)
         ) {
             //배너 + TopBar + 프로필 사진 겹치는 구조
             Box(modifier = Modifier.height(209.dp)) {
@@ -319,7 +321,10 @@ fun UserPromotionScreen(
                     Text( //동아리명
                         text = data.name,
                         color = Color.White,
-                        modifier = Modifier.padding(start = 12.dp),
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .basicMarquee(),
+                        maxLines = 1,
                         fontSize = figmaTextSizeSp(14f),
                         fontFamily = NotoSansKR,
                         fontWeight = FontWeight.Medium,
