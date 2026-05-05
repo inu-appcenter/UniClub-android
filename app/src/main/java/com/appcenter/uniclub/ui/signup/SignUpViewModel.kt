@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.appcenter.uniclub.data.UserRepository
 import com.appcenter.uniclub.model.Major
 import com.appcenter.uniclub.network.dto.RegisterRequestDto
-import com.appcenter.uniclub.network.dto.RegisterTermsRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -93,7 +92,7 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
         _ui.value = _ui.value.copy(showDuplicateModal = false)
     }
 
-    // (기존 register 대체) 약관 저장 + 회원가입을 한 번에
+    //회원가입
     fun agreeAndRegister(onDone: () -> Unit) {
         val s = _ui.value
         if (!s.personalInfoCollectionAgreement) {
@@ -103,34 +102,20 @@ class SignUpViewModel(private val repo: UserRepository) : ViewModel() {
         _ui.value = s.copy(loading = true, error = null)
 
         viewModelScope.launch {
-            // 1) 회원가입
             val regReq = RegisterRequestDto(
                 studentId = s.studentId,
+                password = s.password,
                 name = s.name,
                 major = s.major,
                 nickname = s.nickname,
                 personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
-                marketingAdvertisement = s.marketingAdvertisement,
-                studentVerification = true
+                marketingAdvertisement = s.marketingAdvertisement
             )
-            val registerResult = repo.register(regReq)
 
-            registerResult.fold(
+            repo.register(regReq).fold(
                 onSuccess = {
-                    // 2) 약관 저장
-                    val termsReq = RegisterTermsRequestDto(
-                        studentId = s.studentId,
-                        personalInfoCollectionAgreement = s.personalInfoCollectionAgreement,
-                        marketingAdvertisement = s.marketingAdvertisement
-                    )
-                    repo.saveRegisterTerms(termsReq)
-                        .onSuccess {
-                            _ui.value = _ui.value.copy(loading = false, error = null)
-                            onDone()
-                        }
-                        .onFailure {
-                            _ui.value = _ui.value.copy(loading = false, error = it.message)
-                        }
+                    _ui.value = _ui.value.copy(loading = false, error = null)
+                    onDone()
                 },
                 onFailure = {
                     _ui.value = _ui.value.copy(loading = false, error = it.message)

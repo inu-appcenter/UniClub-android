@@ -147,9 +147,9 @@ fun SignUpScreen(
                 var majorFocused by remember { mutableStateOf(false) }
                 var showMajorSheet by remember { mutableStateOf(false) }
                 val selectedDisplayName = Major.values()
-                    .find { it.name == ui.major }   //ui.major == "COMPUTER_ENGINEERING"
-                    ?.displayName                   //"컴퓨터공학부"
-                    ?: ""   //선택 안했을 때는 빈값
+                    .find { it.name == ui.major } //ui.major == "COMPUTER_ENGINEERING"
+                    ?.displayName //"컴퓨터공학부"
+                    ?: "" //선택 안했을 때는 빈값
 
                 MajorSelectButton(
                     selectedMajor = selectedDisplayName,
@@ -169,8 +169,9 @@ fun SignUpScreen(
                             majorFocused = false
                         },
                         onSelect = { major ->
-                            vm.onMajor(major.name)
+                            vm.onMajor(major.displayName)
                             showMajorSheet = false
+                            majorFocused = false
                         }
                     )
                 }
@@ -207,7 +208,7 @@ fun SignUpScreen(
             if (ui.showDuplicateModal) {
                 DuplicateStudentModal(
                     onRetry = {
-                        vm.onId("")    //다시 입력 → 입력 필드 초기화
+                        vm.onId("") //다시 입력 → 입력 필드 초기화
                         vm.onPw("")
                         vm.resetDuplicateModal()
                     },
