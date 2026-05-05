@@ -1,5 +1,6 @@
 package com.appcenter.uniclub
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -299,7 +300,12 @@ class MainActivity : ComponentActivity() {
                         })
                     ) { backStackEntry ->
                         val category = backStackEntry.arguments?.getString("categoryName") ?: "전체"
-                        ClubListScreen(navController = rootNavController, categoryName = category)
+                        val decodedCategory = Uri.decode(category)
+
+                        ClubListScreen(
+                            navController = rootNavController,
+                            categoryName = decodedCategory
+                        )
                     }
 
                     composable(

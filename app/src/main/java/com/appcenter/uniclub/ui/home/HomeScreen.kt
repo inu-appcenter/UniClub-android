@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.ui.home
 
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -112,9 +113,14 @@ fun HomeScreen(
         }
 
         item {
-            CategorySection(navController = rootNavController) { category ->
-                rootNavController.navigate("clublist/$category")
-            }
+            CategorySection(
+                onCategoryClick = { category ->
+                    rootNavController.navigate("clublist/${Uri.encode(category.displayName)}")
+                },
+                onAllClick = {
+                    rootNavController.navigate("clublist/${Uri.encode("전체")}")
+                }
+            )
         }
 
         item {
@@ -140,8 +146,8 @@ fun RecommendTitle() {
 
 @Composable
 fun CategorySection(
-    navController: NavHostController,
-    onCategoryClick: (ClubCategory) -> Unit
+    onCategoryClick: (ClubCategory) -> Unit,
+    onAllClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         //상단: '카테고리' 제목 + '전체보기' 버튼
@@ -172,10 +178,10 @@ fun CategorySection(
                 color = Color(0xFFB1B1B1),
                 modifier = Modifier
                     .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
                     ) {
-                        navController.navigate("clublist/전체")
+                        onAllClick()
                     }
             )
         }
