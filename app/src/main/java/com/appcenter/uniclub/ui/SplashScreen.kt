@@ -19,7 +19,7 @@ fun SplashScreen(navController: NavController) {
 
     if (!isLoading) {
         if (hasToken) {
-            navController.navigate("main") {
+            navController.navigate("home") {
                 popUpTo("splash") { inclusive = true }
             }
         } else {

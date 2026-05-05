@@ -22,9 +22,15 @@ class ClubListViewModel(
     private val _uiState = MutableStateFlow(ClubListUiState())
     val uiState: StateFlow<ClubListUiState> = _uiState
 
+    private var currentCategory: String? = null
+    private var currentSortBy: String = "name"
+
     private val toggling = mutableSetOf<Long>()
 
     fun loadClubs(category: String?, sortBy: String, reset: Boolean = false) {
+        currentCategory = category
+        currentSortBy = sortBy
+
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(loading = true, error = null)
@@ -50,14 +56,13 @@ class ClubListViewModel(
     fun loadNextPage() {
         val state = _uiState.value
         if (state.loading || !state.hasNext) return
-        // 현재 정렬/카테고리는 Repository 내부 상태로 유지되므로
-        // 여기서는 단순히 fetch 이어붙이기만 하면 됩니다.
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(loading = true, error = null)
+
                 val res = repository.fetchClubs(
-                    category = null, // repo가 보관 중
-                    sortBy = "",     // repo가 보관 중
+                    category = currentCategory,
+                    sortBy = currentSortBy,
                     reset = false
                 )
                 _uiState.value = _uiState.value.copy(

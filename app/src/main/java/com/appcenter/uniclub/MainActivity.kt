@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Scaffold
@@ -81,7 +82,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("FCM", "MainActivity onCreate reached")
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                 Log.d("NAV_TRACE", "route=${entry?.destination?.route}")
             }
 
-            // FCM 토큰 등록(로그인된 경우만)
+            //FCM 토큰 등록(로그인된 경우만)
             LaunchedEffect(Unit) {
                 FirebaseMessaging.getInstance().token
                     .addOnSuccessListener { token ->
@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
                     }
             }
 
-            // 서버 401 등으로 logoutEvent 발생 시 강제 로그인 화면 이동
+            //서버 401 등으로 logoutEvent 발생 시 강제 로그인 화면 이동
             LaunchedEffect(Unit) {
                 app.logoutEvent.collect {
                     rootNavController.navigate("login") {
@@ -132,12 +132,12 @@ class MainActivity : ComponentActivity() {
                     composable("splash") { SplashScreen(rootNavController) }
 
                     composable("login") {
-                        // (주의) viewModel()을 쓰는 편이 더 안정적이지만, 우선 기존 구조 유지
                         val vm = remember { LoginViewModel(repo, fcmRepo) }
                         LoginScreen(
                             onLoginSuccess = {
-                                rootNavController.navigate("main") {
+                                rootNavController.navigate("home") {
                                     popUpTo("login") { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             },
                             onSignUpClick = { rootNavController.navigate("signup") },
@@ -220,18 +220,14 @@ class MainActivity : ComponentActivity() {
                     ) { entry ->
                         val clubId = entry.arguments?.getLong("clubId")!!
 
-                        val bottomNavController = rememberNavController()
-                        LogNavChanges("BOTTOM_NAV", bottomNavController)
-
-                        MainScaffold(
-                            rootNavController = rootNavController,
-                            bottomNavController = bottomNavController,
-                            startDestination = "home",
-                            startClubId = clubId
-                        )
+                        LaunchedEffect(clubId) {
+                            rootNavController.navigate("promotion/$clubId") {
+                                popUpTo("notification_promotion/{clubId}") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     }
 
-                    //(root 그래프) qna / question 등
                     composable("qna") { QnAScreen(navController = rootNavController) }
 
                     composable(
@@ -281,7 +277,6 @@ class MainActivity : ComponentActivity() {
 
                     composable("clubSelect") { ClubSelectScreen(navController = rootNavController) }
 
-                    //mypage 관련(root)
                     composable("alarmSetting") {
                         val app2 = rootNavController.context.applicationContext as App
                         val notificationRepo = ServiceLocator.notificationRepository(app2)
@@ -339,15 +334,22 @@ class MainActivity : ComponentActivity() {
 
                     composable("search") { SearchScreen(navController = rootNavController) }
 
-                    composable("main") {
-                        val bottomNavController = rememberNavController()
-                        LogNavChanges("BOTTOM_NAV", bottomNavController)
+                    composable("home") {
+                        ScreenWithBottomBar(rootNavController) {
+                            HomeScreen(
+                                bottomNavController = rootNavController,
+                                rootNavController = rootNavController
+                            )
+                        }
+                    }
 
-                        MainScaffold(
-                            rootNavController = rootNavController,
-                            bottomNavController = bottomNavController,
-                            startDestination = "home"
-                        )
+                    composable("mypage") {
+                        ScreenWithBottomBar(rootNavController) {
+                            MypageScreen(
+                                navController = rootNavController,
+                                rootNavController = rootNavController
+                            )
+                        }
                     }
                 }
             }
@@ -356,56 +358,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScaffold(
+fun ScreenWithBottomBar(
     rootNavController: NavHostController,
-    bottomNavController: NavHostController,
-    startDestination: String,
-    startClubId: Long? = null
+    content: @Composable () -> Unit
 ) {
-    val bottomEntry = bottomNavController.currentBackStackEntryAsState().value
-    LaunchedEffect(bottomEntry) {
-        Log.d("NAV", "bottom route=${bottomEntry?.destination?.route}")
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            content = { innerPadding ->
-                Box(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                ) {
-                    //startClubId로 들어오면 promotion으로 이동
-                    LaunchedEffect(startClubId) {
-                        if (startClubId != null) {
-                            bottomNavController.navigate("promotion/$startClubId") {
-                                launchSingleTop = true
-                            }
-                        }
-                    }
 
-                    NavHost(
-                        navController = bottomNavController,
-                        startDestination = startDestination
-                    ) {
-                        composable("home") {
-                            HomeScreen(
-                                bottomNavController = bottomNavController,
-                                rootNavController = rootNavController
-                            )
-                        }
-
-                        composable("mypage") {
-                            MypageScreen(
-                                navController = bottomNavController,
-                                rootNavController = rootNavController
-                            )
-                        }
-                    }
-                }
-            }
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            content()
+        }
 
         Column(
             modifier = Modifier
@@ -413,8 +378,7 @@ fun MainScaffold(
                 .wrapContentSize()
         ) {
             BottomNavigationBar(
-                rootNavController = rootNavController,
-                bottomNavController = bottomNavController
+                navController = rootNavController
             )
         }
     }

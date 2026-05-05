@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -67,7 +65,7 @@ fun ClubCard(
         ) {
             //동아리 프로필 이미지 영역
             if (club.profileUrl.isNullOrBlank()) {
-                // 기본 이미지
+                //기본 이미지
                 Image(
                     painter = painterResource(id = R.drawable.default_image),
                     contentDescription = "기본 프로필",
@@ -76,7 +74,7 @@ fun ClubCard(
                         .offset(y=4.dp)
                 )
             } else {
-                // 서버에서 불러온 이미지
+                //서버에서 불러온 이미지
                 AsyncImage(
                     model = club.profileUrl,
                     contentDescription = "동아리 프로필",
@@ -91,13 +89,12 @@ fun ClubCard(
             Spacer(modifier = Modifier.width(20.dp))
 
             //동아리 이름, 추가정보 영역
-            Column(
+            Box(
                 modifier = Modifier
                     .weight(1f)
-                    .offset(y = (-7).dp),
-                verticalArrangement = Arrangement.Top
+                    .height(60.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Column(verticalArrangement = Arrangement.Top) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text( //동아리 이름
                             text = club.name,
@@ -126,9 +123,10 @@ fun ClubCard(
                             contentScale = ContentScale.FillBounds,
                             modifier = Modifier
                                 .scale(1.1f)
-                                .offset(y=1.dp)
+                                .offset(y=2.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.height(5.dp))
                     Text( //추가정보
                         text = club.info ?: "",
                         fontSize = figmaTextSizeSp(9f),
@@ -136,7 +134,9 @@ fun ClubCard(
                         fontWeight = FontWeight.Medium,
                         lineHeight = 9.sp * 1.39f, //행간
                         letterSpacing = (-0.011).em, //자간
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
