@@ -30,7 +30,7 @@ fun TopBar(
     rightIconResId: Int? = null,
     onRightIconClick: () -> Unit = {}
 ) {
-    //화면 단위가 아니라 "이 TopBar 클릭"에서 네비게이션 중복을 막는 가드
+    //화면 단위가 아니라 이 상단바 클릭에서 네비게이션 중복을 막는 가드
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 300L) }
 
@@ -54,22 +54,44 @@ fun TopBar(
             )
         }
 
-        Image(
-            painter = painterResource(id = R.drawable.ic_back_arrow),
-            contentDescription = "뒤로가기",
+        Box(
             modifier = Modifier
-                .figmaSize(widthPx = 11f, heightPx = 20f)
                 .align(Alignment.CenterStart)
+                // 👇 터치 영역만 키움 (원하는 만큼 조절 가능)
+                .figmaSize(widthPx = 40f, heightPx = 40f)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
                 ) {
-                    //여기서 연타/레이스 방지: pop/navigate가 짧은 시간에 2번 못 들어가게
                     scope.launch {
                         navGuard.run { onBackClick() }
                     }
-                }
-        )
+                },
+            contentAlignment = Alignment.CenterStart // 아이콘 위치 유지
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_back_arrow),
+                contentDescription = "뒤로가기",
+                modifier = Modifier
+                    .figmaSize(widthPx = 11f, heightPx = 20f) // 👈 아이콘 크기는 그대로
+            )
+        }
+//        Image(
+//            painter = painterResource(id = R.drawable.ic_back_arrow),
+//            contentDescription = "뒤로가기",
+//            modifier = Modifier
+//                .figmaSize(widthPx = 11f, heightPx = 20f)
+//                .align(Alignment.CenterStart)
+//                .clickable(
+//                    indication = null,
+//                    interactionSource = remember { MutableInteractionSource() }
+//                ) {
+//                    //여기서 연타/레이스 방지: pop/navigate가 짧은 시간에 2번 못 들어가게
+//                    scope.launch {
+//                        navGuard.run { onBackClick() }
+//                    }
+//                }
+//        )
 
         rightIconResId?.let { id ->
             Image(
