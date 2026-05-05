@@ -77,6 +77,7 @@ fun QnAScreen(navController: NavHostController) {
     //연타/중복 네비게이션 방지
     val scope = rememberCoroutineScope()
     val navGuard = remember { NavGuard(lockMs = 300L) }
+    var isBackHandling by remember { mutableStateOf(false) }
 
     var query by remember { mutableStateOf("") } //검색어
     var answered by remember { mutableStateOf(false) } //답변 완료만
@@ -134,8 +135,20 @@ fun QnAScreen(navController: NavHostController) {
 
                 TopBar( //상단바
                     onBackClick = {
-                        scope.launch {
-                            navGuard.run { navController.popBackStack() }
+                        //뒤로가기 연타 방지
+                        if (isBackHandling) return@TopBar
+                        isBackHandling = true
+
+                        //home까지만 pop
+                        val popped = navController.popBackStack(
+                            route = "home",
+                            inclusive = false //home은 남기고 그 위 화면들 제거
+                        )
+
+                        if (!popped) {
+                            navController.navigate("home") {
+                                launchSingleTop = true
+                            }
                         }
                     },
                     title = "질의응답"
