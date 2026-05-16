@@ -27,8 +27,7 @@ class AuthInterceptor(
         val isNoAuthEndpoint =
             path.startsWith("/api/v1/auth/login") ||
                     path.startsWith("/api/v1/auth/register") ||
-                    path.startsWith("/api/v1/users/terms") ||
-                    path.startsWith("/api/v1/user/profile/s3-presigned")
+                    path.startsWith("/api/v1/users/terms")
 
 
         val shouldAttachAuth = !token.isNullOrBlank() && !isNoAuthEndpoint

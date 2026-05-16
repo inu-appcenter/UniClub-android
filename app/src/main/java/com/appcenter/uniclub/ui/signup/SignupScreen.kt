@@ -1,14 +1,17 @@
 package com.appcenter.uniclub.ui.signup
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -113,18 +116,61 @@ fun SignUpScreen(
                     isPassword = true //비밀번호 마스킹
                 )
 
-                Spacer(modifier = Modifier.height(25.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Box(
+                    modifier = Modifier
+                        .figmaSize(108f,34f)
+                        .clip(RoundedCornerShape(45.dp))
+                        .background(if (!ui.verified) Color(0xFFFF5900) else Color(0xFF898989))
+                        .clickable(
+                            enabled = canVerify,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ){ vm.verify() },
+                    contentAlignment = Alignment.Center
+                ){
+                    Text(
+                        text = "재학생 확인",
+                        fontSize = figmaTextSizeSp(12f),
+                        fontFamily = NotoSansKR,
+                        lineHeight = 12.sp * 1.5f,
+                        letterSpacing = (-0.011).em,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Box( //인증 실패 시 오류 메시지 출력
                     modifier = Modifier.height(26.dp) //항상 고정된 공간 확보
                 ) {
                     if (ui.error != null) {
-                        Image(
-                            painter = painterResource(id = R.drawable.error_invalid_credentials),
-                            contentDescription = "오류 메시지",
-                            modifier = Modifier
-                                .figmaSize(widthPx = 197f, heightPx = 30f)
-                                .wrapContentWidth(Alignment.Start)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_lock),
+                                contentDescription = null,
+                                modifier = Modifier.figmaSize(11f, 11f)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "학번과 비밀번호를 확인해주세요.",
+                                fontSize = figmaTextSizeSp(11f),
+                                fontFamily = NotoSansKR,
+                                lineHeight = 11.sp * 1.5f,
+                                letterSpacing = (-0.011).em,
+                                color = Color(0xFFFF5900)
+                            )
+                        }
+                    }
+                    if (ui.verified) {
+                        Text(
+                            text = "재학생 확인이 완료되었습니다.",
+                            fontSize = figmaTextSizeSp(11f),
+                            fontFamily = NotoSansKR,
+                            lineHeight = 11.sp * 1.5f,
+                            letterSpacing = (-0.011).em,
+                            color = Color(0xFFFF5900)
                         )
                     }
                 }
@@ -178,31 +224,20 @@ fun SignUpScreen(
             }
 
             //하단 버튼
-            //인증 전: '재학생 확인' (canVerify 충족 시 enabled 이미지)
             //인증 후: '다음' (canProceed 충족 시 enabled 이미지)
             Image(
                 painter = painterResource(
-                    id = if (!ui.verified)
-                        if (canVerify) R.drawable.btn_verify_enabled else R.drawable.btn_verify_disabled
-                    else
-                        if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
+                    if (canProceed) R.drawable.btn_next_enabled else R.drawable.btn_next_disabled
                 ),
-                contentDescription = "하단 버튼",
+                contentDescription = "다음 버튼",
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .figmaPadding(bottomPx = 51f)
                     .clickable(
-                        enabled = if (!ui.verified) canVerify else canProceed,
+                        enabled = canProceed,
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        if (!ui.verified) {
-                            vm.verify()
-                        } else {
-                            //다음 화면으로 이동
-                            onNext()
-                        }
-                    }
+                    ) { onNext() }
             )
 
             if (ui.showDuplicateModal) {
