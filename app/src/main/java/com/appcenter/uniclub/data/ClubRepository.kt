@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.appcenter.uniclub.App
 import com.appcenter.uniclub.network.ClubService
+import com.appcenter.uniclub.network.dto.ClubMediaDeleteRequestDto
 import com.appcenter.uniclub.network.dto.ClubPromotionRegisterRequestDto
 import com.appcenter.uniclub.network.dto.ClubPromotionResponseDto
 import com.appcenter.uniclub.network.dto.ClubMediaUploadRequestDto
@@ -177,5 +178,15 @@ class ClubRepository(
                 throw e
             }
         }
+    }
+
+    suspend fun deleteClubMedia(
+        clubId: Long,
+        mediaIds: List<Long>
+    ): Result<Unit> = runCatching {
+        val res = service.deleteClubMedia(
+            clubId = clubId,
+            body = ClubMediaDeleteRequestDto(mediaIds = mediaIds)
+        )
     }
 }
