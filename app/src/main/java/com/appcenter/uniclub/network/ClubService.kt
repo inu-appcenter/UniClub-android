@@ -1,5 +1,6 @@
 package com.appcenter.uniclub.network
 
+import com.appcenter.uniclub.network.dto.ClubMediaDeleteRequestDto
 import com.appcenter.uniclub.network.dto.ClubPromotionRegisterRequestDto
 import com.appcenter.uniclub.network.dto.ClubPromotionResponseDto
 import com.appcenter.uniclub.network.dto.ClubResponseDto
@@ -11,6 +12,7 @@ import com.appcenter.uniclub.network.dto.ToggleFavoriteResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -64,4 +66,15 @@ interface ClubService {
         @Path("clubId") clubId: Long,
         @Body body: List<ClubMediaUploadRequestDto>
     ): Unit
+
+    //동아리 미디어 삭제
+    @HTTP(
+        method = "DELETE",
+        path = "/api/v1/clubs/{clubId}/images",
+        hasBody = true
+    )
+    suspend fun deleteClubMedia(
+        @Path("clubId") clubId: Long,
+        @Body body: ClubMediaDeleteRequestDto
+    ): Response<Unit>
 }

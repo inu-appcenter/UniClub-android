@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -136,6 +137,10 @@ fun UserPromotionScreen(
     val scrollState = rememberScrollState()
     val statusIcon = remember(data.status) { recruitIconOf(data.status) }
     val context = LocalContext.current
+
+    var showYoutubeDialog by remember { mutableStateOf(false) }
+    var showInstaDialog by remember { mutableStateOf(false) }
+    var showApplyDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -269,14 +274,14 @@ fun UserPromotionScreen(
                     modifier = Modifier
                         .size(30.dp)
                         .clickable(
-                            enabled = !yt.isNullOrBlank(),
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
                             //외부 링크도 연타 방지
                             scope.launch {
                                 navGuard.run {
-                                    if (!yt.isNullOrBlank()) openUrl(context, yt)
+                                    if (yt.isNullOrBlank()) showYoutubeDialog = true
+                                    else openUrl(context, yt)
                                 }
                             }
                         }
@@ -291,14 +296,14 @@ fun UserPromotionScreen(
                     modifier = Modifier
                         .size(30.dp)
                         .clickable(
-                            enabled = !ig.isNullOrBlank(),
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
                             //외부 링크도 연타 방지
                             scope.launch {
                                 navGuard.run {
-                                    if (!ig.isNullOrBlank()) openUrl(context, ig)
+                                    if (ig.isNullOrBlank()) showInstaDialog = true
+                                    else openUrl(context, ig)
                                 }
                             }
                         }
@@ -394,11 +399,34 @@ fun UserPromotionScreen(
                     rootNavController = rootNavController,
                     clubId = clubId,
                     data = data,
-                    applicationFormLink = data.applicationFormLink
+                    applicationFormLink = data.applicationFormLink,
+                    onEmptyApplyClick = {
+                        showApplyDialog = true
+                    }
                 )
             }
 
             Spacer(modifier = Modifier.height(75.dp))
+        }
+
+        if (showYoutubeDialog) {
+            Dialog(
+                message = "해당 동아리는 유튜브를 지원하지 않습니다.",
+                onClick = { showYoutubeDialog = false }
+            )
+        }
+        if (showInstaDialog) {
+            Dialog(
+                message = "해당 동아리는 유튜브를 지원하지 않습니다.",
+                onClick = { showInstaDialog = false }
+            )
+        }
+        if (showApplyDialog) {
+            Dialog(
+                message = "지원기간이 아닙니다."
+            ) {
+                showApplyDialog = false
+            }
         }
     }
 }
@@ -456,7 +484,8 @@ fun TextShadowBanner(text: String) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 30.dp)
+                .padding(start = 30.dp, end = 30.dp)
+                .basicMarquee()
         )
     }
 }
@@ -618,7 +647,8 @@ fun BottomActionButtons(
     rootNavController: NavHostController,
     clubId: Long,
     data: PromotionViewData,
-    applicationFormLink: String?
+    applicationFormLink: String?,
+    onEmptyApplyClick: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -657,10 +687,14 @@ fun BottomActionButtons(
         ImageButtonItem(
             imageRes = R.drawable.btn_apply,
             contentDescription = "지원하기",
-            enabled = !applicationFormLink.isNullOrBlank(),
             onClick = {
                 scope.launch {
                     navGuard.run {
+                        if (applicationFormLink.isNullOrBlank()) {
+                            onEmptyApplyClick()
+                            return@run
+                        }
+
                         applicationFormLink?.let { openUrl(context, it) }
                     }
                 }
@@ -686,4 +720,63 @@ fun ImageButtonItem(
             interactionSource = remember { MutableInteractionSource() }
         )
     )
+}
+
+@Composable
+private fun Dialog(
+    message: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(999f) //항상 가장 위로
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(enabled = true, onClick = { onClick() }),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .figmaSize(widthPx = 240f,  heightPx = 90f )
+                .background(Color.White, shape = RoundedCornerShape(18.dp)),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column (
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 15.dp)
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = message,
+                    fontFamily = NotoSansKR,
+                    fontSize = figmaTextSizeSp(12f),
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 12.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Divider(color = Color(0xFFDDDDDD), thickness = 0.5.dp)
+            Box(
+                modifier = Modifier
+                    .height(40.dp)
+                    .clickable { onClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "확인",
+                    fontFamily = NotoSansKR,
+                    fontSize = figmaTextSizeSp(13f),
+                    lineHeight = 13.sp * 1.5f,
+                    letterSpacing = (-0.011).em,
+                    color = Color.Black
+                )
+            }
+        }
+    }
 }

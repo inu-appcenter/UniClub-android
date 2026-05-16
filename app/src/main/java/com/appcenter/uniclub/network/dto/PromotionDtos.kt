@@ -7,6 +7,7 @@ enum class Role { GUEST, MEMBER, ADMIN, PRESIDENT }
 
 @Keep
 data class DescriptionMediaDto(
+    @field:SerializedName("mediaId") val mediaId: Long,
     @field:SerializedName("mediaLink") val mediaLink: String,
     @field:SerializedName("mediaType") val mediaType: String,
     @field:SerializedName("updatedAt") val updatedAt: String,
@@ -48,4 +49,9 @@ data class ClubPromotionRegisterRequestDto(
     @field:SerializedName("youtubeLink") val youtubeLink: String?,
     @field:SerializedName("instagramLink") val instagramLink: String?,
     @field:SerializedName("applicationFormLink") val applicationFormLink: String?
+)
+
+@Keep
+data class ClubMediaDeleteRequestDto(
+    @field:SerializedName("mediaIds") val mediaIds: List<Long>
 )

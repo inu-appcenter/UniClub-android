@@ -15,6 +15,7 @@ import coil.compose.AsyncImage
 import com.appcenter.uniclub.util.figmaPadding
 import com.appcenter.uniclub.util.figmaSize
 import com.google.accompanist.pager.*
+import kotlinx.coroutines.delay
 
 //이벤트 칸 카드뉴스 슬라이드형
 @OptIn(ExperimentalPagerApi::class)
@@ -23,6 +24,17 @@ fun EventImageCarousel(
     eventList: List<Any> //여러 장 이미지 받기
 ) {
     val pagerState = rememberPagerState()
+
+    //자동 슬라이드
+    LaunchedEffect(eventList.size) {
+        if (eventList.size <= 1) return@LaunchedEffect
+
+        while (true) {
+            delay(3000)
+            val nextPage = (pagerState.currentPage + 1) % eventList.size
+            pagerState.animateScrollToPage(nextPage)
+        }
+    }
 
     Column(
         modifier = Modifier

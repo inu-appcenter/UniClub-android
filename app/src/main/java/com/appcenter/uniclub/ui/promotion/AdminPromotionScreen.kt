@@ -117,6 +117,7 @@ fun AdminPromotionScreen(
                 //배너 (탭하여 업로드)
                 EditableBanner(
                     bannerUri = ui.bannerUri,
+                    onRemoveAt = { vm.removeBanner() },
                     onClick = {
                         bannerPicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -160,6 +161,7 @@ fun AdminPromotionScreen(
                 //프로필 이미지
                 EditableProfile(
                     profileUri = ui.profileUri,
+                    onRemoveAt = { vm.removeProfile() },
                     onClick = {
                         profilePicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -464,6 +466,7 @@ fun AdminPromotionScreen(
 @Composable
 private fun EditableBanner(
     bannerUri: Uri?,
+    onRemoveAt: () -> Unit,
     onClick: () -> Unit
 ) {
     Box(
@@ -479,6 +482,25 @@ private fun EditableBanner(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+            //삭제 버튼
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .figmaPadding(topPx = 10f, endPx = 9f)
+                    .figmaSize(widthPx = 35f, heightPx = 35f)
+                    .zIndex(999f)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onRemoveAt() },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_delete),
+                    contentDescription = "삭제",
+                    modifier = Modifier.figmaSize(widthPx = 35f, heightPx = 35f)
+                )
+            }
         } else { //없으면 배경 + 문구
             Box(
                 modifier = Modifier
@@ -502,6 +524,7 @@ private fun EditableBanner(
 @Composable
 private fun EditableProfile(
     profileUri: Uri?,
+    onRemoveAt: () -> Unit,
     onClick: () -> Unit
 ) {
     Box(
@@ -519,6 +542,24 @@ private fun EditableProfile(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .figmaPadding(topPx = 10f, endPx = 9f)
+                    .figmaSize(widthPx = 35f, heightPx = 35f)
+                    .zIndex(999f)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onRemoveAt() },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_delete),
+                    contentDescription = "삭제",
+                    modifier = Modifier.figmaSize(widthPx = 35f, heightPx = 35f)
+                )
+            }
         } else {
             Box(
                 modifier = Modifier

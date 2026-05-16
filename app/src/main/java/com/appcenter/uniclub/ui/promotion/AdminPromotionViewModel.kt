@@ -19,6 +19,7 @@ enum class RecruitStatus { SCHEDULED, ACTIVE, CLOSED }
 
 data class PromotionImage(
     val id: String = UUID.randomUUID().toString(), // 드래그/컴포즈용 안정 키
+    val mediaId: Long? = null,
     val localUri: String?,                         // 로컬 선택 이미지 (코일이 String/Uri 둘 다 처리)
     val mediaLink: String? = null                  // 서버가 부여한 키 (uploads/....png)
 ) {
@@ -79,7 +80,12 @@ data class AdminPromotionUi(
     val profileUri: Uri? = null,
     val activityImageUris: List<Uri> = emptyList(),
 
-    val activityImages: List<PromotionImage> = emptyList()
+    val activityImages: List<PromotionImage> = emptyList(),
+
+    val bannerMediaId: Long? = null,
+    val profileMediaId: Long? = null,
+
+    val deletedMediaIds: List<Long> = emptyList()
 )
 
 class AdminPromotionViewModel(
@@ -158,7 +164,14 @@ class AdminPromotionViewModel(
 
         viewModelScope.launch {
             try {
-                // 1. 프로필 업로드
+                if (s.deletedMediaIds.isNotEmpty()) {
+                    repo.deleteClubMedia(
+                        clubId = clubId,
+                        mediaIds = s.deletedMediaIds.distinct()
+                    )
+                }
+
+                //1.프로필 업로드
                 s.profileUri?.let { local ->
                     repo.uploadClubImage(
                         clubId = clubId,
@@ -169,7 +182,7 @@ class AdminPromotionViewModel(
                     )
                 }
 
-                // 2. 배너 업로드
+                //2.배너 업로드
                 s.bannerUri?.let { local ->
                     repo.uploadClubImage(
                         clubId = clubId,
@@ -180,7 +193,7 @@ class AdminPromotionViewModel(
                     )
                 }
 
-                // 3. 활동 사진 업로드 (순서대로, 첫 번째만 main=true)
+                //3.활동 사진 업로드 (순서대로, 첫 번째만 main=true)
                 s.activityImages.forEachIndexed { idx, img ->
                     img.localUri?.let { local ->
                         repo.uploadClubImage(
@@ -193,7 +206,7 @@ class AdminPromotionViewModel(
                     }
                 }
 
-                // 4. 나머지 텍스트 정보 저장
+                //4.나머지 텍스트 정보 저장
                 repo.upsertClubPromotion(clubId, body)
 
                 onSuccess?.invoke()
@@ -203,19 +216,42 @@ class AdminPromotionViewModel(
         }
     }
 
-    // ------ 업로드 진입점 ------
+    //프로필/배너/활동사진 업로드
     fun uploadProfile(local: Uri) {
-        _ui.value = _ui.value.copy(profileUri = local)
+        val oldMediaId = _ui.value.profileMediaId
+
+        _ui.value = _ui.value.copy(
+            profileUri = local,
+            profileMediaId = null,
+            deletedMediaIds = if (oldMediaId != null) {
+                _ui.value.deletedMediaIds + oldMediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
     }
 
     fun uploadBanner(local: Uri) {
-        _ui.value = _ui.value.copy(bannerUri = local)
+        val oldMediaId = _ui.value.bannerMediaId
+
+        _ui.value = _ui.value.copy(
+            bannerUri = local,
+            bannerMediaId = null,
+            deletedMediaIds = if (oldMediaId != null) {
+                _ui.value.deletedMediaIds + oldMediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
     }
 
-    /** 활동사진 업로드: index 자리에 넣거나 추가. index==0이면 main=true */
     fun uploadActivityAt(index: Int, picked: Uri) {
         val list = _ui.value.activityImages.toMutableList()
-        val item = PromotionImage(localUri = picked.toString())
+        val oldMediaId = list.getOrNull(index)?.mediaId
+
+        val item = PromotionImage(
+            localUri = picked.toString()
+        )
 
         if (index in list.indices) {
             list[index] = item
@@ -223,7 +259,14 @@ class AdminPromotionViewModel(
             list.add(item)
         }
 
-        _ui.value = _ui.value.copy(activityImages = list)
+        _ui.value = _ui.value.copy(
+            activityImages = list,
+            deletedMediaIds = if (oldMediaId != null) {
+                _ui.value.deletedMediaIds + oldMediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
     }
 
     /** 드래그로 순서 변경: UI 즉시 반영 + 0번이 바뀌면 main=true 서버와 동기화 */
@@ -238,12 +281,50 @@ class AdminPromotionViewModel(
         syncMainIfNeeded()
     }
 
-    /** 사진 삭제 (서버 삭제 API 있으면 여기서 호출) */
+    //사진 삭제
+    fun removeBanner() {
+        val mediaId = _ui.value.bannerMediaId
+
+        _ui.value = _ui.value.copy(
+            bannerUri = null,
+            bannerMediaId = null,
+            deletedMediaIds = if (mediaId != null) {
+                _ui.value.deletedMediaIds + mediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
+    }
+
+    fun removeProfile() {
+        val mediaId = _ui.value.profileMediaId
+
+        _ui.value = _ui.value.copy(
+            profileUri = null,
+            profileMediaId = null,
+            deletedMediaIds = if (mediaId != null) {
+                _ui.value.deletedMediaIds + mediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
+    }
+
     fun removeActivityAt(index: Int) {
         val cur = _ui.value.activityImages.toMutableList()
         if (index !in cur.indices) return
-        cur.removeAt(index)
-        _ui.value = _ui.value.copy(activityImages = cur)
+
+        val removed = cur.removeAt(index)
+
+        _ui.value = _ui.value.copy(
+            activityImages = cur,
+            deletedMediaIds = if (removed.mediaId != null) {
+                _ui.value.deletedMediaIds + removed.mediaId
+            } else {
+                _ui.value.deletedMediaIds
+            }
+        )
+
         syncMainIfNeeded()
     }
 
@@ -275,19 +356,24 @@ class AdminPromotionViewModel(
         val images = dto.mediaList?.map {
             PromotionImage(
                 id = UUID.randomUUID().toString(),
+                mediaId = it.mediaId,
                 localUri = null,
                 mediaLink = it.mediaLink // 서버에서 준 S3 경로
             )
         } ?: emptyList()
 
         // 배너 / 프로필 / 대표이미지 분리
-        val banner = dto.mediaList
+        val bannerMedia = dto.mediaList
             ?.find { it.mediaType == "CLUB_BACKGROUND" }
+
+        val profileMedia = dto.mediaList
+            ?.find { it.mediaType == "CLUB_PROFILE" }
+
+        val banner = bannerMedia
             ?.mediaLink
             ?.let { Uri.parse(it) }
 
-        val profile = dto.mediaList
-            ?.find { it.mediaType == "CLUB_PROFILE" }
+        val profile = profileMedia
             ?.mediaLink
             ?.let { Uri.parse(it) }
 
@@ -296,6 +382,7 @@ class AdminPromotionViewModel(
             ?.map {
                 PromotionImage(
                     id = UUID.randomUUID().toString(),
+                    mediaId = it.mediaId,
                     localUri = null,
                     mediaLink = it.mediaLink
                 )
@@ -327,7 +414,9 @@ class AdminPromotionViewModel(
             } else "", // 값이 없을 경우 공백으로
             bannerUri = banner,
             profileUri = profile,
-            activityImages = activities
+            activityImages = activities,
+            bannerMediaId = bannerMedia?.mediaId,
+            profileMediaId = profileMedia?.mediaId,
         )
     }
 }

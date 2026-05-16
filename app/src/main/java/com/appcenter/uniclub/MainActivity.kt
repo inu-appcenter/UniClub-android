@@ -1,12 +1,13 @@
 package com.appcenter.uniclub
 
+import android.app.Activity
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +16,13 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -78,7 +81,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        enableEdgeToEdge()
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
         setContent {
@@ -116,6 +118,16 @@ class MainActivity : ComponentActivity() {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            }
+
+            val view = LocalView.current
+            val isDark = isSystemInDarkTheme()
+
+            SideEffect {
+                val window = (view.context as Activity).window
+
+                WindowCompat.getInsetsController(window, view)
+                    .isAppearanceLightStatusBars = !isDark
             }
 
             UniClubTheme {
