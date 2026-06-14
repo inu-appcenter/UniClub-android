@@ -130,3 +130,19 @@ git clone https://github.com/inu-appcenter/UniClub-android.git
 ---
 
 ## 화면
+
+<p align="center">
+  <img src="screenshots/home.png" width="180"/>
+  <img src="screenshots/clublist.png" width="180"/>
+  <img src="screenshots/promotion.png" width="180"/>
+  <img src="screenshots/qna.png" width="180"/>
+  <img src="screenshots/mypage.png" width="180"/>
+</p>
+
+<p align="center">
+  <b>홈</b> &nbsp;&nbsp;&nbsp;&nbsp;
+  <b>동아리 리스트</b> &nbsp;&nbsp;&nbsp;&nbsp;
+  <b>홍보</b> &nbsp;&nbsp;&nbsp;&nbsp;
+  <b>Q&A</b> &nbsp;&nbsp;&nbsp;&nbsp;
+  <b>마이페이지</b>
+</p>
